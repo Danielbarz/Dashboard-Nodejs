@@ -8,7 +8,7 @@ import AppLayout from '../layouts/AppLayout'
  * ProtectedRoute untuk admin-only pages
  * Hanya accessible ketika user dalam admin mode
  */
-const AdminModeRoute = ({ children }) => {
+const AdminModeRoute = ({ children, superOnly = false }) => {
   const { isAuthenticated, loading } = useAuth()
   const currentRole = useCurrentRole()
 
@@ -24,8 +24,10 @@ const AdminModeRoute = ({ children }) => {
     return <Navigate to="/login" replace />
   }
 
-  // Redirect to analysis if not in admin mode
-  if (!['admin', 'super_admin'].includes(currentRole)) {
+  const allowedRoles = superOnly ? ['super_admin'] : ['admin', 'super_admin']
+
+  // Redirect to analysis if not allowed
+  if (!allowedRoles.includes(currentRole)) {
     return <Navigate to="/analysis" replace />
   }
 

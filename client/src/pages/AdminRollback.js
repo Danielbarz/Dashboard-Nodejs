@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import AppLayout from '../layouts/AppLayout'
 
 const tabs = [
   { key: 'digital', label: 'Digital Product' },
@@ -45,7 +44,7 @@ const AdminRollback = () => {
   }
 
   return (
-    <AppLayout pageTitle="Rollback Batch">
+    <>
       <div className="space-y-6">
         <div className="flex items-center space-x-6 border-b border-gray-200">
           {tabs.map((tab) => (
@@ -106,7 +105,7 @@ const AdminRollback = () => {
           </div>
         )}
       </div>
-    </AppLayout>
+    </>
   )
 }
 

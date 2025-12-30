@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
+import { useCurrentRole } from '../hooks/useCurrentRole'
 
 const Reports = () => {
   const [reportType, setReportType] = useState('revenue')
+  const currentRole = useCurrentRole()
+  const isAdmin = ['admin', 'super_admin'].includes(currentRole)
 
   const reportOptions = [
     { id: 'revenue', label: 'Revenue Report', desc: 'Laporan pendapatan per witel dan branch' },
@@ -44,14 +47,16 @@ const Reports = () => {
         </div>
 
         {/* Export Button */}
-        <div className="flex gap-4">
-          <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">
-            Export as PDF
-          </button>
-          <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
-            Export as Excel
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-4">
+            <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">
+              Export as PDF
+            </button>
+            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+              Export as Excel
+            </button>
+          </div>
+        )}
       </div>
   )
 }

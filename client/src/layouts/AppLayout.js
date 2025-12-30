@@ -19,6 +19,7 @@ const AppLayout = ({ children, pageTitle }) => {
   const [currentRole, setCurrentRole] = useState(null)
   const [canSwitchRole, setCanSwitchRole] = useState(false)
   const [switching, setSwitching] = useState(false)
+  const [cooldownUntil, setCooldownUntil] = useState(0)
   
   // Menu expansion states
   const [isDashboardOpen, setIsDashboardOpen] = useState(true)
@@ -34,32 +35,48 @@ const AppLayout = ({ children, pageTitle }) => {
     }
   }, [user])
 
-  // Refetch role every 2 seconds to keep it in sync
+  // Refetch role periodically to keep it in sync
   useEffect(() => {
     const interval = setInterval(() => {
       if (user) {
         fetchCurrentRole()
       }
-    }, 2000)
+    }, 60000)
     
     return () => clearInterval(interval)
   }, [user])
 
   const fetchCurrentRole = async () => {
+    if (switching) return
+
+    const fallbackRole = user?.role || 'user'
+    const fallbackCanSwitch = ['admin', 'super_admin'].includes(user?.role)
+
     try {
       const response = await roleService.getCurrentRole()
-      console.log('Current role response:', response.data.data)
-      setCurrentRole(response.data.data.activeRole)
-      setCanSwitchRole(response.data.data.canSwitchRole)
-      console.log('Updated currentRole to:', response.data.data.activeRole, 'canSwitch:', response.data.data.canSwitchRole)
+      const data = response?.data?.data || {}
+      const nextRole = data.activeRole || fallbackRole
+      const nextCanSwitch = data.canSwitchRole !== undefined ? data.canSwitchRole : fallbackCanSwitch
+
+      console.log('Current role response:', data)
+      setCurrentRole(nextRole)
+      setCanSwitchRole(nextCanSwitch)
+      console.log('Updated currentRole to:', nextRole, 'canSwitch:', nextCanSwitch)
     } catch (error) {
       console.error('Failed to get current role:', error)
-      // Fallback to user role if error
-      setCurrentRole(user?.role || 'user')
+      // Fallback so the switch button stays available for admins even when rate-limited
+      setCurrentRole(fallbackRole)
+      setCanSwitchRole(fallbackCanSwitch)
     }
   }
 
   const handleRoleSwitch = async () => {
+    const now = Date.now()
+    if (now < cooldownUntil) {
+      alert('Tunggu beberapa detik sebelum mencoba lagi (rate limit)')
+      return
+    }
+
     try {
       setSwitching(true)
       console.log('Starting role switch from:', currentRole)
@@ -70,7 +87,34 @@ const AppLayout = ({ children, pageTitle }) => {
       console.log('Target role:', targetRole)
       
       try {
-        const response = await roleService.switchRole(targetRole)
+        const doSwitch = async () => roleService.switchRole(targetRole)
+
+        let response
+        let attempt = 0
+        while (attempt < 3) {
+          try {
+            response = await doSwitch()
+            break
+          } catch (error) {
+            const isRateLimited = error?.response?.status === 429
+            if (isRateLimited && attempt < 2) {
+              const delay = 2000 * Math.pow(2, attempt)
+              console.warn(`Switch role hit 429, retrying in ${delay}ms (attempt ${attempt + 2}/3)`)            
+              await new Promise((res) => setTimeout(res, delay))
+              attempt += 1
+              continue
+            }
+            if (isRateLimited) {
+              setCooldownUntil(Date.now() + 15000)
+            }
+            throw error
+          }
+        }
+
+        if (!response) {
+          throw new Error('Switch role failed after retries')
+        }
+
         console.log('Switch role response:', response.data)
         
         // Use targetRole as we just switched to it
@@ -79,14 +123,17 @@ const AppLayout = ({ children, pageTitle }) => {
         
         // Refresh user from localStorage (already updated by switchRole)
         refreshUser()
-        
-        // Then refetch the role to verify
-        setTimeout(() => {
-          fetchCurrentRole()
-        }, 100)
       } catch (error) {
         console.error('Failed to switch role:', error)
-        // Show error to user
+        // If target was user, optimistically fall back to user mode to avoid trapping in admin UI during rate limit
+        if (targetRole === 'user') {
+          setCurrentRole('user')
+          setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
+          setTimeout(() => fetchCurrentRole(), 2000)
+        }
+        if (error?.response?.status === 429) {
+          setCooldownUntil(Date.now() + 15000)
+        }
         alert('Failed to switch role: ' + (error.response?.data?.message || error.message))
       }
     } finally {
@@ -127,18 +174,27 @@ const AppLayout = ({ children, pageTitle }) => {
 
   const isActive = (path) => location.pathname === path
 
+  const activeRole = currentRole || user?.role
+  const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
+  const isSuperAdmin = activeRole === 'super_admin'
+  const switchLabel = switching ? 'Switching...' : isAdminMode ? 'Keluar dari Mode Admin' : 'Masuk Mode Admin'
+  const switchIcon = !switching && isAdminMode ? (
+    <MdExitToApp size={16} className="text-white bg-red-600 rounded-full p-0.5" />
+  ) : null
+
   // Build menu structure dynamically based on current role
   const getMenuStructure = () => {
     const actualRole = user?.role
-    const activeRole = currentRole || user?.role
     const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
-    const canSwitchRole = ['admin', 'super_admin'].includes(actualRole)
+    const userCanSwitchRole = ['admin', 'super_admin'].includes(actualRole)
     
-    console.log('Building menu - actualRole:', actualRole, 'activeRole:', activeRole, 'isAdminMode:', isAdminMode)
+    console.log('Building menu - actualRole:', actualRole, 'activeRole:', activeRole, 'isAdminMode:', isAdminMode, 'canSwitchRole:', userCanSwitchRole)
     
-    // Base menu: Always available
-    const baseMenu = [
-      {
+    const menu = []
+
+    // Dashboard only for user mode
+    if (!isAdminMode) {
+      menu.push({
         id: 'dashboard',
         label: 'Dashboard',
         icon: MdDashboard,
@@ -159,48 +215,48 @@ const AppLayout = ({ children, pageTitle }) => {
           },
           { path: '/flow-process-hsi', label: 'Flow Process HSI' }
         ]
-      }
-    ]
-
-    // Admin-only menu: Only show when in admin mode
-    if (isAdminMode) {
-      baseMenu.push(
-        {
-          id: 'reports',
-          label: 'Reports',
-          icon: MdBarChart,
-          isOpen: isReportsOpen,
-          setIsOpen: setIsReportsOpen,
-          children: [
-            { path: '/reports-analysis', label: 'Report Digital Product' },
-            {
-              id: 'report-connectivity',
-              label: 'Report Connectivity',
-              isOpen: isReportConnectivityOpen,
-              setIsOpen: setIsReportConnectivityOpen,
-              children: [
-                { path: '/reports-tambahan', label: 'Report Jaringan Tambahan' },
-                { path: '/reports-datin', label: 'Report Datin' },
-                { path: '/reports-hsi', label: 'Report HSI' }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'admin-menu',
-          label: 'Admin',
-          icon: MdAssessment,
-          isOpen: isAdminMenuOpen,
-          setIsOpen: setIsAdminMenuOpen,
-          children: [
-            { path: '/admin/users', label: 'User Management' },
-            { path: '/admin/rollback', label: 'Rollback Batch' }
-          ]
-        }
-      )
+      })
     }
 
-    return baseMenu
+    // Reports available in both modes
+    menu.push({
+      id: 'reports',
+      label: 'Reports',
+      icon: MdBarChart,
+      isOpen: isReportsOpen,
+      setIsOpen: setIsReportsOpen,
+      children: [
+        { path: '/reports-analysis', label: 'Report Digital Product' },
+        {
+          id: 'report-connectivity',
+          label: 'Report Connectivity',
+          isOpen: isReportConnectivityOpen,
+          setIsOpen: setIsReportConnectivityOpen,
+          children: [
+            { path: '/reports-tambahan', label: 'Report Jaringan Tambahan' },
+            { path: '/reports-datin', label: 'Report Datin' },
+            { path: '/reports-hsi', label: 'Report HSI' }
+          ]
+        }
+      ]
+    })
+
+    // Admin menu only when in admin mode
+    if (isSuperAdmin) {
+      menu.push({
+        id: 'admin-menu',
+        label: 'Admin',
+        icon: MdAssessment,
+        isOpen: isAdminMenuOpen,
+        setIsOpen: setIsAdminMenuOpen,
+        children: [
+          { path: '/admin/users', label: 'User Management' },
+          { path: '/admin/rollback', label: 'Rollback Batch' }
+        ]
+      })
+    }
+
+    return menu
   }
 
   const menuStructure = getMenuStructure()
@@ -328,9 +384,12 @@ const AppLayout = ({ children, pageTitle }) => {
                   <button
                     onClick={handleRoleSwitch}
                     disabled={switching}
-                    className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200 disabled:opacity-50"
+                    className={`w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm border-b border-gray-200 disabled:opacity-50 ${
+                      isAdminMode ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'
+                    }`}
                   >
-                    <span>{switching ? 'Switching...' : `Masuk Mode ${currentRole === 'user' ? 'Admin' : 'User'}`}</span>
+                    {switchIcon}
+                    <span>{switchLabel}</span>
                   </button>
                 )}
                 
@@ -366,9 +425,12 @@ const AppLayout = ({ children, pageTitle }) => {
                 <button
                   onClick={handleRoleSwitch}
                   disabled={switching}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                  className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 text-sm font-medium flex items-center gap-2 ${
+                    isAdminMode ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  {switching ? 'Switching...' : `Masuk Mode ${currentRole === 'user' ? 'Admin' : 'User'}`}
+                  {switchIcon}
+                  <span>{switchLabel}</span>
                 </button>
               )}
               <div className="text-right">

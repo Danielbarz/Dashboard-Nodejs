@@ -135,7 +135,7 @@ function App() {
           <Route
             path="/admin/users"
             element={
-              <AdminModeRoute>
+              <AdminModeRoute superOnly>
                 <AdminUsers />
               </AdminModeRoute>
             }
@@ -143,7 +143,7 @@ function App() {
           <Route
             path="/admin/rollback"
             element={
-              <AdminModeRoute>
+              <AdminModeRoute superOnly>
                 <AdminRollback />
               </AdminModeRoute>
             }

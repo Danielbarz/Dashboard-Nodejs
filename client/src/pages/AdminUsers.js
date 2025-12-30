@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import AppLayout from '../layouts/AppLayout'
 import api from '../services/dashboardService'
 
 const RoleBadge = ({ role }) => {
@@ -43,7 +42,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <AppLayout pageTitle="User Management">
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
@@ -88,7 +87,7 @@ const AdminUsers = () => {
           )}
         </div>
       </div>
-    </AppLayout>
+    </>
   )
 }
 
