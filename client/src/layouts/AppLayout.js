@@ -182,14 +182,17 @@ const AppLayout = ({ children, pageTitle }) => {
   const fetchCurrentRole = async () => {
     if (switching) return
 
-    const fallbackRole = user?.role || 'user'
-    const fallbackCanSwitch = ['admin', 'super_admin'].includes(user?.role)
+    const fallbackRole = localStorage.getItem('currentRole') || user?.role || 'user'
+    const fallbackCanSwitch = ['admin', 'super_admin'].includes(user?.role || fallbackRole)
 
     try {
       const response = await roleService.getCurrentRole()
       const data = response?.data?.data || {}
       const nextRole = data.activeRole || fallbackRole
-      const nextCanSwitch = data.canSwitchRole !== undefined ? data.canSwitchRole : fallbackCanSwitch
+      const nextCanSwitch =
+        data.canSwitchRole !== undefined
+          ? data.canSwitchRole || ['admin', 'super_admin'].includes(data.actualRole)
+          : fallbackCanSwitch
 
       setCurrentRole(nextRole)
       localStorage.setItem('currentRole', nextRole)
@@ -241,11 +244,11 @@ const AppLayout = ({ children, pageTitle }) => {
 
       setCurrentRole(targetRole)
       localStorage.setItem('currentRole', targetRole)
-      refreshUser()
+      // We are not mutating server-stored role; no need to refresh user
     } catch (error) {
       console.error('Failed to switch role:', error)
       if (targetRole === 'user') {
-        setCurrentRole('user')
+        setCurrentRole(user?.role || 'user')
         setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
         setTimeout(() => fetchCurrentRole(), 2000)
       }
@@ -285,7 +288,12 @@ const AppLayout = ({ children, pageTitle }) => {
   const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
   const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
+  // Always show switch button if user base role is admin/super_admin
+  const showSwitchButton = ['admin', 'super_admin'].includes(user?.role)
   const isSuperAdmin = activeRole === 'super_admin'
+
+  // Debug: log user role
+  console.log('AppLayout Debug:', { userRole: user?.role, activeRole, showSwitchButton, isAdminMode })
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
@@ -526,7 +534,7 @@ const AppLayout = ({ children, pageTitle }) => {
           user={user}
           isSidebarOpen={isSidebarOpen}
           currentRole={currentRole}
-          canSwitchRole={canSwitchRole}
+          canSwitchRole={showSwitchButton}
           switching={switching}
           isAdminMode={isAdminMode}
           onSwitch={handleRoleSwitch}
@@ -560,7 +568,7 @@ const AppLayout = ({ children, pageTitle }) => {
             </div>
 
             <div className="flex items-center space-x-4 ml-4">
-              {canSwitchRole && (
+              {showSwitchButton && (
                 <button
                   onClick={handleRoleSwitch}
                   disabled={switching}

@@ -76,14 +76,15 @@ export const roleService = {
 }
 
 export const fileService = {
-  uploadFile: (file, type = 'digital_product') => {
+  uploadFile: (file, type = 'digital_product', onUploadProgress) => {
     const formData = new FormData()
     formData.append('file', file)
     return api.post('/files/upload', formData, {
       params: { type },
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      onUploadProgress
     })
   },
 

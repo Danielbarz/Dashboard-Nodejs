@@ -27,13 +27,8 @@ export const switchRole = async (req, res, next) => {
       return errorResponse(res, 'Admins can only switch between user and admin roles', 403)
     }
 
-    // Update active role
-    await prisma.user.update({
-      where: { id: userId },
-      data: { updatedAt: new Date() }
-    })
-
-    successResponse(res, { currentRoleAs: targetRole }, 'Role switched successfully')
+    // We do not mutate the stored role; we just acknowledge the requested active role
+    successResponse(res, { currentRoleAs: targetRole, role: userRole }, 'Role switched successfully')
   } catch (error) {
     next(error)
   }
@@ -43,9 +38,10 @@ export const switchRole = async (req, res, next) => {
 export const getCurrentRole = async (req, res, next) => {
   try {
     const userId = req.user.id
+    const parsedId = typeof userId === 'string' ? BigInt(userId) : BigInt(userId)
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: parsedId }
     })
 
     if (!user) {
@@ -57,7 +53,7 @@ export const getCurrentRole = async (req, res, next) => {
 
     successResponse(res, {
       actualRole: user.role,
-      activeRole: user.role,
+      activeRole: req.user.role || user.role,
       canSwitchRole: canSwitchRole
     })
   } catch (error) {
