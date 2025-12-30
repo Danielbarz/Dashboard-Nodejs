@@ -103,33 +103,33 @@ function App() {
           <Route
             path="/reports-analysis"
             element={
-              <AdminModeRoute>
+              <ProtectedRoute>
                 <ReportsAnalysis />
-              </AdminModeRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/reports-hsi"
             element={
-              <AdminModeRoute>
+              <ProtectedRoute>
                 <ReportsHSI />
-              </AdminModeRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/reports-datin"
             element={
-              <AdminModeRoute>
+              <ProtectedRoute>
                 <ReportsDatin />
-              </AdminModeRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/reports-tambahan"
             element={
-              <AdminModeRoute>
+              <ProtectedRoute>
                 <ReportsTambahan />
-              </AdminModeRoute>
+              </ProtectedRoute>
             }
           />
           <Route
