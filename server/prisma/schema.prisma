@@ -13,6 +13,7 @@ model User {
   email             String    @unique
   password          String
   role              String    @default("user")
+  currentRoleAs     String?   @map("current_role_as")
   emailVerifiedAt   DateTime? @map("email_verified_at")
   rememberToken     String?   @map("remember_token")
   createdAt         DateTime  @default(now()) @map("created_at")

@@ -22,7 +22,15 @@ const Logo = ({ isSidebarOpen }) => (
       </h1>
     </div>
     <div className={`absolute transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-      <img src="/images/logo.png" alt="Telkom" className="h-8" onError={(e) => e.target.style.display = 'none'} />
+      <img 
+        src={`${process.env.PUBLIC_URL}/logotelkom.png`}
+        alt="Telkom" 
+        className="h-10 w-10 object-contain" 
+        onError={(e) => {
+          console.error('Failed to load logo')
+          e.target.style.display = 'none'
+        }} 
+      />
     </div>
   </div>
 )
@@ -242,11 +250,22 @@ const AppLayout = ({ children, pageTitle }) => {
       setCurrentRole(targetRole)
       localStorage.setItem('currentRole', targetRole)
       refreshUser()
+
+      // Navigate based on the target role
+      if (targetRole === 'user') {
+        // Exiting admin mode - go to user dashboard
+        navigate('/analysis')
+      } else if (targetRole === 'admin' || targetRole === 'super_admin') {
+        // Entering admin mode - go to admin page
+        navigate('/admin/users')
+      }
     } catch (error) {
       console.error('Failed to switch role:', error)
       if (targetRole === 'user') {
         setCurrentRole('user')
         setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
+        // Force navigate to user dashboard even on error
+        navigate('/analysis')
         setTimeout(() => fetchCurrentRole(), 2000)
       }
       if (error?.response?.status === 429) {
@@ -311,14 +330,14 @@ const AppLayout = ({ children, pageTitle }) => {
           {!isAdminMode && (
             <div className="relative">
               <button
-                onClick={() => setIsDashboardOpen(!isDashboardOpen)}
-                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
+                onClick={() => isSidebarOpen && setIsDashboardOpen(!isDashboardOpen)}
+                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
                   isSidebarOpen ? 'px-6' : 'justify-center'
                 }`}
               >
                 <MdDashboard size={22} />
                 <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                  isSidebarOpen ? 'opacity-100' : 'opacity-0'
+                  isSidebarOpen ? 'opacity-100' : 'opacity-0 absolute'
                 }`}>
                   Dashboard
                 </span>
@@ -327,6 +346,11 @@ const AppLayout = ({ children, pageTitle }) => {
                     size={20}
                     className={`ml-auto transition-transform duration-300 ${isDashboardOpen ? 'rotate-180' : ''}`}
                   />
+                )}
+                {!isSidebarOpen && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    Dashboard
+                  </div>
                 )}
               </button>
 
@@ -399,14 +423,14 @@ const AppLayout = ({ children, pageTitle }) => {
           {/* Reports Section */}
           <div className="relative">
             <button
-              onClick={() => setIsReportsOpen(!isReportsOpen)}
-              className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
+              onClick={() => isSidebarOpen && setIsReportsOpen(!isReportsOpen)}
+              className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
                 isSidebarOpen ? 'px-6' : 'justify-center'
               }`}
             >
               <MdAssessment size={22} />
               <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                isSidebarOpen ? 'opacity-100' : 'opacity-0'
+                isSidebarOpen ? 'opacity-100' : 'opacity-0 absolute'
               }`}>
                 Reports
               </span>
@@ -415,6 +439,11 @@ const AppLayout = ({ children, pageTitle }) => {
                   size={20}
                   className={`ml-auto transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`}
                 />
+              )}
+              {!isSidebarOpen && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                  Reports
+                </div>
               )}
             </button>
 

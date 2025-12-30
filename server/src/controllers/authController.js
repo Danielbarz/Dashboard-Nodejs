@@ -39,7 +39,16 @@ export const register = async (req, res, next) => {
       }
     })
 
-    successResponse(res, newUser, 'User registered successfully', 201)
+    // Convert BigInt to String
+    const userResponse = {
+      id: newUser.id.toString(),
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      createdAt: newUser.createdAt
+    }
+
+    successResponse(res, userResponse, 'User registered successfully', 201)
   } catch (error) {
     next(error)
   }
@@ -66,23 +75,24 @@ export const login = async (req, res, next) => {
 
     // Generate tokens
     const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id.toString(), email: user.email, role: user.role },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
     )
 
     const refreshToken = jwt.sign(
-      { id: user.id },
+      { id: user.id.toString() },
       config.jwt.refreshSecret,
       { expiresIn: config.jwt.refreshExpiresIn }
     )
 
-    // Return user without password
+    // Return user without password (convert BigInt to String)
     const userResponse = {
-      id: user.id,
+      id: user.id.toString(),
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      currentRoleAs: user.currentRoleAs || user.role
     }
 
     successResponse(res, {
@@ -133,7 +143,7 @@ export const refreshToken = async (req, res, next) => {
 export const getProfile = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
+      where: { id: BigInt(req.user.id) }
     })
 
     if (!user) {
@@ -141,10 +151,11 @@ export const getProfile = async (req, res, next) => {
     }
 
     successResponse(res, {
-      id: user.id,
+      id: user.id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
+      currentRoleAs: user.currentRoleAs || user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     }, 'Profile retrieved successfully')

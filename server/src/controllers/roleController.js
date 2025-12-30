@@ -27,10 +27,13 @@ export const switchRole = async (req, res, next) => {
       return errorResponse(res, 'Admins can only switch between user and admin roles', 403)
     }
 
-    // Update active role
+    // Update current_role_as in database
     await prisma.user.update({
-      where: { id: userId },
-      data: { updatedAt: new Date() }
+      where: { id: BigInt(userId) },
+      data: { 
+        currentRoleAs: targetRole,
+        updatedAt: new Date() 
+      }
     })
 
     successResponse(res, { currentRoleAs: targetRole }, 'Role switched successfully')
@@ -45,19 +48,21 @@ export const getCurrentRole = async (req, res, next) => {
     const userId = req.user.id
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: BigInt(userId) }
     })
 
     if (!user) {
       return errorResponse(res, 'User not found', 404)
     }
 
+    const activeRole = user.currentRoleAs || user.role
+
     // Can switch role if actual role is admin or super_admin
     const canSwitchRole = ['admin', 'super_admin'].includes(user.role)
 
     successResponse(res, {
       actualRole: user.role,
-      activeRole: user.role,
+      activeRole: activeRole,
       canSwitchRole: canSwitchRole
     })
   } catch (error) {
