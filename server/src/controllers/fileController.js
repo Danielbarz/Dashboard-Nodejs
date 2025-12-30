@@ -64,6 +64,9 @@ export const uploadFile = async (req, res, next) => {
     let failedCount = 0
     const errors = []
 
+    // Generate Batch ID for this upload session
+    const currentBatchId = `batch_${Date.now()}`
+
     for (const record of records) {
       try {
         if (type === 'sos') {
@@ -90,7 +93,7 @@ export const uploadFile = async (req, res, next) => {
               revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
               biayaPasang: parseFloat(pickCaseInsensitive(record, 'biaya_pasang')) || 0,
               hrgBulanan: parseFloat(pickCaseInsensitive(record, 'hrg_bulanan')) || 0,
-              batchId: `batch_${Date.now()}`
+              batchId: currentBatchId
             },
             create: {
               orderId: orderId.toString(),
@@ -110,7 +113,7 @@ export const uploadFile = async (req, res, next) => {
               revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
               biayaPasang: parseFloat(pickCaseInsensitive(record, 'biaya_pasang')) || 0,
               hrgBulanan: parseFloat(pickCaseInsensitive(record, 'hrg_bulanan')) || 0,
-              batchId: `batch_${Date.now()}`
+              batchId: currentBatchId
             }
           })
           successCount++
@@ -132,6 +135,8 @@ export const uploadFile = async (req, res, next) => {
               ncli: pickCaseInsensitive(record, 'ncli'),
               speedy: pickCaseInsensitive(record, 'speedy'),
               pots: pickCaseInsensitive(record, 'pots')
+              // Note: hsiData might not have batchId in schema based on your snippet, 
+              // if it does, add: batchId: currentBatchId
             }
           })
           successCount++
@@ -145,7 +150,7 @@ export const uploadFile = async (req, res, next) => {
               witelBaru: pickCaseInsensitive(record, 'witel_baru') || pickCaseInsensitive(record, 'WITEL_BARU'),
               statusProyek: 'JT',
               revenuePlan: parseFloat(pickCaseInsensitive(record, 'revenue_plan')) || 0,
-              batchId: `batch_${Date.now()}`,
+              batchId: currentBatchId,
               poName: pickCaseInsensitive(record, 'po_name'),
               segmen: pickCaseInsensitive(record, 'segmen')
             }
@@ -161,7 +166,7 @@ export const uploadFile = async (req, res, next) => {
               witelBaru: pickCaseInsensitive(record, 'witel_baru'),
               statusProyek: 'DATIN',
               revenuePlan: parseFloat(pickCaseInsensitive(record, 'revenue_plan')) || 0,
-              batchId: `batch_${Date.now()}`,
+              batchId: currentBatchId,
               poName: pickCaseInsensitive(record, 'po_name'),
               segmen: pickCaseInsensitive(record, 'segmen')
             }
@@ -178,7 +183,7 @@ export const uploadFile = async (req, res, next) => {
               billWitel: pickCaseInsensitive(record, 'bill_witel'),
               liProductName: pickCaseInsensitive(record, 'li_product_name'),
               revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
-              batchId: `batch_${Date.now()}`
+              batchId: currentBatchId
             }
           })
           successCount++
@@ -200,6 +205,7 @@ export const uploadFile = async (req, res, next) => {
         totalRows: records.length,
         successRows: successCount,
         failedRows: failedCount,
+        batchId: currentBatchId,
         errors: errors.length > 0 ? errors.slice(0, 5) : [] // Return first 5 errors
       },
       'File uploaded successfully'
@@ -216,3 +222,65 @@ export const uploadFile = async (req, res, next) => {
   }
 }
 
+// ---------------------------------------------------------
+// NEW FUNCTION ADDED HERE TO FIX THE CRASH
+// ---------------------------------------------------------
+export const getImportLogs = async (req, res, next) => {
+  try {
+    // Karena kita tidak punya tabel khusus logs, kita akan mengambil
+    // data batch (kelompok upload) dari tabel sosData dan spmkMom
+    // sebagai representasi riwayat import.
+
+    // 1. Ambil Batch dari SOS Data
+    const sosBatches = await prisma.sosData.groupBy({
+      by: ['batchId', 'createdAt'],
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    })
+
+    // 2. Ambil Batch dari SPMK MOM
+    const spmkBatches = await prisma.spmkMom.groupBy({
+      by: ['batchId', 'createdAt'],
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    })
+
+    // 3. Format data agar seragam
+    const formattedSos = sosBatches
+      .filter(b => b.batchId) // Hanya yang punya batchId
+      .map(batch => ({
+        batchId: batch.batchId,
+        importDate: batch.createdAt,
+        recordCount: batch._count.id,
+        type: 'SOS Data / Analysis'
+      }))
+
+    const formattedSpmk = spmkBatches
+      .filter(b => b.batchId)
+      .map(batch => ({
+        batchId: batch.batchId,
+        importDate: batch.createdAt,
+        recordCount: batch._count.id,
+        type: 'SPMK (JT/Datin)'
+      }))
+
+    // 4. Gabungkan dan urutkan berdasarkan tanggal terbaru
+    const allLogs = [...formattedSos, ...formattedSpmk].sort((a, b) => {
+      return new Date(b.importDate) - new Date(a.importDate)
+    })
+
+    successResponse(res, allLogs, 'Import logs retrieved successfully')
+  } catch (error) {
+    next(error)
+  }
+}

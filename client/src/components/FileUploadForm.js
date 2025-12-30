@@ -8,6 +8,8 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(null)
+  const [logLines, setLogLines] = useState([])
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
@@ -28,16 +30,43 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     }
 
     setLoading(true)
+    setUploadProgress(0)
+    setLogLines(['Menyiapkan upload...'])
     setError(null)
     setSuccess(false)
 
     try {
       console.log('Uploading file:', file.name, 'Type:', type)
-      const response = await fileService.uploadFile(file, type)
+      const response = await fileService.uploadFile(file, type, (event) => {
+        if (event.total) {
+          const percent = Math.round((event.loaded * 100) / event.total)
+          setUploadProgress(percent)
+          if (percent === 100) {
+            setLogLines((prev) => [...prev, 'Upload selesai, memproses di server...'])
+          } else {
+            setLogLines((prev) => {
+              if (prev[prev.length - 1]?.startsWith('Mengunggah')) return prev
+              return [...prev, 'Mengunggah file...']
+            })
+          }
+        }
+      })
       console.log('Upload response:', response)
 
       setSuccess(true)
       setFile(null)
+      setUploadProgress(null)
+      const summary = response?.data?.data
+      if (summary) {
+        const { totalRows, successRows, failedRows, batchId } = summary
+        setLogLines((prev) => [
+          ...prev,
+          `Selesai diproses. Batch: ${batchId || 'n/a'}`,
+          `Rows: ${successRows ?? 0}/${totalRows ?? 0} berhasil, gagal: ${failedRows ?? 0}`
+        ])
+      } else {
+        setLogLines((prev) => [...prev, 'Selesai.'])
+      }
       
       // Reset file input
       const fileInput = document.getElementById('file-input')
@@ -55,6 +84,8 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       console.error('Error response:', err.response)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
       setError(errorMessage)
+      setUploadProgress(null)
+      setLogLines((prev) => [...prev, `Gagal: ${errorMessage}`])
     } finally {
       setLoading(false)
     }
@@ -114,6 +145,24 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
           </div>
         )}
 
+        {uploadProgress !== null && (
+          <div className="w-full bg-gray-100 rounded-lg h-3">
+            <div
+              className="bg-blue-600 h-3 rounded-lg transition-all"
+              style={{ width: `${uploadProgress}%` }}
+            />
+            <div className="text-sm text-gray-600 mt-1 text-right">{uploadProgress}%</div>
+          </div>
+        )}
+
+        {logLines.length > 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 space-y-1 max-h-40 overflow-y-auto">
+            {logLines.map((line, idx) => (
+              <div key={idx}>• {line}</div>
+            ))}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={!file || loading}
@@ -123,7 +172,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          {loading ? 'Uploading...' : 'Upload File'}
+          {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
         </button>
       </form>
     </div>

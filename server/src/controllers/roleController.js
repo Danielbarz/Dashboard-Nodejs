@@ -46,6 +46,7 @@ export const switchRole = async (req, res, next) => {
 export const getCurrentRole = async (req, res, next) => {
   try {
     const userId = req.user.id
+    const parsedId = typeof userId === 'string' ? BigInt(userId) : BigInt(userId)
 
     const user = await prisma.user.findUnique({
       where: { id: BigInt(userId) }

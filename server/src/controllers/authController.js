@@ -6,6 +6,15 @@ import { successResponse, errorResponse } from '../utils/response.js'
 
 const prisma = new PrismaClient()
 
+const formatUser = (user) => ({
+  id: user.id?.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt
+})
+
 export const register = async (req, res, next) => {
   try {
     const { name, email, password, role = 'user' } = req.body
@@ -73,7 +82,9 @@ export const login = async (req, res, next) => {
       return errorResponse(res, 'Invalid credentials', 401)
     }
 
-    // Generate tokens
+    const userIdStr = user.id?.toString()
+
+    // Generate tokens (store id as string to avoid BigInt serialization)
     const accessToken = jwt.sign(
       { id: user.id.toString(), email: user.email, role: user.role },
       config.jwt.secret,
@@ -96,7 +107,7 @@ export const login = async (req, res, next) => {
     }
 
     successResponse(res, {
-      user: userResponse,
+      user: formatUser(user),
       accessToken,
       refreshToken
     }, 'Login successful')
@@ -114,10 +125,11 @@ export const refreshToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret)
+    const parsedId = decoded.id ? BigInt(decoded.id) : undefined
 
     // Get user
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id }
+      where: { id: parsedId }
     })
 
     if (!user) {
@@ -126,7 +138,7 @@ export const refreshToken = async (req, res, next) => {
 
     // Generate new access token
     const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id?.toString(), email: user.email, role: user.role },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
     )
@@ -142,6 +154,8 @@ export const refreshToken = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
   try {
+    const parsedId = req.user.id ? BigInt(req.user.id) : undefined
+
     const user = await prisma.user.findUnique({
       where: { id: BigInt(req.user.id) }
     })
