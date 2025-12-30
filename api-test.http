@@ -1,0 +1,34 @@
+### Health Check
+GET http://localhost:5000/api/health
+
+### Register New User
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin Telkom",
+  "email": "admin@telkom.com",
+  "password": "admin123",
+  "role": "admin"
+}
+
+### Login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@telkom.com",
+  "password": "admin123"
+}
+
+### Get Profile (Protected - Add token from login response)
+GET http://localhost:5000/api/auth/profile
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Refresh Token
+POST http://localhost:5000/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}

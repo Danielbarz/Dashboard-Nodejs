@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             BigInt   @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  role           String   @default("user")
+  currentRoleAs  String?  @default("user") @map("current_role_as")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model DigitalProduct {
+  id              BigInt    @id @default(autoincrement())
+  orderNumber     String    @unique @map("order_number")
+  productName     String    @map("product_name")
+  witel           String
+  branch          String
+  revenue         Decimal   @db.Decimal(15, 2)
+  amount          Decimal   @db.Decimal(15, 2)
+  status          String
+  subType         String?   @map("sub_type")
+  customTarget    Decimal?  @db.Decimal(15, 2) @map("custom_target")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("digital_products")
+  @@index([witel])
+  @@index([branch])
+  @@index([status])
+}
+
+model ImportLog {
+  id          BigInt   @id @default(autoincrement())
+  fileName    String   @map("file_name")
+  totalRows   Int      @map("total_rows")
+  successRows Int      @map("success_rows")
+  failedRows  Int      @map("failed_rows")
+  status      String
+  errorLog    String?  @db.Text @map("error_log")
+  userId      BigInt   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("import_logs")
+  @@index([userId])
+  @@index([status])
+}
