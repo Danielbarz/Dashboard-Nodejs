@@ -1,190 +1,288 @@
-import React from 'react'
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import React, { useState, useMemo, useEffect } from 'react'
+import { FiDownload } from 'react-icons/fi'
+import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
+import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsTambahan = () => {
-  const onProgressRows = [
-    'INITIAL',
-    'SURVEY & DRM',
-    'PERIZINAN & MOS',
-    'INSTALASI',
-    'FI-OGP LIVE'
-  ].map((status) => ({ status }))
+  const { user } = useAuth()
+  const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
+  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const goLiveRows = []
+  const formatDateLocal = (date) => {
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
 
-  const witelRows = []
+  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
+  const [endDate, setEndDate] = useState(formatDateLocal(now))
+  const [selectedWitel, setSelectedWitel] = useState('')
+  const [tableDataFromAPI, setTableDataFromAPI] = useState([])
+  const [projectDataFromAPI, setProjectDataFromAPI] = useState([])
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const witelLamaRows = []
+  const witelHierarchy = {
+    'BALI': ['BALI', 'DENPASAR', 'SINGARAJA'],
+    'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG'],
+    'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO'],
+    'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB'],
+    'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA']
+  }
+
+  const witelList = Object.keys(witelHierarchy)
+
+  // Fetch data from API
+  const fetchReportData = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-tambahan`,
+        {
+          params: { start_date: startDate, end_date: endDate },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      if (response.data?.data) {
+        setTableDataFromAPI(response.data.data.tableData || [])
+        setProjectDataFromAPI(response.data.data.projectData || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch report data:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchReportData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, refreshKey])
+
+  // Table 1: Data Report JT
+  const tableData = useMemo(() => {
+    return tableDataFromAPI
+  }, [tableDataFromAPI])
+
+  // Table 2: Project Belum GO LIVE
+  const projectBelumGoLive = useMemo(() => {
+    return projectDataFromAPI
+  }, [projectDataFromAPI])
+
+  const filteredTableData = useMemo(() => {
+    let result = tableData
+    if (selectedWitel) {
+      const parentWitel = witelList.find(w => witelHierarchy[w].includes(selectedWitel))
+      result = result.filter(row => row.parentWitel === parentWitel || row.witel === selectedWitel || row.isParent)
+    }
+    return result
+  }, [tableData, selectedWitel])
+
+  const filteredProjectData = useMemo(() => {
+    let result = projectBelumGoLive
+    if (selectedWitel) {
+      const parentWitel = witelList.find(w => witelHierarchy[w].includes(selectedWitel))
+      result = result.filter(row => row.parentWitel === parentWitel || row.witel === selectedWitel || row.isParent)
+    }
+    return result
+  }, [projectBelumGoLive, selectedWitel])
+
+  const handleExport = () => {
+    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
+    window.location.href = `/api/export/report-tambahan?${params.toString()}`
+  }
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Analysis Jaringan Tambahan</h1>
-            <p className="text-gray-600 mt-1">Ringkasan laporan JT dengan unggah data</p>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
+            <option value="">Semua Witel</option>
+            {witelList.map(parentWitel => (
+              <optgroup key={parentWitel} label={`WITEL ${parentWitel}`}>
+                {witelHierarchy[parentWitel].map(witel => (
+                  <option key={witel} value={witel}>
+                    {witel === parentWitel ? `WITEL ${witel}` : witel}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+            </div>
+            <span className="text-gray-400 font-light">|</span>
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+            </div>
           </div>
-          <button className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700">
-            Keluar Mode Admin
+
+          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
+            <FiDownload className="mr-2" size={16} />
+            Ekspor Report
           </button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">Ringkasan Report JT</h2>
-            <p className="text-sm text-gray-600">Total LOP On Progress (by Status)</p>
-            <div className="overflow-x-auto">
-              <table className="min-w-[480px] w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Order</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {onProgressRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-gray-500">Belum ada data</td>
-                    </tr>
-                  ) : (
-                    onProgressRows.map((row) => (
-                      <tr key={row.status}>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.status}</td>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.order || '-'}</td>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.revenue || '-'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">Total LOP GO LIVE (exc Drop)</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-[360px] w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Order</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {goLiveRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-gray-500">Belum ada data</td>
-                    </tr>
-                  ) : (
-                    goLiveRows.map((row) => (
-                      <tr key={row.status}>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.status}</td>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.order || '-'}</td>
-                        <td className="px-3 py-2 text-gray-800 whitespace-nowrap">{row.revenue || '-'}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Unggah Data Mentah JT</h2>
-            <p className="text-sm text-gray-600">Unggah file Excel (xlsx, xls, csv) untuk memperbarui data JT.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <input type="file" className="block w-full max-w-sm text-sm text-gray-700" />
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold text-sm hover:bg-indigo-700">Unggah Dokumen</button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Konfigurasi Tampilan Tabel</h2>
-            <button className="text-sm text-indigo-600 font-semibold">Buka</button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-lg font-semibold text-gray-900">Data Report JT</h2>
-            <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded">
-              <ArrowDownTrayIcon className="w-5 h-5" />
-              Ekspor Excel
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-[1200px] w-full text-xs md:text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['WITEL', 'ORDER', 'REVENUE', 'INITIAL', 'SURVEY & DRM', 'PERIZINAN & MOS', 'INSTALASI', 'FI-OGP LIVE', 'GO LIVE', 'DROP', 'PO', 'KONTRIBUSI'].map((col) => (
-                    <th key={col} className="px-3 py-2 text-left font-semibold text-gray-700 whitespace-nowrap">{col}</th>
-                  ))}
+      {/* Table 1: Data Report JT */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report JT</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
+            <thead className="bg-blue-600">
+              <tr>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JUMLAH LOP (EXC DROP)</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">REV ALL LOP</th>
+                <th colSpan="4" className="px-2 py-1 text-center font-bold text-white border">PROGRESS DEPLOY</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border bg-green-600">GOLIVE (EXC DROP)</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JML LOP</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">REV LOP</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border bg-red-600">DROP</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">%CLOSE</th>
+              </tr>
+              <tr className="bg-blue-600">
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">INITIAL</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">SURVEY & DRM</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">PERSIAPAN & MOS</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">INSTALASI</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
+              {filteredTableData.map((row) => (
+                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+                  <td className={`px-2 py-1 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
+                    {row.isParent ? `WITEL ${row.witel}` : row.witel}
+                  </td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlah_lop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.rev_all}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.initial}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.survey}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.perizinan}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.instalasi}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jml_lop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.rev_lop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isParent ? 'bg-red-600 text-white' : 'bg-red-100'}`}>{row.drop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_close}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {witelRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={12} className="px-3 py-6 text-center text-gray-500">Belum ada data</td>
-                  </tr>
-                ) : (
-                  witelRows.map((row) => (
-                    <tr key={row[0]} className="hover:bg-gray-50">
-                      {row.map((cell, idx) => (
-                        <td key={idx} className="px-3 py-2 whitespace-nowrap text-gray-800">{cell}</td>
-                      ))}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['Project Belum GO LIVE', 'Top 3 On Progress by Witel', 'Top 3 On Progress by PO'].map((title) => (
-            <div key={title} className="bg-white rounded-lg shadow p-4 h-40 flex items-center justify-center text-gray-500 text-sm">
-              {title}
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">WITEL LAMA</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-[720px] w-full text-xs md:text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['WITEL', 'ORDER', 'REVENUE', '% CONTRIBUTION'].map((col) => (
-                    <th key={col} className="px-3 py-2 text-left font-semibold text-gray-700 whitespace-nowrap">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {witelLamaRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-gray-500">Belum ada data</td>
-                  </tr>
-                ) : (
-                  witelLamaRows.map((row) => (
-                    <tr key={row.witel} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.witel}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.order || '-'}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.revenue || '-'}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.percent || '-'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Table 2: Project Belum GO LIVE */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Project Belum GO LIVE</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
+            <thead className="bg-blue-600">
+              <tr>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL LAMA</th>
+                <th colSpan="2" className="px-2 py-1 text-center font-bold text-white border bg-red-600">TOC LOP BELUM GOLIVE</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JUMLAH LOP ON PROGRESS</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">% DALAM TOC</th>
+              </tr>
+              <tr className="bg-blue-600">
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px] bg-blue-600">DALAM TOC</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px] bg-blue-600">LEWAT TOC</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
+              {filteredProjectData.map((row) => (
+                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+                  <td className={`px-2 py-1 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
+                    {row.isParent ? `WITEL ${row.witel}` : row.witel}
+                  </td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.dalam_toc}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.lewat_toc}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlah_lop_progress}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_dalam_toc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Table 3: Top 3 Usia Project - By Witel Induk */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Top 3 Usia Project Terbaru (On Progress) - By Witel Induk</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
+            <thead className="bg-blue-600">
+              <tr>
+                <th className="px-2 py-2 text-center font-bold text-white border">NAMA PROJECT</th>
+                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border">TOP 3 USIA PROJECT ON PROGRESS</th>
+              </tr>
+              <tr className="bg-blue-600">
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">IHLD</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">TGL MOM</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">REVENUE</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">STATUS TOMPS</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">USIA (HARI)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colSpan="6" className="px-4 py-8 text-center text-gray-500">Tidak ada data "On Progress" yang ditemukan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Table 4: Top 3 Usia Project - By PO */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Top 3 Usia Project Terbaru (On Progress) - By PO</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
+            <thead className="bg-blue-600">
+              <tr>
+                <th className="px-2 py-2 text-center font-bold text-white border">NAMA PO</th>
+                <th className="px-2 py-2 text-center font-bold text-white border">NAMA PROJECT</th>
+                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border">TOP 3 USIA PROJECT ON PROGRESS</th>
+              </tr>
+              <tr className="bg-blue-600">
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">IHLD</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">TGL MOM</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">REVENUE</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">STATUS TOMPS</th>
+                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">USIA (HARI)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">Tidak ada data "On Progress" yang ditemukan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {isAdminMode && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Tambahan</h2>
+          <FileUploadForm 
+            type="jt"
+            onSuccess={() => {
+              // Refresh data after successful upload
+              setRefreshKey(prev => prev + 1)
+            }}
+          />
+        </div>
+      )}
     </>
   )
 }

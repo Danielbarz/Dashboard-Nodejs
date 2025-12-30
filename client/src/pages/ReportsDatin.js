@@ -1,209 +1,246 @@
-import React, { useMemo, useState } from 'react'
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
-import { useCurrentRole } from '../hooks/useCurrentRole'
+import React, { useState, useMemo, useEffect } from 'react'
+import { FiDownload } from 'react-icons/fi'
+import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsDatin = () => {
-  const currentRole = useCurrentRole()
-  const isAdmin = ['admin', 'super_admin'].includes(currentRole)
+  const { user } = useAuth()
+  const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
+  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const [dateRange, setDateRange] = useState({ start: '19/06/2023', end: '19/11/2025' })
-  const [selectedWitel, setSelectedWitel] = useState('Pilih Witel (5/5)')
-  const [selectedSegmen, setSelectedSegmen] = useState('Pilih Segmen (4/4)')
-  const [selectedKategori, setSelectedKategori] = useState('Pilih Kategori (4/4)')
-  const [search, setSearch] = useState('')
-  const [pageSize, setPageSize] = useState(10)
+  const formatDateLocal = (date) => {
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
 
-  const tableData = useMemo(() => ([]), [])
+  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
+  const [endDate, setEndDate] = useState(formatDateLocal(now))
+  const [selectedWitel, setSelectedWitel] = useState('')
+  const [tableDataFromAPI, setTableDataFromAPI] = useState([])
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const filteredData = useMemo(() => {
-    if (!search) return tableData
-    return tableData.filter((row) => {
-      const haystack = `${row.orderId || ''} ${row.name || ''} ${row.produk || ''}`.toLowerCase()
-      return haystack.includes(search.toLowerCase())
-    })
-  }, [search, tableData])
+  const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  const hasData = filteredData.length > 0
-  const visibleRows = hasData ? filteredData.slice(0, pageSize) : []
+  // Fetch data from API
+  const fetchReportData = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-datin`,
+        {
+          params: { start_date: startDate, end_date: endDate },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      if (response.data?.data) {
+        setTableDataFromAPI(response.data.data.tableData || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch report data:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchReportData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, refreshKey])
+
+  const table1Data = useMemo(() => tableDataFromAPI, [tableDataFromAPI])
+
+  const table2Data = useMemo(() => [], [])
+
+  const galaksiData = useMemo(() => [], [])
+
+  const handleExport = () => {
+    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
+    window.location.href = `/api/export/report-datin?${params.toString()}`
+  }
 
   return (
     <>
-      <div className="space-y-6 w-full max-w-7xl mx-auto px-4 overflow-x-hidden">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Report Datin</h1>
-          <p className="text-gray-600 mt-1">Laporan Datin dengan filter dan unggah data</p>
-        </div>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
+            <option value="">Semua Witel</option>
+            {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
+          </select>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 space-y-4 overflow-hidden w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rentang Tanggal</label>
-              <div className="flex items-center gap-2">
-                <input
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm w-full"
-                />
-                <span className="text-gray-500">-</span>
-                <input
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm w-full"
-                />
-              </div>
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Witel</label>
-                <select
-                  value={selectedWitel}
-                  onChange={(e) => setSelectedWitel(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option>Pilih Witel (5/5)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Segmen</label>
-                <select
-                  value={selectedSegmen}
-                  onChange={(e) => setSelectedSegmen(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option>Pilih Segmen (4/4)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <select
-                  value={selectedKategori}
-                  onChange={(e) => setSelectedKategori(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option>Pilih Kategori (4/4)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setSelectedWitel('Pilih Witel (5/5)')
-                setSelectedSegmen('Pilih Segmen (4/4)')
-                setSelectedKategori('Pilih Kategori (4/4)')
-                setSearch('')
-              }}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md text-sm font-medium"
-            >
-              Reset
-            </button>
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium">Terapkan</button>
-          </div>
-        </div>
-
-        {/* Cards placeholders */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[ 'Jumlah Order by Kategori', 'Estimasi Revenue by Kategori (Juta)', 'Distribusi Order by Witel', 'Distribusi Order by Segmen' ].map((title) => (
-            <div key={title} className="bg-white rounded-lg shadow p-4 h-48 flex items-center justify-center text-gray-500 text-sm">
-              {title}
-            </div>
-          ))}
-        </div>
-
-        {/* Upload + export (admin only) */}
-        {isAdmin && (
-          <div className="bg-white rounded-lg shadow p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Unggah / Export</h2>
-              <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded">
-                <ArrowDownTrayIcon className="w-5 h-5" />
-                Export Excel
-              </button>
-            </div>
-            <FileUploadForm type="datin" onSuccess={() => {}} />
-          </div>
-        )}
-
-        {/* Data Preview */}
-        <div className="bg-white rounded-lg shadow p-6 space-y-4 overflow-hidden w-full">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex-1 min-w-[240px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Preview</label>
-              <input
-                placeholder="Cari Nama/ID/Produk..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Tampilkan:</label>
-              <input
-                type="number"
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value) || 10)}
-                className="w-16 px-2 py-2 border border-gray-300 rounded-md text-sm"
-              />
+            <span className="text-gray-400 font-light">|</span>
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
             </div>
           </div>
 
-          <div className="overflow-x-auto max-w-full">
-            <table className="min-w-[1200px] w-full text-xs md:text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  {['Order ID', 'Order Date', 'NIPNAS', 'Standard Name (PO)', 'Produk', 'Revenue', 'Segmen', 'Sub Segmen', 'Kategori', 'Kategori Umur', 'Umur Order', 'Bill Witel', 'Cust Witel', 'Service Witel', 'Status', 'Milestone', 'Biaya Pasang', 'Harga Bulanan', 'Lama Kontrak (Hari)', 'Bill City', 'Tipe Order', 'Witel Baru'].map((col) => (
-                    <th key={col} className="px-3 py-2 text-left font-semibold text-gray-700 whitespace-nowrap">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {visibleRows.map((row) => (
-                  <tr key={row.orderId} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 whitespace-nowrap">{row.orderId}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.orderDate}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.nipnas}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.name}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.produk}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.revenue}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.segmen}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.subSegmen}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.kategori}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.kategoriUmur}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.umurOrder}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.billWitel}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.custWitel}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.serviceWitel}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.status}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.milestone || '-'}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.biayaPasang}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.hargaBulanan}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.lamaKontrak}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.billCity}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.tipeOrder}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{row.witelBaru}</td>
-                  </tr>
-                ))}
-                {!hasData && (
-                  <tr>
-                    <td colSpan={22} className="px-3 py-6 text-center text-gray-500">Belum ada data</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 gap-2">
-            <span>Menampilkan {hasData ? `1 sampai ${Math.min(pageSize, filteredData.length)} dari ${filteredData.length}` : '0 hasil'}</span>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1 border rounded-md text-gray-700 bg-gray-50">« Previous</button>
-              <div className="flex items-center gap-1">1 2 3 ...</div>
-              <button className="px-3 py-1 border rounded-md text-gray-700 bg-gray-50">Next »</button>
-            </div>
-          </div>
+          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
+            <FiDownload className="mr-2" size={16} />
+            Ekspor Report
+          </button>
         </div>
       </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report (Tampilan PSA & SO DO RO)</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
+            <thead className="bg-blue-600">
+              <tr>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
+                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&lt;3BLN<br/>TOTAL</th>
+                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&gt;3BLN<br/>TOTAL</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
+              </tr>
+              <tr>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">EST BC<br/>(JT)</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">EST BC<br/>(JT)</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 text-center">
+              {table1Data.map((row) => (
+                <tr key={row.id} className={row.isCategoryHeader ? 'bg-blue-700 font-bold text-white' : 'hover:bg-gray-50'}>
+                  <td className={`px-2 py-1 whitespace-nowrap border text-left ${row.isCategoryHeader ? 'font-bold text-white bg-blue-700' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.grand_total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report (Tampilan SO DO RO)</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
+            <thead className="bg-red-900">
+              <tr>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
+                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN<br/>TOTAL</th>
+                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN<br/>TOTAL</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
+              </tr>
+              <tr>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 text-center">
+              {table2Data.map((row) => (
+                <tr key={row.id} className={`hover:bg-gray-50 ${['SME', 'GOV', 'PRIVATE', 'SOE'].includes(row.witel) ? 'bg-red-900 font-bold text-white' : ''}`}>
+                  <td className="px-2 py-1 whitespace-nowrap border text-left">{row.witel}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.in_process}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.in_process2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border font-bold">{row.grand_total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Posisi Galaksi (Order In Progress)</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
+            <thead className="bg-gray-700">
+              <tr>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">PO</th>
+                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&lt; 3 BLN</th>
+                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&gt; 3 BLN</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">Achievement<br/>&gt;3bln</th>
+              </tr>
+              <tr>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">AO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">SO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">DO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">MO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">RO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">&lt; 3 BLN Total</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">AO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">SO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">DO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">MO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">RO</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">&gt; 3 BLN Total</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 text-center">
+              {galaksiData.map((row) => (
+                <tr key={row.id} className="bg-gray-800 font-bold text-white">
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.po}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.achievement}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {isAdminMode && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Datin</h2>
+          <FileUploadForm 
+            type="datin"
+            onSuccess={() => {
+              // Refresh data after successful upload
+              setRefreshKey(prev => prev + 1)
+            }}
+          />
+        </div>
+      )}
     </>
   )
 }

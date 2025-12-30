@@ -1,5 +1,7 @@
-import sql from '../config/database.js'
+import { PrismaClient } from '@prisma/client'
 import { successResponse, errorResponse } from '../utils/response.js'
+
+const prisma = new PrismaClient()
 
 // Switch user role (for super admin and admins)
 export const switchRole = async (req, res, next) => {
@@ -25,12 +27,11 @@ export const switchRole = async (req, res, next) => {
       return errorResponse(res, 'Admins can only switch between user and admin roles', 403)
     }
 
-    // Update current_role_as
-    await sql`
-      UPDATE users 
-      SET current_role_as = ${targetRole}, updated_at = NOW()
-      WHERE id = ${userId}
-    `
+    // Update active role
+    await prisma.user.update({
+      where: { id: userId },
+      data: { updatedAt: new Date() }
+    })
 
     successResponse(res, { currentRoleAs: targetRole }, 'Role switched successfully')
   } catch (error) {
@@ -43,25 +44,20 @@ export const getCurrentRole = async (req, res, next) => {
   try {
     const userId = req.user.id
 
-    const user = await sql`
-      SELECT id, name, email, role, current_role_as 
-      FROM users 
-      WHERE id = ${userId}
-    `
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
 
-    if (user.length === 0) {
+    if (!user) {
       return errorResponse(res, 'User not found', 404)
     }
 
-    const currentUser = user[0]
-    const activeRole = currentUser.current_role_as || currentUser.role
-
-    // Can switch role if actual role is admin or super_admin (regardless of current active role)
-    const canSwitchRole = ['admin', 'super_admin'].includes(currentUser.role)
+    // Can switch role if actual role is admin or super_admin
+    const canSwitchRole = ['admin', 'super_admin'].includes(user.role)
 
     successResponse(res, {
-      actualRole: currentUser.role,
-      activeRole: activeRole,
+      actualRole: user.role,
+      activeRole: user.role,
       canSwitchRole: canSwitchRole
     })
   } catch (error) {

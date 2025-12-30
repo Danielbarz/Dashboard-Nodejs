@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { roleService } from '../services/dashboardService'
@@ -6,21 +6,135 @@ import {
   MdDashboard,
   MdAssessment,
   MdExitToApp,
-  MdBarChart
+  MdBarChart,
+  MdAdminPanelSettings,
+  MdKeyboardArrowDown
 } from 'react-icons/md'
-import { FiMenu, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi'
+import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+
+// ==================== HELPER COMPONENTS ====================
+
+const Logo = ({ isSidebarOpen }) => (
+  <div className="flex items-center justify-center h-20 border-b border-gray-200 relative overflow-hidden">
+    <div className={`transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+      <h1 className="text-2xl font-bold text-red-600">
+        Telkom<span className="text-gray-800">Indonesia</span>
+      </h1>
+    </div>
+    <div className={`absolute transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+      <img src="/images/logo.png" alt="Telkom" className="h-8" onError={(e) => e.target.style.display = 'none'} />
+    </div>
+  </div>
+)
+
+const NavLink = ({ href, active, icon: Icon, isSidebarOpen, children }) => (
+  <div className="relative group">
+    <Link
+      to={href}
+      className={`flex items-center py-4 text-gray-600 hover:bg-gray-100 transition-colors duration-200 ${
+        isSidebarOpen ? 'px-6' : 'justify-center'
+      } ${active ? 'bg-gray-200 text-gray-800 font-bold' : ''}`}
+    >
+      <Icon size={22} />
+      <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+        {children}
+      </span>
+    </Link>
+    {!isSidebarOpen && (
+      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+        {children}
+      </div>
+    )}
+  </div>
+)
+
+const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switching, isAdminMode, onSwitch, onLogout }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profileRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  if (!user) return null
+
+  const switchLabel = switching ? 'Switching...' : isAdminMode ? 'Keluar Mode Admin' : 'Masuk Mode Admin'
+  const switchIcon = isAdminMode ? <MdExitToApp size={16} /> : <MdAdminPanelSettings size={16} />
+
+  return (
+    <div className="mt-auto p-2 border-t border-gray-200 relative" ref={profileRef}>
+      {isProfileOpen && (
+        <div className={`absolute bottom-full mb-2 bg-white rounded-md shadow-lg border py-2 z-20 ${
+          isSidebarOpen ? 'w-[calc(100%-1rem)]' : 'left-full ml-2 w-56'
+        }`}>
+          <div className="px-4 py-3 border-b">
+            <p className="font-bold text-gray-800 truncate">{user.name}</p>
+            <p className="text-sm text-gray-500 truncate">{user.email}</p>
+            <p className="text-xs text-gray-400 mt-1">Current: <span className="capitalize font-semibold">{currentRole}</span></p>
+          </div>
+          <div className="mt-2">
+            {canSwitchRole && (
+              <button
+                onClick={() => {
+                  onSwitch()
+                  setIsProfileOpen(false)
+                }}
+                disabled={switching}
+                className={`flex items-center w-full px-4 py-2 text-sm space-x-2 disabled:opacity-50 ${
+                  isAdminMode ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                {switchIcon}
+                <span>{switchLabel}</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                onLogout()
+                setIsProfileOpen(false)
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-100 space-x-2"
+            >
+              <MdExitToApp size={16} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      )}
+      <div
+        className={`flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-100 ${!isSidebarOpen && 'justify-center'}`}
+        onClick={() => setIsProfileOpen(!isProfileOpen)}
+      >
+        <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+          {user.name?.charAt(0).toUpperCase() || '?'}
+        </div>
+        <div className={`ml-3 flex-grow overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>
+          <p className="font-semibold text-gray-800 text-sm truncate">{user.name}</p>
+          <p className="text-xs text-gray-500 capitalize">{currentRole}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================== MAIN LAYOUT ====================
 
 const AppLayout = ({ children, pageTitle }) => {
   const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [currentRole, setCurrentRole] = useState(null)
   const [canSwitchRole, setCanSwitchRole] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(0)
-  
+
   // Menu expansion states
   const [isDashboardOpen, setIsDashboardOpen] = useState(true)
   const [isDashboardConnectivityOpen, setIsDashboardConnectivityOpen] = useState(false)
@@ -28,21 +142,40 @@ const AppLayout = ({ children, pageTitle }) => {
   const [isReportConnectivityOpen, setIsReportConnectivityOpen] = useState(false)
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(true)
 
+  // Close sidebar on mobile resize
   useEffect(() => {
-    // Get current role info
+    const isDesktop = () => window.innerWidth >= 1024
+    const handleResize = () => {
+      if (isDesktop()) {
+        setIsSidebarOpen(true)
+      } else {
+        setIsSidebarOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Fetch current role
+  useEffect(() => {
     if (user) {
+      const userRole = user.role || 'user'
+      const activeRole = user.currentRoleAs || userRole
+      const canSwitch = ['admin', 'super_admin'].includes(userRole)
+      
+      setCurrentRole(activeRole)
+      setCanSwitchRole(canSwitch)
       fetchCurrentRole()
     }
   }, [user])
 
-  // Refetch role periodically to keep it in sync
+  // Refetch role periodically
   useEffect(() => {
     const interval = setInterval(() => {
       if (user) {
         fetchCurrentRole()
       }
     }, 60000)
-    
     return () => clearInterval(interval)
   }, [user])
 
@@ -58,14 +191,13 @@ const AppLayout = ({ children, pageTitle }) => {
       const nextRole = data.activeRole || fallbackRole
       const nextCanSwitch = data.canSwitchRole !== undefined ? data.canSwitchRole : fallbackCanSwitch
 
-      console.log('Current role response:', data)
       setCurrentRole(nextRole)
+      localStorage.setItem('currentRole', nextRole)
       setCanSwitchRole(nextCanSwitch)
-      console.log('Updated currentRole to:', nextRole, 'canSwitch:', nextCanSwitch)
     } catch (error) {
       console.error('Failed to get current role:', error)
-      // Fallback so the switch button stays available for admins even when rate-limited
       setCurrentRole(fallbackRole)
+      localStorage.setItem('currentRole', fallbackRole)
       setCanSwitchRole(fallbackCanSwitch)
     }
   }
@@ -77,371 +209,374 @@ const AppLayout = ({ children, pageTitle }) => {
       return
     }
 
+    let targetRole
     try {
       setSwitching(true)
-      console.log('Starting role switch from:', currentRole)
-      
-      // If currently in user mode, switch to admin (if available)
-      // If currently in admin mode, switch to user
-      const targetRole = currentRole === 'user' ? 'admin' : 'user'
-      console.log('Target role:', targetRole)
-      
-      try {
-        const doSwitch = async () => roleService.switchRole(targetRole)
+      targetRole = currentRole === 'user' ? 'admin' : 'user'
 
-        let response
+      let response
+      let attempt = 0
+      while (attempt < 3) {
         try {
-          response = await doSwitch()
+          response = await roleService.switchRole(targetRole)
+          break
         } catch (error) {
           const isRateLimited = error?.response?.status === 429
+          if (isRateLimited && attempt < 2) {
+            const delay = 2000 * Math.pow(2, attempt)
+            await new Promise((res) => setTimeout(res, delay))
+            attempt += 1
+            continue
+          }
           if (isRateLimited) {
-            // Stop spamming the endpoint and give user-friendly feedback
             setCooldownUntil(Date.now() + 15000)
-            // Optimistically exit admin mode so UI is not stuck
-            if (targetRole === 'user') {
-              setCurrentRole('user')
-              setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
-            }
-            console.warn('Role switch rate-limited; cooling down for 15s')
-            alert('Terlalu banyak percobaan. Tunggu 15 detik lalu coba lagi. Anda sudah dialihkan ke mode user secara lokal.')
-            return
           }
           throw error
         }
-
-        if (!response) {
-          throw new Error('Switch role failed (no response)')
-        }
-
-        console.log('Switch role response:', response.data)
-        
-        // Use targetRole as we just switched to it
-        setCurrentRole(targetRole)
-        console.log('Role switched to:', targetRole)
-        
-        // Refresh user from localStorage (already updated by switchRole)
-        refreshUser()
-
-        // Navigate based on target role
-        if (targetRole === 'user') {
-          // Keluar dari mode admin, redirect ke dashboard user
-          console.log('Exiting admin mode, navigating to /analysis')
-          navigate('/analysis')
-        } else if (targetRole === 'admin' || targetRole === 'super_admin') {
-          // Masuk mode admin, redirect ke halaman admin
-          console.log('Entering admin mode, navigating to /admin/users')
-          navigate('/admin/users')
-        }
-      } catch (error) {
-        console.error('Failed to switch role:', error)
-        // If target was user, optimistically fall back to user mode to avoid trapping in admin UI during failures
-        if (targetRole === 'user') {
-          setCurrentRole('user')
-          setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
-          // Force navigate to user dashboard
-          navigate('/analysis')
-          setTimeout(() => fetchCurrentRole(), 2000)
-        }
-        alert('Failed to switch role: ' + (error.response?.data?.message || error.message))
       }
+
+      if (!response) {
+        throw new Error('Switch role failed after retries')
+      }
+
+      setCurrentRole(targetRole)
+      localStorage.setItem('currentRole', targetRole)
+      refreshUser()
+    } catch (error) {
+      console.error('Failed to switch role:', error)
+      if (targetRole === 'user') {
+        setCurrentRole('user')
+        setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
+        setTimeout(() => fetchCurrentRole(), 2000)
+      }
+      if (error?.response?.status === 429) {
+        setCooldownUntil(Date.now() + 15000)
+      }
+      alert('Failed to switch role: ' + (error.response?.data?.message || error.message))
     } finally {
       setSwitching(false)
     }
   }
-
-  // Auto-detect page title from route
-  const getPageTitle = () => {
-    if (pageTitle) return pageTitle
-    
-    const pathMap = {
-      '/analysis': 'Dashboard Digital Product',
-      '/connectivity': 'Dashboard Connectivity',
-      '/tambahan': 'Dashboard Jaringan Tambahan',
-      '/datin': 'Dashboard Datin',
-      '/hsi': 'Dashboard HSI',
-      '/flow-process-hsi': 'Flow Process HSI',
-      '/reports': 'Reports',
-      '/reports-analysis': 'Report Digital Product',
-      '/reports-connectivity': 'Report Connectivity',
-      '/reports-tambahan': 'Report Jaringan Tambahan',
-      '/reports-datin': 'Report Datin',
-      '/reports-hsi': 'Report HSI',
-      '/admin/users': 'User Management',
-      '/admin/rollback': 'Rollback Batch'
-    }
-    
-    return pathMap[location.pathname] || 'Dashboard'
-  }
-
-  const currentPageTitle = getPageTitle()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
-  const isActive = (path) => location.pathname === path
+  const getPageTitle = () => {
+    if (pageTitle) return pageTitle
+    
+    const pathMap = {
+      '/analysis': 'Dashboard Digital Product',
+      '/tambahan': 'Dashboard Jaringan Tambahan',
+      '/datin': 'Dashboard Datin',
+      '/hsi': 'Dashboard HSI',
+      '/flow-process-hsi': 'Flow Process HSI',
+      '/reports-analysis': 'Report Digital Product',
+      '/reports-tambahan': 'Report Jaringan Tambahan',
+      '/reports-datin': 'Report Datin',
+      '/reports-hsi': 'Report HSI',
+      '/admin/users': 'User Management',
+      '/admin/rollback': 'Rollback Batch'
+    }
+    return pathMap[location.pathname] || 'Dashboard'
+  }
 
+  const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
   const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
   const isSuperAdmin = activeRole === 'super_admin'
-  const switchLabel = switching ? 'Switching...' : isAdminMode ? 'Keluar dari Mode Admin' : 'Masuk Mode Admin'
-  const switchIcon = !switching && isAdminMode ? (
-    <MdExitToApp size={16} className="text-white bg-red-600 rounded-full p-0.5" />
-  ) : null
-
-  // Build menu structure dynamically based on current role
-  const getMenuStructure = () => {
-    const actualRole = user?.role
-    const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
-    const userCanSwitchRole = ['admin', 'super_admin'].includes(actualRole)
-    
-    console.log('Building menu - actualRole:', actualRole, 'activeRole:', activeRole, 'isAdminMode:', isAdminMode, 'canSwitchRole:', userCanSwitchRole)
-    
-    const menu = []
-
-    // Dashboard only for user mode
-    if (!isAdminMode) {
-      menu.push({
-        id: 'dashboard',
-        label: 'Dashboard',
-        icon: MdDashboard,
-        isOpen: isDashboardOpen,
-        setIsOpen: setIsDashboardOpen,
-        children: [
-          { path: '/analysis', label: 'Dashboard Digital Product' },
-          {
-            id: 'dashboard-connectivity',
-            label: 'Dashboard Connectivity',
-            isOpen: isDashboardConnectivityOpen,
-            setIsOpen: setIsDashboardConnectivityOpen,
-            children: [
-              { path: '/tambahan', label: 'Dashboard Jaringan Tambahan' },
-              { path: '/datin', label: 'Dashboard Datin' },
-              { path: '/hsi', label: 'Dashboard HSI' }
-            ]
-          },
-          { path: '/flow-process-hsi', label: 'Flow Process HSI' }
-        ]
-      })
-    }
-
-    // Reports available in both modes
-    menu.push({
-      id: 'reports',
-      label: 'Reports',
-      icon: MdBarChart,
-      isOpen: isReportsOpen,
-      setIsOpen: setIsReportsOpen,
-      children: [
-        { path: '/reports-analysis', label: 'Report Digital Product' },
-        {
-          id: 'report-connectivity',
-          label: 'Report Connectivity',
-          isOpen: isReportConnectivityOpen,
-          setIsOpen: setIsReportConnectivityOpen,
-          children: [
-            { path: '/reports-tambahan', label: 'Report Jaringan Tambahan' },
-            { path: '/reports-datin', label: 'Report Datin' },
-            { path: '/reports-hsi', label: 'Report HSI' }
-          ]
-        }
-      ]
-    })
-
-    // Admin menu only when in admin mode
-    if (isSuperAdmin) {
-      menu.push({
-        id: 'admin-menu',
-        label: 'Admin',
-        icon: MdAssessment,
-        isOpen: isAdminMenuOpen,
-        setIsOpen: setIsAdminMenuOpen,
-        children: [
-          { path: '/admin/users', label: 'User Management' },
-          { path: '/admin/rollback', label: 'Rollback Batch' }
-        ]
-      })
-    }
-
-    return menu
-  }
-
-  const menuStructure = getMenuStructure()
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 font-sans">
       {/* SIDEBAR */}
       <div
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        } bg-white shadow-lg transition-all duration-300 flex flex-col fixed h-full z-30`}
+        className={`flex flex-col bg-white h-screen fixed shadow-lg z-30 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0 lg:w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
+        }`}
       >
-        {/* LOGO */}
-        <div className="flex items-center justify-center h-20 border-b border-gray-200">
-          {isSidebarOpen ? (
-            <h1 className="text-2xl font-bold text-red-600">
-              Telkom<span className="text-gray-800">Indonesia</span>
-            </h1>
-          ) : (
-            <img src="/images/logo.png" alt="Telkom" className="h-8" />
-          )}
-        </div>
+        {/* Sidebar toggle button for desktop */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="hidden lg:block absolute -right-3 top-6 z-40 bg-white p-1 rounded-full shadow-md border hover:bg-gray-100 transition-colors"
+        >
+          {isSidebarOpen ? <FiChevronLeft size={16} /> : <FiChevronRight size={16} />}
+        </button>
 
-        {/* NAVIGATION */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {menuStructure.map((menu) => (
-            <div key={menu.id}>
+        <Logo isSidebarOpen={isSidebarOpen} />
+
+        {/* Navigation */}
+        <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
+          {/* Dashboard Section - Only in user mode */}
+          {!isAdminMode && (
+            <div className="relative">
               <button
-                onClick={() => menu.setIsOpen(!menu.isOpen)}
-                className="w-full flex items-center justify-between py-3 px-4 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                onClick={() => setIsDashboardOpen(!isDashboardOpen)}
+                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
+                  isSidebarOpen ? 'px-6' : 'justify-center'
+                }`}
               >
-                <div className="flex items-center">
-                  <menu.icon size={20} />
-                  {isSidebarOpen && <span className="ml-4 font-semibold">{menu.label}</span>}
-                </div>
+                <MdDashboard size={22} />
+                <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
+                  isSidebarOpen ? 'opacity-100' : 'opacity-0'
+                }`}>
+                  Dashboard
+                </span>
                 {isSidebarOpen && (
-                  menu.isOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />
+                  <MdKeyboardArrowDown
+                    size={20}
+                    className={`ml-auto transition-transform duration-300 ${isDashboardOpen ? 'rotate-180' : ''}`}
+                  />
                 )}
               </button>
 
-              {/* Children Menu */}
-              {menu.isOpen && isSidebarOpen && (
-                <div className="ml-4 mt-1 space-y-1">
-                  {menu.children.map((child) => (
-                    child.path ? (
-                      // Direct link
-                      <Link
-                        key={child.path}
-                        to={child.path}
-                        className={`block py-2 px-4 rounded-lg transition-colors text-sm ${
-                          isActive(child.path)
-                            ? 'bg-blue-100 text-blue-600 font-semibold'
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    ) : (
-                      // Nested submenu
-                      <div key={child.id} className="space-y-1">
-                        <button
-                          onClick={() => child.setIsOpen(!child.isOpen)}
-                          className="w-full flex items-center justify-between py-2 px-4 rounded-lg transition-colors text-sm text-gray-700 hover:bg-gray-100"
+              {isSidebarOpen && isDashboardOpen && (
+                <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
+                  <Link
+                    to="/analysis"
+                    className={`block px-4 py-2 text-sm rounded-md text-left ${
+                      isActive('/analysis') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Dashboard Digital Product
+                  </Link>
+
+                  {/* Dashboard Connectivity Submenu */}
+                  <div>
+                    <button
+                      onClick={() => setIsDashboardConnectivityOpen(!isDashboardConnectivityOpen)}
+                      className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-md hover:bg-gray-200 text-left"
+                    >
+                      <span>Dashboard Connectivity</span>
+                      <MdKeyboardArrowDown
+                        size={18}
+                        className={`transition-transform duration-300 ${isDashboardConnectivityOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {isDashboardConnectivityOpen && (
+                      <div className="pl-6 mt-1 space-y-1">
+                        <Link
+                          to="/tambahan"
+                          className={`block px-4 py-2 text-sm rounded-md text-left ${
+                            isActive('/tambahan') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
                         >
-                          <span>{child.label}</span>
-                          {child.isOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-                        </button>
-                        
-                        {/* Nested children */}
-                        {child.isOpen && (
-                          <div className="ml-4 space-y-1">
-                            {child.children.map((nestedChild) => (
-                              <Link
-                                key={nestedChild.path}
-                                to={nestedChild.path}
-                                className={`block py-2 px-4 rounded-lg transition-colors text-sm ${
-                                  isActive(nestedChild.path)
-                                    ? 'bg-blue-100 text-blue-600 font-semibold'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                              >
-                                {nestedChild.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
+                          Dashboard Jaringan Tambahan
+                        </Link>
+                        <Link
+                          to="/datin"
+                          className={`block px-4 py-2 text-sm rounded-md text-left ${
+                            isActive('/datin') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Dashboard Datin
+                        </Link>
+                        <Link
+                          to="/hsi"
+                          className={`block px-4 py-2 text-sm rounded-md text-left ${
+                            isActive('/hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Dashboard HSI
+                        </Link>
                       </div>
-                    )
-                  ))}
+                    )}
+                  </div>
+
+                  <Link
+                    to="/flow-process-hsi"
+                    className={`block px-4 py-2 text-sm rounded-md text-left ${
+                      isActive('/flow-process-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Flow Process HSI
+                  </Link>
                 </div>
               )}
             </div>
-          ))}
-        </nav>
+          )}
 
-        {/* USER PROFILE */}
-        <div className="border-t border-gray-200 p-4">
-          <button
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 relative"
-          >
-            <div className={`flex items-center space-x-3 ${isSidebarOpen ? '' : 'hidden'}`}>
-              <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center text-white font-bold">
-                {user?.name?.charAt(0).toUpperCase()}
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-sm text-gray-800 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{currentRole || user?.role}</p>
-              </div>
-            </div>
-            {isSidebarOpen && <FiChevronDown size={16} />}
-
-            {/* PROFILE DROPDOWN */}
-            {isProfileOpen && (
-              <div className={`absolute bottom-full mb-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 ${
-                isSidebarOpen ? 'left-0 right-0 mx-2 w-auto' : 'left-full ml-2 w-48'
+          {/* Reports Section */}
+          <div className="relative">
+            <button
+              onClick={() => setIsReportsOpen(!isReportsOpen)}
+              className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
+                isSidebarOpen ? 'px-6' : 'justify-center'
+              }`}
+            >
+              <MdAssessment size={22} />
+              <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
+                isSidebarOpen ? 'opacity-100' : 'opacity-0'
               }`}>
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <p className="font-semibold text-gray-800">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
-                  <p className="text-xs text-gray-400 mt-1">Current: <span className="capitalize font-semibold">{currentRole || user?.role}</span></p>
-                </div>
-                
-                {canSwitchRole && (
-                  <button
-                    onClick={handleRoleSwitch}
-                    disabled={switching}
-                    className={`w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm border-b border-gray-200 disabled:opacity-50 ${
-                      isAdminMode ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                  >
-                    {switchIcon}
-                    <span>{switchLabel}</span>
-                  </button>
-                )}
-                
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                Reports
+              </span>
+              {isSidebarOpen && (
+                <MdKeyboardArrowDown
+                  size={20}
+                  className={`ml-auto transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`}
+                />
+              )}
+            </button>
+
+            {isSidebarOpen && isReportsOpen && (
+              <div className="pl-8 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
+                <Link
+                  to="/reports-analysis"
+                  className={`block px-4 py-2 text-sm rounded-md text-left ${
+                    isActive('/reports-analysis') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                  }`}
                 >
-                  <MdExitToApp size={16} />
-                  <span>Logout</span>
-                </button>
+                  Report Digital Product
+                </Link>
+
+                {/* Report Connectivity Submenu */}
+                <div>
+                  <button
+                    onClick={() => setIsReportConnectivityOpen(!isReportConnectivityOpen)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-md text-gray-700 hover:bg-gray-200 text-left"
+                  >
+                    <span>Report Connectivity</span>
+                    <MdKeyboardArrowDown
+                      size={18}
+                      className={`transition-transform duration-300 ${isReportConnectivityOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {isReportConnectivityOpen && (
+                    <div className="pl-6 mt-1 space-y-1">
+                      <Link
+                        to="/reports-tambahan"
+                        className={`block px-4 py-2 text-sm rounded-md text-left ${
+                          isActive('/reports-tambahan') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Report Jaringan Tambahan
+                      </Link>
+                      <Link
+                        to="/reports-datin"
+                        className={`block px-4 py-2 text-sm rounded-md text-left ${
+                          isActive('/reports-datin') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Report Datin
+                      </Link>
+                      <Link
+                        to="/reports-hsi"
+                        className={`block px-4 py-2 text-sm rounded-md text-left ${
+                          isActive('/reports-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Report HSI
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-          </button>
-        </div>
+          </div>
+
+          {/* Admin Section - Only for super_admin */}
+          {isSuperAdmin && (
+            <div className="relative">
+              <button
+                onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
+                  isSidebarOpen ? 'px-6' : 'justify-center'
+                }`}
+              >
+                <MdBarChart size={22} />
+                <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
+                  isSidebarOpen ? 'opacity-100' : 'opacity-0'
+                }`}>
+                  Admin
+                </span>
+                {isSidebarOpen && (
+                  <MdKeyboardArrowDown
+                    size={20}
+                    className={`ml-auto transition-transform duration-300 ${isAdminMenuOpen ? 'rotate-180' : ''}`}
+                  />
+                )}
+              </button>
+
+              {isSidebarOpen && isAdminMenuOpen && (
+                <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
+                  <Link
+                    to="/admin/users"
+                    className={`block px-4 py-2 text-sm rounded-md text-left ${
+                      isActive('/admin/users') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    User Management
+                  </Link>
+                  <Link
+                    to="/admin/rollback"
+                    className={`block px-4 py-2 text-sm rounded-md text-left ${
+                      isActive('/admin/rollback') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Rollback Batch
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+
+        {/* User Profile */}
+        <UserProfile
+          user={user}
+          isSidebarOpen={isSidebarOpen}
+          currentRole={currentRole}
+          canSwitchRole={canSwitchRole}
+          switching={switching}
+          isAdminMode={isAdminMode}
+          onSwitch={handleRoleSwitch}
+          onLogout={handleLogout}
+        />
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className={`${isSidebarOpen ? 'ml-64' : 'ml-20'} flex-1 flex flex-col transition-all duration-300`}>
-        {/* HEADER */}
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          aria-hidden="true"
+        ></div>
+      )}
+
+      {/* Main Content */}
+      <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
+        {/* Header */}
         <header className="bg-white shadow-sm sticky top-0 z-20">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
+          <div className="max-w-full mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <div className="flex items-center">
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+                className="lg:hidden mr-4 p-2 rounded-lg hover:bg-gray-100"
+                aria-label="Toggle sidebar"
               >
                 {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
               </button>
-              <h2 className="text-2xl font-bold text-gray-900">{currentPageTitle}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
             </div>
-            <div className="flex items-center space-x-4">
+
+            <div className="flex items-center space-x-4 ml-4">
               {canSwitchRole && (
                 <button
                   onClick={handleRoleSwitch}
                   disabled={switching}
-                  className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 text-sm font-medium flex items-center gap-2 ${
-                    isAdminMode ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                  className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 ${
+                    isAdminMode
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                   }`}
                 >
-                  {switchIcon}
-                  <span>{switchLabel}</span>
+                  {isAdminMode ? <MdExitToApp size={18} /> : <MdAdminPanelSettings size={18} />}
+                  <span className="hidden sm:inline">
+                    {switching ? 'Switching...' : isAdminMode ? 'Keluar Mode Admin' : 'Masuk Mode Admin'}
+                  </span>
                 </button>
               )}
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <p className="text-sm text-gray-600">Welcome back,</p>
                 <p className="font-semibold text-gray-900">{user?.name}</p>
               </div>
@@ -449,8 +584,8 @@ const AppLayout = ({ children, pageTitle }) => {
           </div>
         </header>
 
-        {/* PAGE CONTENT */}
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   )
