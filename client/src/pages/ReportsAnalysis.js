@@ -1,8 +1,13 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { FiDownload } from 'react-icons/fi'
+import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsAnalysis = () => {
+  const { user } = useAuth()
+  const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
+  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -17,34 +22,36 @@ const ReportsAnalysis = () => {
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
-  const [search, setSearch] = useState('')
-  const [pageSize, setPageSize] = useState(10)
+  const [tableDataFromAPI, setTableDataFromAPI] = useState([])
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  const tableData = useMemo(() => [
-    { id: 1, category: 'SME', witel: '', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: true },
-    { id: 2, category: '', witel: 'BALI', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 3, category: '', witel: 'JATIM BARAT', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 4, category: '', witel: 'JATIM TIMUR', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 5, category: '', witel: 'NUSA TENGGARA', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 6, category: '', witel: 'SURAMADU', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 7, category: 'GOV', witel: '', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: true },
-    { id: 8, category: '', witel: 'BALI', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 9, category: '', witel: 'JATIM BARAT', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 10, category: '', witel: 'JATIM TIMUR', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 11, category: '', witel: 'NUSA TENGGARA', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 12, category: '', witel: 'SURAMADU', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 13, category: 'PRIVATE', witel: '', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: true },
-    { id: 14, category: '', witel: 'BALI', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 15, category: '', witel: 'JATIM BARAT', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 16, category: '', witel: 'JATIM TIMUR', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 17, category: '', witel: 'NUSA TENGGARA', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 18, category: '', witel: 'SURAMADU', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 19, category: 'SOE', witel: '', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: true },
-    { id: 20, category: '', witel: 'BALI', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-    { id: 21, category: '', witel: 'JATIM BARAT', done_ncx: 0, done_scone: 0, ogp_ncx: 0, ogp_scone: 0, total: 0, ach_range: '0%', ach_q3: '0%', isCategoryHeader: false },
-  ], [])
+  // Fetch data from API
+  const fetchReportData = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-analysis`,
+        {
+          params: { start_date: startDate, end_date: endDate },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      if (response.data?.data) {
+        setTableDataFromAPI(response.data.data.tableData || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch report data:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchReportData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, refreshKey])
+
+  const tableData = useMemo(() => tableDataFromAPI, [tableDataFromAPI])
 
   const filteredData = useMemo(() => {
     let result = tableData
@@ -128,10 +135,18 @@ const ReportsAnalysis = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data</h2>
-        <FileUploadForm reportType="analysis" />
-      </div>
+      {isAdminMode && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data</h2>
+          <FileUploadForm 
+            type="analysis"
+            onSuccess={() => {
+              // Refresh data after successful upload
+              setRefreshKey(prev => prev + 1)
+            }}
+          />
+        </div>
+      )}
     </>
   )
 }

@@ -1,11 +1,17 @@
 import React, { useState } from 'react'
 import { fileService } from '../services/dashboardService'
+import { useAuth } from '../context/AuthContext'
 
 const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
+  const { user } = useAuth()
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+
+  // Check if user is in admin mode
+  const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
+  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -52,6 +58,19 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // If not in admin mode, show access denied message
+  if (!isAdminMode) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Data (Excel/CSV)</h3>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+          <p className="font-medium">Access Restricted</p>
+          <p className="text-sm mt-1">File upload is only available in admin mode. Please enter admin mode to upload files.</p>
+        </div>
+      </div>
+    )
   }
 
   return (

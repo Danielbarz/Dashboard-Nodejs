@@ -1,34 +1,45 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import config from '../config/index.js'
-import sql from '../config/database.js'
+import { PrismaClient } from '@prisma/client'
 import { successResponse, errorResponse } from '../utils/response.js'
+
+const prisma = new PrismaClient()
 
 export const register = async (req, res, next) => {
   try {
     const { name, email, password, role = 'user' } = req.body
 
     // Check if user exists
-    const existingUser = await sql`
-      SELECT id FROM users WHERE email = ${email}
-    `
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
 
-    if (existingUser.length > 0) {
+    if (existingUser) {
       return errorResponse(res, 'Email already registered', 400)
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user with explicit timestamps
-    const now = new Date()
-    const newUser = await sql`
-      INSERT INTO users (name, email, password, role, created_at, updated_at)
-      VALUES (${name}, ${email}, ${hashedPassword}, ${role}, ${now}, ${now})
-      RETURNING id, name, email, role, created_at
-    `
+    // Create user
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true
+      }
+    })
 
-    successResponse(res, newUser[0], 'User registered successfully', 201)
+    successResponse(res, newUser, 'User registered successfully', 201)
   } catch (error) {
     next(error)
   }
@@ -39,17 +50,13 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body
 
     // Find user
-    const users = await sql`
-      SELECT id, name, email, password, role, current_role_as
-      FROM users 
-      WHERE email = ${email}
-    `
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
 
-    if (users.length === 0) {
+    if (!user) {
       return errorResponse(res, 'Invalid credentials', 401)
     }
-
-    const user = users[0]
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password)
@@ -59,7 +66,7 @@ export const login = async (req, res, next) => {
 
     // Generate tokens
     const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, currentRoleAs: user.current_role_as },
+      { id: user.id, email: user.email, role: user.role },
       config.jwt.secret,
       { expiresIn: config.jwt.expiresIn }
     )
@@ -70,14 +77,16 @@ export const login = async (req, res, next) => {
       { expiresIn: config.jwt.refreshExpiresIn }
     )
 
-    // Remove password from response
-    delete user.password
+    // Return user without password
+    const userResponse = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
 
     successResponse(res, {
-      user: {
-        ...user,
-        currentRoleAs: user.current_role_as
-      },
+      user: userResponse,
       accessToken,
       refreshToken
     }, 'Login successful')
@@ -97,17 +106,13 @@ export const refreshToken = async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret)
 
     // Get user
-    const users = await sql`
-      SELECT id, name, email, role 
-      FROM users 
-      WHERE id = ${decoded.id}
-    `
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
+    })
 
-    if (users.length === 0) {
+    if (!user) {
       return errorResponse(res, 'User not found', 404)
     }
-
-    const user = users[0]
 
     // Generate new access token
     const accessToken = jwt.sign(
@@ -127,28 +132,21 @@ export const refreshToken = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
   try {
-    const users = await sql`
-      SELECT id, name, email, role, current_role_as, created_at, updated_at
-      FROM users
-      WHERE id = ${req.user.id}
-    `
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    })
 
-    if (users.length === 0) {
+    if (!user) {
       return errorResponse(res, 'User not found', 404)
     }
 
-    const user = users[0]
-    const activeRole = user.current_role_as || user.role
-    
     successResponse(res, {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
-      currentRoleAs: activeRole,
-      current_role_as: activeRole,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
     }, 'Profile retrieved successfully')
   } catch (error) {
     next(error)

@@ -192,10 +192,12 @@ const AppLayout = ({ children, pageTitle }) => {
       const nextCanSwitch = data.canSwitchRole !== undefined ? data.canSwitchRole : fallbackCanSwitch
 
       setCurrentRole(nextRole)
+      localStorage.setItem('currentRole', nextRole)
       setCanSwitchRole(nextCanSwitch)
     } catch (error) {
       console.error('Failed to get current role:', error)
       setCurrentRole(fallbackRole)
+      localStorage.setItem('currentRole', fallbackRole)
       setCanSwitchRole(fallbackCanSwitch)
     }
   }
@@ -238,6 +240,7 @@ const AppLayout = ({ children, pageTitle }) => {
       }
 
       setCurrentRole(targetRole)
+      localStorage.setItem('currentRole', targetRole)
       refreshUser()
     } catch (error) {
       console.error('Failed to switch role:', error)
