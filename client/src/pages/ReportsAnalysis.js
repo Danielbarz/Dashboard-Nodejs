@@ -28,7 +28,7 @@ const ReportsAnalysis = () => {
 
   return (
     <>
-      <div className="space-y-6 w-full max-w-7xl mx-auto px-4 overflow-x-hidden">
+      <div className="space-y-6 w-full max-w-full overflow-x-hidden px-1 sm:px-2 lg:px-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Report Digital Product</h1>
           <p className="text-gray-600 mt-1">Laporan Digital Product dengan filter dan unggah data</p>
@@ -143,7 +143,7 @@ const ReportsAnalysis = () => {
           </div>
 
           <div className="overflow-x-auto max-w-full">
-            <table className="min-w-[1200px] w-full text-xs md:text-sm">
+            <table className="min-w-full w-full text-xs md:text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   {['Order ID', 'Order Date', 'Customer', 'Produk', 'Revenue', 'Witel', 'Status', 'Milestone'].map((col) => (

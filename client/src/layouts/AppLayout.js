@@ -90,29 +90,27 @@ const AppLayout = ({ children, pageTitle }) => {
         const doSwitch = async () => roleService.switchRole(targetRole)
 
         let response
-        let attempt = 0
-        while (attempt < 3) {
-          try {
-            response = await doSwitch()
-            break
-          } catch (error) {
-            const isRateLimited = error?.response?.status === 429
-            if (isRateLimited && attempt < 2) {
-              const delay = 2000 * Math.pow(2, attempt)
-              console.warn(`Switch role hit 429, retrying in ${delay}ms (attempt ${attempt + 2}/3)`)            
-              await new Promise((res) => setTimeout(res, delay))
-              attempt += 1
-              continue
+        try {
+          response = await doSwitch()
+        } catch (error) {
+          const isRateLimited = error?.response?.status === 429
+          if (isRateLimited) {
+            // Stop spamming the endpoint and give user-friendly feedback
+            setCooldownUntil(Date.now() + 15000)
+            // Optimistically exit admin mode so UI is not stuck
+            if (targetRole === 'user') {
+              setCurrentRole('user')
+              setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
             }
-            if (isRateLimited) {
-              setCooldownUntil(Date.now() + 15000)
-            }
-            throw error
+            console.warn('Role switch rate-limited; cooling down for 15s')
+            alert('Terlalu banyak percobaan. Tunggu 15 detik lalu coba lagi. Anda sudah dialihkan ke mode user secara lokal.')
+            return
           }
+          throw error
         }
 
         if (!response) {
-          throw new Error('Switch role failed after retries')
+          throw new Error('Switch role failed (no response)')
         }
 
         console.log('Switch role response:', response.data)
@@ -123,16 +121,26 @@ const AppLayout = ({ children, pageTitle }) => {
         
         // Refresh user from localStorage (already updated by switchRole)
         refreshUser()
+
+        // Navigate based on target role
+        if (targetRole === 'user') {
+          // Keluar dari mode admin, redirect ke dashboard user
+          console.log('Exiting admin mode, navigating to /analysis')
+          navigate('/analysis')
+        } else if (targetRole === 'admin' || targetRole === 'super_admin') {
+          // Masuk mode admin, redirect ke halaman admin
+          console.log('Entering admin mode, navigating to /admin/users')
+          navigate('/admin/users')
+        }
       } catch (error) {
         console.error('Failed to switch role:', error)
-        // If target was user, optimistically fall back to user mode to avoid trapping in admin UI during rate limit
+        // If target was user, optimistically fall back to user mode to avoid trapping in admin UI during failures
         if (targetRole === 'user') {
           setCurrentRole('user')
           setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
+          // Force navigate to user dashboard
+          navigate('/analysis')
           setTimeout(() => fetchCurrentRole(), 2000)
-        }
-        if (error?.response?.status === 429) {
-          setCooldownUntil(Date.now() + 15000)
         }
         alert('Failed to switch role: ' + (error.response?.data?.message || error.message))
       }
