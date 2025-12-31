@@ -266,7 +266,7 @@ const Dashboard = () => {
       </div>
 
       {/* FILE UPLOAD - Only for admin */}
-      {['admin', 'super_admin'].includes(user?.role) && (
+      {['admin', 'superadmin'].includes(user?.role) && (
         <FileUploadForm onSuccess={fetchDashboardData} />
       )}
     </div>

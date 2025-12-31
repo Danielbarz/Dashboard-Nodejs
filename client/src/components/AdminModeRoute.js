@@ -24,7 +24,7 @@ const AdminModeRoute = ({ children, superOnly = false }) => {
     return <Navigate to="/login" replace />
   }
 
-  const allowedRoles = superOnly ? ['super_admin'] : ['admin', 'super_admin']
+  const allowedRoles = superOnly ? ['superadmin'] : ['admin', 'superadmin']
 
   // Redirect to analysis if not allowed
   if (!allowedRoles.includes(currentRole)) {

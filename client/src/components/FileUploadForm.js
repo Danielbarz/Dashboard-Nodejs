@@ -13,7 +13,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
-  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
+  const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]

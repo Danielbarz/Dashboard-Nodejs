@@ -8,7 +8,9 @@ import {
   MdExitToApp,
   MdBarChart,
   MdAdminPanelSettings,
-  MdKeyboardArrowDown
+  MdKeyboardArrowDown,
+  MdPeople,
+  MdHistory
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
@@ -169,7 +171,7 @@ const AppLayout = ({ children, pageTitle }) => {
     if (user) {
       const userRole = user.role || 'user'
       const activeRole = user.currentRoleAs || userRole
-      const canSwitch = ['admin', 'super_admin'].includes(userRole)
+      const canSwitch = ['admin', 'superadmin'].includes(userRole)
       
       setCurrentRole(activeRole)
       setCanSwitchRole(canSwitch)
@@ -191,7 +193,7 @@ const AppLayout = ({ children, pageTitle }) => {
     if (switching) return
 
     const fallbackRole = localStorage.getItem('currentRole') || user?.role || 'user'
-    const fallbackCanSwitch = ['admin', 'super_admin'].includes(user?.role || fallbackRole)
+    const fallbackCanSwitch = ['admin', 'superadmin'].includes(user?.role || fallbackRole)
 
     try {
       const response = await roleService.getCurrentRole()
@@ -199,7 +201,7 @@ const AppLayout = ({ children, pageTitle }) => {
       const nextRole = data.activeRole || fallbackRole
       const nextCanSwitch =
         data.canSwitchRole !== undefined
-          ? data.canSwitchRole || ['admin', 'super_admin'].includes(data.actualRole)
+          ? data.canSwitchRole || ['admin', 'superadmin'].includes(data.actualRole)
           : fallbackCanSwitch
 
       setCurrentRole(nextRole)
@@ -257,18 +259,21 @@ const AppLayout = ({ children, pageTitle }) => {
       // Navigate based on the target role
       if (targetRole === 'user') {
         // Exiting admin mode - go to user dashboard
-        navigate('/analysis')
-      } else if (targetRole === 'admin' || targetRole === 'super_admin') {
-        // Entering admin mode - go to admin page
+        navigate('/dashboard')
+      } else if (targetRole === 'superadmin') {
+        // Entering superadmin mode - go to user management
         navigate('/admin/users')
+      } else if (targetRole === 'admin') {
+        // Entering admin mode - go to dashboard
+        navigate('/dashboard')
       }
     } catch (error) {
       console.error('Failed to switch role:', error)
       if (targetRole === 'user') {
         setCurrentRole(user?.role || 'user')
-        setCanSwitchRole(['admin', 'super_admin'].includes(user?.role))
+        setCanSwitchRole(['admin', 'superadmin'].includes(user?.role))
         // Force navigate to user dashboard even on error
-        navigate('/analysis')
+        navigate('/dashboard')
         setTimeout(() => fetchCurrentRole(), 2000)
       }
       if (error?.response?.status === 429) {
@@ -306,10 +311,10 @@ const AppLayout = ({ children, pageTitle }) => {
 
   const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
-  const isAdminMode = ['admin', 'super_admin'].includes(activeRole)
-  // Always show switch button if user base role is admin/super_admin
-  const showSwitchButton = ['admin', 'super_admin'].includes(user?.role)
-  const isSuperAdmin = activeRole === 'super_admin'
+  const isAdminMode = ['admin', 'superadmin'].includes(activeRole)
+  // Always show switch button if user base role is admin (NOT superadmin)
+  const showSwitchButton = user?.role === 'admin'
+  const isSuperAdmin = activeRole === 'superadmin'
 
   // Debug: log user role
   console.log('AppLayout Debug:', { userRole: user?.role, activeRole, showSwitchButton, isAdminMode })
@@ -334,8 +339,8 @@ const AppLayout = ({ children, pageTitle }) => {
 
         {/* Navigation */}
         <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
-          {/* Dashboard Section - Only in user mode */}
-          {!isAdminMode && (
+          {/* Dashboard Section - Only in user mode or admin mode (NOT superadmin) */}
+          {!isSuperAdmin && (
             <div className="relative">
               <button
                 onClick={() => isSidebarOpen && setIsDashboardOpen(!isDashboardOpen)}
@@ -365,9 +370,9 @@ const AppLayout = ({ children, pageTitle }) => {
               {isSidebarOpen && isDashboardOpen && (
                 <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
                   <Link
-                    to="/analysis"
+                    to="/dashboard"
                     className={`block px-4 py-2 text-sm rounded-md text-left ${
-                      isActive('/analysis') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                      isActive('/dashboard') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
                     }`}
                   >
                     Dashboard Digital Product
@@ -429,6 +434,7 @@ const AppLayout = ({ children, pageTitle }) => {
           )}
 
           {/* Reports Section */}
+          {!isSuperAdmin && (
           <div className="relative">
             <button
               onClick={() => isSidebarOpen && setIsReportsOpen(!isReportsOpen)}
@@ -510,51 +516,29 @@ const AppLayout = ({ children, pageTitle }) => {
               </div>
             )}
           </div>
+          )}
 
-          {/* Admin Section - Only for super_admin */}
+          {/* Admin Section - Only for superadmin */}
           {isSuperAdmin && (
-            <div className="relative">
-              <button
-                onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
-                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left ${
-                  isSidebarOpen ? 'px-6' : 'justify-center'
-                }`}
+            <>
+              <NavLink
+                href="/admin/users"
+                active={isActive('/admin/users')}
+                icon={MdPeople}
+                isSidebarOpen={isSidebarOpen}
               >
-                <MdBarChart size={22} />
-                <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                  isSidebarOpen ? 'opacity-100' : 'opacity-0'
-                }`}>
-                  Admin
-                </span>
-                {isSidebarOpen && (
-                  <MdKeyboardArrowDown
-                    size={20}
-                    className={`ml-auto transition-transform duration-300 ${isAdminMenuOpen ? 'rotate-180' : ''}`}
-                  />
-                )}
-              </button>
-
-              {isSidebarOpen && isAdminMenuOpen && (
-                <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
-                  <Link
-                    to="/admin/users"
-                    className={`block px-4 py-2 text-sm rounded-md text-left ${
-                      isActive('/admin/users') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    User Management
-                  </Link>
-                  <Link
-                    to="/admin/rollback"
-                    className={`block px-4 py-2 text-sm rounded-md text-left ${
-                      isActive('/admin/rollback') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Rollback Batch
-                  </Link>
-                </div>
-              )}
-            </div>
+                User Management
+              </NavLink>
+              
+              <NavLink
+                href="/admin/rollback"
+                active={isActive('/admin/rollback')}
+                icon={MdHistory}
+                isSidebarOpen={isSidebarOpen}
+              >
+                Rollback Batch
+              </NavLink>
+            </>
           )}
         </nav>
 

@@ -3,7 +3,7 @@ import { useCurrentRole } from '../hooks/useCurrentRole'
 
 const DATIN = () => {
   const currentRole = useCurrentRole()
-  const isAdmin = ['admin', 'super_admin'].includes(currentRole)
+  const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 
   const [dateRange, setDateRange] = useState({ start: '19/06/2023', end: '19/11/2025' })
   const [selectedWitel, setSelectedWitel] = useState('Pilih Witel (5/5)')

@@ -21,7 +21,13 @@ export const getAllUsers = async (req, res, next) => {
       }
     })
 
-    successResponse(res, users, 'Users retrieved successfully')
+    // Convert BigInt to string
+    const usersWithStringId = users.map(user => ({
+      ...user,
+      id: user.id.toString()
+    }))
+
+    successResponse(res, usersWithStringId, 'Users retrieved successfully')
   } catch (error) {
     console.error('Error fetching users:', error)
     errorResponse(res, 'Failed to fetch users', 500)
@@ -34,7 +40,7 @@ export const getUserById = async (req, res, next) => {
     const { id } = req.params
 
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
       select: {
         id: true,
         name: true,
@@ -49,7 +55,13 @@ export const getUserById = async (req, res, next) => {
       return errorResponse(res, 'User not found', 404)
     }
 
-    successResponse(res, user, 'User retrieved successfully')
+    // Convert BigInt to string
+    const userWithStringId = {
+      ...user,
+      id: user.id.toString()
+    }
+
+    successResponse(res, userWithStringId, 'User retrieved successfully')
   } catch (error) {
     console.error('Error fetching user:', error)
     errorResponse(res, 'Failed to fetch user', 500)
@@ -65,7 +77,7 @@ export const createUser = async (req, res, next) => {
       return errorResponse(res, 'Name, email, and password are required', 400)
     }
 
-    if (!['user', 'admin', 'super_admin'].includes(role)) {
+    if (!['user', 'admin', 'superadmin'].includes(role)) {
       return errorResponse(res, 'Invalid role', 400)
     }
 
@@ -98,7 +110,13 @@ export const createUser = async (req, res, next) => {
       }
     })
 
-    successResponse(res, newUser, 'User created successfully', 201)
+    // Convert BigInt to string
+    const userWithStringId = {
+      ...newUser,
+      id: newUser.id.toString()
+    }
+
+    successResponse(res, userWithStringId, 'User created successfully', 201)
   } catch (error) {
     console.error('Error creating user:', error)
     if (error.message.includes('duplicate') || error.message.includes('unique')) {
@@ -118,7 +136,7 @@ export const updateUser = async (req, res, next) => {
       return errorResponse(res, 'At least one field is required', 400)
     }
 
-    if (role && !['user', 'admin', 'super_admin'].includes(role)) {
+    if (role && !['user', 'admin', 'superadmin'].includes(role)) {
       return errorResponse(res, 'Invalid role', 400)
     }
 
@@ -133,7 +151,7 @@ export const updateUser = async (req, res, next) => {
     updateData.updatedAt = new Date()
 
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: updateData,
       select: {
         id: true,
@@ -145,7 +163,13 @@ export const updateUser = async (req, res, next) => {
       }
     })
 
-    successResponse(res, updatedUser, 'User updated successfully')
+    // Convert BigInt to string
+    const userWithStringId = {
+      ...updatedUser,
+      id: updatedUser.id.toString()
+    }
+
+    successResponse(res, userWithStringId, 'User updated successfully')
   } catch (error) {
     console.error('Error updating user:', error)
     if (error.code === 'P2025') {
@@ -161,12 +185,12 @@ export const deleteUser = async (req, res, next) => {
     const { id } = req.params
 
     // Prevent deleting yourself
-    if (id === req.user.id) {
+    if (BigInt(id) === BigInt(req.user.id)) {
       return errorResponse(res, 'You cannot delete your own account', 400)
     }
 
     const deletedUser = await prisma.user.delete({
-      where: { id },
+      where: { id: BigInt(id) },
       select: {
         id: true,
         name: true,
@@ -174,7 +198,13 @@ export const deleteUser = async (req, res, next) => {
       }
     })
 
-    successResponse(res, deletedUser, 'User deleted successfully')
+    // Convert BigInt to string
+    const userWithStringId = {
+      ...deletedUser,
+      id: deletedUser.id.toString()
+    }
+
+    successResponse(res, userWithStringId, 'User deleted successfully')
   } catch (error) {
     console.error('Error deleting user:', error)
     if (error.code === 'P2025') {

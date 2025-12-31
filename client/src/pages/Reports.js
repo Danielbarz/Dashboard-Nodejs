@@ -4,7 +4,7 @@ import { useCurrentRole } from '../hooks/useCurrentRole'
 const Reports = () => {
   const [reportType, setReportType] = useState('revenue')
   const currentRole = useCurrentRole()
-  const isAdmin = ['admin', 'super_admin'].includes(currentRole)
+  const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 
   const reportOptions = [
     { id: 'revenue', label: 'Revenue Report', desc: 'Laporan pendapatan per witel dan branch' },

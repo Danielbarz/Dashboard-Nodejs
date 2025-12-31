@@ -7,7 +7,7 @@ import FileUploadForm from '../components/FileUploadForm'
 const ReportsAnalysis = () => {
   const { user } = useAuth()
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
-  const isAdminMode = ['admin', 'super_admin'].includes(currentRole)
+  const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 

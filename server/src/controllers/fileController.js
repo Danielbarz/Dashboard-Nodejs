@@ -20,8 +20,8 @@ export const uploadFile = async (req, res, next) => {
     const userRole = req.user.role
     const type = (req.query.type || 'sos').toString().toLowerCase()
 
-    // Only admin and super_admin can upload files
-    if (!['admin', 'super_admin'].includes(userRole)) {
+    // Only admin and superadmin can upload files
+    if (!['admin', 'superadmin'].includes(userRole)) {
       return errorResponse(res, 'Unauthorized', 'Only admins can upload files', 403)
     }
 

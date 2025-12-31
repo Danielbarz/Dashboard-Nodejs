@@ -18,8 +18,25 @@ const Login = () => {
     setLoading(true)
 
     try {
-      await login(email, password)
-      navigate('/dashboard')
+      const response = await login(email, password)
+      
+      // Get user from localStorage (already set by authService)
+      const userStr = localStorage.getItem('user')
+      const userData = userStr ? JSON.parse(userStr) : null
+      const userRole = userData?.role || 'user'
+      
+      console.log('=== LOGIN DEBUG ===')
+      console.log('User from localStorage:', userData)
+      console.log('User role:', userRole)
+      
+      // Redirect based on role
+      if (userRole === 'superadmin') {
+        console.log('✅ Redirecting Super Admin to /admin/users')
+        navigate('/admin/users', { replace: true })
+      } else {
+        console.log('✅ Redirecting User/Admin to /dashboard')
+        navigate('/dashboard', { replace: true })
+      }
     } catch (err) {
       console.error('Login error:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Invalid credentials'

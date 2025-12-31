@@ -16,7 +16,7 @@ async function seedUsers() {
       
       await sql`
         INSERT INTO users (name, email, password, role, current_role_as, created_at, updated_at)
-        VALUES ('Super Admin Telkom', 'superadmin@telkom.co.id', ${hashedPassword}, 'super_admin', 'super_admin', ${now}, ${now})
+        VALUES ('Super Admin Telkom', 'superadmin@telkom.co.id', ${hashedPassword}, 'superadmin', 'superadmin', ${now}, ${now})
       `
       
       console.log('✅ Super Admin user created: superadmin@telkom.co.id / password123')

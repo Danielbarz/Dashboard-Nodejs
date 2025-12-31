@@ -34,6 +34,7 @@ const DashboardPage = () => {
   const [selectedWitel, setSelectedWitel] = useState('')
   const [selectedSubType, setSelectedSubType] = useState('')
   const [activeRole, setActiveRole] = useState(user?.role || 'user')
+  const [adminMode, setAdminMode] = useState(false)
 
   // Fetch all dashboard data
   const fetchDashboardData = async () => {
@@ -119,9 +120,33 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard Digital Product</h1>
+        <p className="text-gray-600 mt-1">Overview & Analytics</p>
+      </div>
+
       {/* FILTER PANEL */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Rentang Tanggal</h3>
+      <div className="bg-white rounded-lg shadow p-6 relative">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Rentang Tanggal</h3>
+          {/* Admin Mode Button */}
+          {user?.role === 'admin' && !adminMode && (
+            <button
+              onClick={() => setAdminMode(true)}
+              className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition shadow-sm"
+            >
+              Masuk Mode Admin
+            </button>
+          )}
+          {user?.role === 'admin' && adminMode && (
+            <button
+              onClick={() => setAdminMode(false)}
+              className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition shadow-sm"
+            >
+              Keluar Mode Admin
+            </button>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {/* Start Date */}
@@ -256,7 +281,7 @@ const DashboardPage = () => {
             type="pie"
           />
         )}
-        
+       (activeRole === 'superadmin' || (activeRole === 'admin' && adminMode)
         {sebaranDataPS.length > 0 && (
           <PieDonutChart
             title="Product by Channel"
@@ -274,8 +299,8 @@ const DashboardPage = () => {
         )}
       </div>
 
-      {/* FILE UPLOAD - Only for active admin/super_admin */}
-      {['admin', 'super_admin'].includes(activeRole) && (
+      {/* FILE UPLOAD - Only for active admin/superadmin */}
+      {['admin', 'superadmin'].includes(activeRole) && (
         <FileUploadForm type="digital_product" onSuccess={fetchDashboardData} />
       )}
     </div>

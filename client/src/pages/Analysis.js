@@ -73,7 +73,7 @@ const Analysis = () => {
   const totalPages = Math.ceil(total / limit)
 
   // If in admin mode, show detailed report
-  if (['admin', 'super_admin'].includes(currentRole)) {
+  if (['admin', 'superadmin'].includes(currentRole)) {
     return <AdminReport />
   }
 
@@ -322,7 +322,7 @@ const Analysis = () => {
         </div>
 
         {/* Upload Section (Admin/Super Admin) */}
-        {['admin', 'super_admin'].includes(currentRole) && (
+        {['admin', 'superadmin'].includes(currentRole) && (
           <div className="mt-6">
             <FileUploadForm type="digital_product" onSuccess={fetchData} />
           </div>

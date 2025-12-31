@@ -84,6 +84,12 @@ export const login = async (req, res, next) => {
 
     const userIdStr = user.id?.toString()
 
+    // Reset currentRoleAs to NULL on login (fresh start with actual role)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { currentRoleAs: null }
+    })
+
     // Generate tokens (store id as string to avoid BigInt serialization)
     const accessToken = jwt.sign(
       { id: user.id.toString(), email: user.email, role: user.role },
@@ -103,11 +109,11 @@ export const login = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      currentRoleAs: user.currentRoleAs || user.role
+      currentRoleAs: null  // Always start fresh with null
     }
 
     successResponse(res, {
-      user: formatUser(user),
+      user: userResponse,
       accessToken,
       refreshToken
     }, 'Login successful')

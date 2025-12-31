@@ -10,13 +10,13 @@ export const switchRole = async (req, res, next) => {
     const userRole = req.user.role
     const { targetRole } = req.body
 
-    // Only admin and super_admin can switch roles
-    if (!['admin', 'super_admin'].includes(userRole)) {
+    // Only admin and superadmin can switch roles
+    if (!['admin', 'superadmin'].includes(userRole)) {
       return errorResponse(res, 'You do not have permission to switch roles', 403)
     }
 
     // Validate target role
-    if (!['user', 'admin', 'super_admin'].includes(targetRole)) {
+    if (!['user', 'admin', 'superadmin'].includes(targetRole)) {
       return errorResponse(res, 'Invalid target role', 400)
     }
 
@@ -58,8 +58,8 @@ export const getCurrentRole = async (req, res, next) => {
 
     const activeRole = user.currentRoleAs || user.role
 
-    // Can switch role if actual role is admin or super_admin
-    const canSwitchRole = ['admin', 'super_admin'].includes(user.role)
+    // Can switch role if actual role is admin or superadmin
+    const canSwitchRole = ['admin', 'superadmin'].includes(user.role)
 
     successResponse(res, {
       actualRole: user.role,

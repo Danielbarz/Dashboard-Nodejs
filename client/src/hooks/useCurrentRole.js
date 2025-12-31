@@ -5,7 +5,7 @@ import { roleService } from '../services/dashboardService'
 /**
  * Custom hook to get the current active role of the user
  * Automatically fetches and syncs with the server
- * @returns {string} The current active role (user, admin, super_admin)
+ * @returns {string} The current active role (user, admin, superadmin)
  */
 export const useCurrentRole = () => {
   const { user } = useAuth()
