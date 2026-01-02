@@ -5,6 +5,7 @@ import dashboardRoutes from './dashboardRoutes.js'
 import fileRoutes from './fileRoutes.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
+import reportRoutes from './reportRoutes.js'
 
 const router = express.Router()
 
@@ -31,6 +32,9 @@ router.use('/roles', roleRoutes)
 
 // Admin routes
 router.use('/admin', adminRoutes)
+
+// Report routes
+router.use('/report', reportRoutes)
 
 // Analysis routes
 router.use('/analysis', analysisRoutes)
