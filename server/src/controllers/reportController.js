@@ -17,28 +17,89 @@ export const getReportTambahan = async (req, res, next) => {
       }
     }
 
-    const tableData = await prisma.spmkMom.groupBy({
-      by: ['witelBaru'],
+    // Fetch all raw data to aggregate in memory for complex logic
+    const rawData = await prisma.spmkMom.findMany({
       where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        revenuePlan: true
+      select: {
+        witelBaru: true,
+        revenuePlan: true,
+        goLive: true,
+        populasiNonDrop: true,
+        baDrop: true,
+        statusTompsLastActivity: true,
+        statusIHld: true
       }
     })
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witelBaru || 'Unknown',
-      jumlahLop: row._count.id,
-      revAll: parseFloat(row._sum.revenuePlan || 0),
-      initial: 0,
-      survey: 0,
-      perizinan: 0,
-      instalasi: 0,
-      piOgp: 0,
-      golive: row.goLive === 'Y' ? row._count.id : 0,
-      drop: 0
+    // Aggregate data
+    const witelMap = {}
+    
+    // Helper for parent witel
+    const getParentWitel = (witel) => {
+      const w = witel.toUpperCase()
+      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'].includes(w)) return 'BALI'
+      if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].includes(w)) return 'JATIM BARAT'
+      if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].includes(w)) return 'JATIM TIMUR'
+      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'].includes(w)) return 'NUSA TENGGARA'
+      if (['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].includes(w)) return 'SURAMADU'
+      return 'OTHER'
+    }
+
+    rawData.forEach(row => {
+      const witel = row.witelBaru || 'Unknown'
+      if (!witelMap[witel]) {
+        witelMap[witel] = {
+          witel,
+          parentWitel: getParentWitel(witel),
+          isParent: witel === getParentWitel(witel), // Mark as parent if name matches
+          jumlahLop: 0,
+          revAll: 0,
+          initial: 0,
+          survey: 0,
+          perizinan: 0,
+          instalasi: 0,
+          piOgp: 0,
+          golive_jml: 0,
+          golive_rev: 0,
+          drop: 0
+        }
+      }
+
+      const revenue = parseFloat(row.revenuePlan || 0)
+      const isDrop = row.populasiNonDrop === 'N' || row.baDrop !== null
+      const isGoLive = row.goLive === 'Y'
+
+      if (isDrop) {
+        witelMap[witel].drop++
+      } else {
+        witelMap[witel].jumlahLop++
+        witelMap[witel].revAll += revenue
+
+        if (isGoLive) {
+          witelMap[witel].golive_jml++
+          witelMap[witel].golive_rev += revenue
+        } else {
+          // Map status to progress columns
+          const status = (row.statusTompsLastActivity || '').toLowerCase()
+          
+          if (status.includes('survey') || status.includes('drm')) {
+            witelMap[witel].survey++
+          } else if (status.includes('izin') || status.includes('mos')) {
+            witelMap[witel].perizinan++
+          } else if (status.includes('instal') || status.includes('deploy')) {
+            witelMap[witel].instalasi++
+          } else if (status.includes('ogp') || status.includes('live')) {
+            witelMap[witel].piOgp++
+          } else {
+            witelMap[witel].initial++
+          }
+        }
+      }
+    })
+
+    const formattedTableData = Object.values(witelMap).map(row => ({
+      ...row,
+      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
     // Get project data (belum GO LIVE)

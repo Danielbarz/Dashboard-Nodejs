@@ -136,42 +136,43 @@ const ReportsTambahan = () => {
         <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report JT</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
-            <thead className="bg-blue-600">
+            <thead>
               <tr>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JUMLAH LOP (EXC DROP)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">REV ALL LOP</th>
-                <th colSpan="4" className="px-2 py-1 text-center font-bold text-white border">PROGRESS DEPLOY</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border bg-green-600">GOLIVE (EXC DROP)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JML LOP</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">REV LOP</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border bg-red-600">DROP</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">%CLOSE</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">WITEL</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">JUMLAH LOP (EXC DROP)</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">REV ALL LOP</th>
+                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border border-gray-500 bg-blue-600">PROGRESS DEPLOY</th>
+                <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-green-700">GOLIVE (EXC DROP)</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-red-600">DROP</th>
+                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-600">%CLOSE</th>
               </tr>
-              <tr className="bg-blue-600">
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">INITIAL</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">SURVEY & DRM</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">PERSIAPAN & MOS</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">INSTALASI</th>
+              <tr>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">INITIAL</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">SURVEY & DRM</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">PERIZINAN & MOS</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">INSTALASI</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">FI-OGP LIVE</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-green-500">JML LOP</th>
+                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-green-500">REV LOP</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
               {filteredTableData.map((row) => (
                 <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
-                  <td className={`px-2 py-1 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
                     {row.isParent ? `WITEL ${row.witel}` : row.witel}
                   </td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlah_lop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.rev_all}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.initial}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.survey}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.perizinan}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.instalasi}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jml_lop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.rev_lop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isParent ? 'bg-red-600 text-white' : 'bg-red-100'}`}>{row.drop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_close}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlahLop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.revAll ? row.revAll.toLocaleString('id-ID') : 0}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.initial}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.survey}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.perizinan}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.instalasi}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.piOgp}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive_jml}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive_rev ? row.golive_rev.toLocaleString('id-ID') : 0}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-red-600 text-white' : 'bg-red-100'}`}>{row.drop}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_close}</td>
                 </tr>
               ))}
             </tbody>
