@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
-
-const prisma = new PrismaClient()
 
 // Switch user role (for super admin and admins)
 export const switchRole = async (req, res, next) => {

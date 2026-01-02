@@ -1,7 +1,11 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc.js'
+import timezone from 'dayjs/plugin/timezone.js'
 
-const prisma = new PrismaClient()
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 // Get all SOS data for dashboard
 export const getDashboardData = async (req, res, next) => {

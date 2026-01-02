@@ -58,11 +58,21 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       setUploadProgress(null)
       const summary = response?.data?.data
       if (summary) {
-        const { totalRows, successRows, failedRows, batchId } = summary
+        const { totalRows, successRows, failedRows, batchId, totalBatches, progressLogs } = summary
+        
+        // Add batch progress logs if available
+        if (progressLogs && progressLogs.length > 0) {
+          const batchLogs = progressLogs
+            .filter(log => log.status === 'success')
+            .map(log => `Batch ${log.batch}: ${log.inserted} ${log.type} rows inserted`)
+          setLogLines((prev) => [...prev, ...batchLogs])
+        }
+        
         setLogLines((prev) => [
           ...prev,
-          `Selesai diproses. Batch: ${batchId || 'n/a'}`,
-          `Rows: ${successRows ?? 0}/${totalRows ?? 0} berhasil, gagal: ${failedRows ?? 0}`
+          `✅ Selesai diproses. Batch: ${batchId || 'n/a'}`,
+          `📊 Total: ${successRows ?? 0}/${totalRows ?? 0} berhasil, ${failedRows ?? 0} gagal`,
+          `📦 Jumlah batch: ${totalBatches ?? 'n/a'}`
         ])
       } else {
         setLogLines((prev) => [...prev, 'Selesai.'])
