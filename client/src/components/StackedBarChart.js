@@ -13,9 +13,18 @@ const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981
     )
   }
 
-  const keys = Object.keys(data[0])
-    .filter(key => key !== 'name' && key !== 'Name')
-    .slice(0, 4)
+  // Sort by total value and ambil top 10 supaya label tidak menumpuk
+  const sortableKeys = Object.keys(data[0]).filter(key => key !== 'name' && key !== 'Name')
+  const topData = [...data]
+    .map(item => {
+      const total = sortableKeys.reduce((sum, key) => sum + (Number(item[key]) || 0), 0)
+      return { item, total }
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+    .map(d => d.item)
+
+  const keys = sortableKeys.slice(0, 4)
 
   return (
     <div className="bg-white rounded-lg shadow p-6">

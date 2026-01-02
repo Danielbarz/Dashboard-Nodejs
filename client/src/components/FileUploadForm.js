@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { fileService } from '../services/dashboardService'
 import { useAuth } from '../context/AuthContext'
 
@@ -10,10 +10,25 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [success, setSuccess] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
   const [logLines, setLogLines] = useState([])
+  const [uploadedFileInfo, setUploadedFileInfo] = useState(null)
+
+  const fileInputRef = useRef(null)
+  const storageKey = useMemo(() => `uploadedFile_${type}`, [type])
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey)
+    if (saved) {
+      try {
+        setUploadedFileInfo(JSON.parse(saved))
+      } catch (e) {
+        localStorage.removeItem(storageKey)
+      }
+    }
+  }, [storageKey])
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -79,12 +94,19 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       }
       
       // Reset file input
-      const fileInput = document.getElementById('file-input')
-      if (fileInput) fileInput.value = ''
+      if (fileInputRef.current) fileInputRef.current.value = ''
       
       if (onSuccess) {
         onSuccess(response.data.data)
       }
+
+      const uploadedInfo = {
+        name: file.name,
+        size: file.size,
+        uploadedAt: new Date().toISOString()
+      }
+      setUploadedFileInfo(uploadedInfo)
+      localStorage.setItem(storageKey, JSON.stringify(uploadedInfo))
 
       setTimeout(() => {
         setSuccess(false)
@@ -100,6 +122,20 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       setLoading(false)
     }
   }
+
+    const handleDeleteUploaded = () => {
+      setUploadedFileInfo(null)
+      localStorage.removeItem(storageKey)
+      setFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLogLines((prev) => [...prev, 'Data upload ditandai dihapus dari UI.'])
+    }
+
+    const handleReplace = () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.click()
+      }
+    }
 
   // If not in admin mode, show access denied message
   if (!isAdminMode) {
@@ -119,16 +155,21 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Data (Excel/CSV)</h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileChange}
-            disabled={loading}
-            className="hidden"
-            id="file-input"
-          />
-          <label htmlFor="file-input" className="cursor-pointer">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          onChange={handleFileChange}
+          disabled={loading}
+          className="hidden"
+          id={`file-input-${type}`}
+        />
+
+        {!uploadedFileInfo && (
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer"
+            onClick={handleReplace}
+          >
             <div className="text-gray-600">
               {file ? (
                 <p className="text-green-600 font-medium">{file.name}</p>
@@ -140,8 +181,43 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
                 </>
               )}
             </div>
-          </label>
-        </div>
+          </div>
+        )}
+
+        {uploadedFileInfo && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold text-gray-800">File sudah diupload</p>
+                <p className="text-sm text-gray-600">{uploadedFileInfo.name}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.round(uploadedFileInfo.size / 1024)} KB • {new Date(uploadedFileInfo.uploadedAt).toLocaleString()}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleReplace}
+                  className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 transition"
+                  disabled={loading}
+                >
+                  Ubah file
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteUploaded}
+                  className="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  disabled={loading}
+                >
+                  Hapus file
+                </button>
+              </div>
+            </div>
+            {file && (
+              <p className="text-xs text-blue-600 mt-2">File baru dipilih: {file.name}</p>
+            )}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
@@ -182,7 +258,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
+          {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : uploadedFileInfo ? 'Upload ulang' : 'Upload File'}
         </button>
       </form>
     </div>

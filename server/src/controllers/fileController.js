@@ -59,10 +59,8 @@ export const uploadFile = async (req, res, next) => {
     const userRole = req.user.role
     let type = (req.query.type || 'sos').toString().toLowerCase()
 
-    // Normalize type: digital_product, digital, analysis, dp all map to 'sos'
-    if (['digital_product', 'digital', 'analysis', 'dp'].includes(type)) {
-      type = 'sos'
-    }
+    // Normalize aliases
+    if (['digital', 'analysis', 'dp'].includes(type)) type = 'digital_product'
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -129,6 +127,23 @@ export const uploadFile = async (req, res, next) => {
       console.log('🔍 DEBUG - Total records to process:', records.length)
     }
 
+    // Ensure digital_products table exists (for dashboard/report sync)
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "digital_products" (
+        id BIGSERIAL PRIMARY KEY,
+        order_number TEXT UNIQUE,
+        product_name TEXT,
+        witel TEXT,
+        branch TEXT,
+        revenue NUMERIC(18,2) DEFAULT 0,
+        amount NUMERIC(18,2) DEFAULT 0,
+        status TEXT,
+        sub_type TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `)
+
     // Process records based on type
     let successCount = 0
     let failedCount = 0
@@ -143,6 +158,7 @@ export const uploadFile = async (req, res, next) => {
     const hsiBuffer = []
     const jtBuffer = []
     const datinBuffer = []
+    const digitalBuffer = []
     let batchCounter = 0
     const progressLogs = []
 
@@ -204,6 +220,50 @@ export const uploadFile = async (req, res, next) => {
 
           await prisma.$executeRawUnsafe(sql, ...values)
           insertedCount = buffer.length
+        } else if (mode === 'digital') {
+          // Raw upsert into digital_products (single round trip)
+          const columns = [
+            'order_number','product_name','witel','branch','revenue','amount','status','sub_type','created_at','updated_at'
+          ]
+
+          // Deduplicate within batch by order_number to avoid ON CONFLICT double-hit
+          const uniqMap = new Map()
+          for (const row of buffer) {
+            if (!row.order_number) continue
+            uniqMap.set(row.order_number, row)
+          }
+          const uniqRows = Array.from(uniqMap.values())
+
+          const values = []
+          const placeholders = uniqRows.map((row, rowIdx) => {
+            const base = rowIdx * columns.length
+            values.push(
+              row.order_number,
+              row.product_name,
+              row.witel,
+              row.branch,
+              row.revenue,
+              row.amount,
+              row.status,
+              row.sub_type,
+              row.created_at,
+              row.updated_at
+            )
+            const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
+            return `(${params.join(',')})`
+          }).join(',')
+
+          const setClause = columns
+            .filter(col => col !== 'order_number')
+            .map(col => `"${col}" = EXCLUDED."${col}"`)
+            .join(', ')
+
+          const sql = `INSERT INTO "digital_products" (${columns.map(c => `"${c}"`).join(',')}) VALUES ${placeholders} ON CONFLICT ("order_number") DO UPDATE SET ${setClause};`
+
+          if (placeholders.length > 0) {
+            await prisma.$executeRawUnsafe(sql, ...values)
+            insertedCount = uniqRows.length
+          }
         } else {
           const result = await model.createMany({
             data: buffer,
@@ -240,6 +300,41 @@ export const uploadFile = async (req, res, next) => {
       }
       
       try {
+        // Unified digital_products intake for dashboard/reports
+        if (['digital_product', 'hsi', 'jt', 'datin'].includes(type)) {
+          const now = new Date()
+          const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
+          const productName = type === 'digital_product'
+            ? (getValue(record, keyMap, 'product_name', 'product', 'productname') || 'DIGITAL_PRODUCT')
+            : type.toUpperCase()
+          const witelVal = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel', 'cust_witel', 'bill_witel')
+          const branchVal = getValue(record, keyMap, 'branch', 'datel', 'cust_city', 'sto')
+          const revenueVal = cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice'))
+          const amountVal = cleanNumber(getValue(record, keyMap, 'amount', 'qty', 'quantity', 'jumlah')) || 0
+          const statusVal = getValue(record, keyMap, 'status', 'status_resume', 'order_status', 'li_status') || 'progress'
+          const subTypeVal = getValue(record, keyMap, 'sub_type', 'subtype', 'kategori', 'segmen')
+
+          digitalBuffer.push({
+            order_number: orderNumber.toString(),
+            product_name: productName,
+            witel: witelVal || null,
+            branch: branchVal || null,
+            revenue: revenueVal || 0,
+            amount: amountVal || 0,
+            status: statusVal,
+            sub_type: subTypeVal || null,
+            created_at: now,
+            updated_at: now
+          })
+
+          if (digitalBuffer.length >= BATCH_SIZE) {
+            const count = await flushBuffer(digitalBuffer, null, 'DIGITAL', 'digital')
+            successCount += count
+          }
+
+          continue
+        }
+
         if (type === 'sos') {
           // Prepare SOS data for batch insert
           const orderId = getValue(
@@ -369,6 +464,7 @@ export const uploadFile = async (req, res, next) => {
     successCount += await flushBuffer(hsiBuffer, prisma.hsiData, 'HSI (final)')
     successCount += await flushBuffer(jtBuffer, prisma.spmkMom, 'JT (final)')
     successCount += await flushBuffer(datinBuffer, prisma.spmkMom, 'DATIN (final)')
+    successCount += await flushBuffer(digitalBuffer, null, 'DIGITAL (final)', 'digital')
 
     console.log(`✅ Import complete: ${successCount} success, ${failedCount} failed`)
 

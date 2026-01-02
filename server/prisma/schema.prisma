@@ -7,6 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model DigitalProduct {
+  id           BigInt   @id @default(autoincrement())
+  orderNumber  String?  @unique @map("order_number")
+  productName  String?  @map("product_name")
+  witel        String?
+  branch       String?
+  revenue      Decimal  @db.Decimal(18, 2) @default(0)
+  amount       Decimal  @db.Decimal(18, 2) @default(0)
+  status       String?
+  subType      String?  @map("sub_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("digital_products")
+  @@index([witel])
+  @@index([branch])
+  @@index([status])
+}
+
 model User {
   id                BigInt    @id @default(autoincrement())
   name              String

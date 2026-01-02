@@ -15,13 +15,17 @@ const PieDonutChart = ({ title, data, type = 'pie' }) => {
     )
   }
 
+  const topData = [...data]
+    .sort((a, b) => (b.value || 0) - (a.value || 0))
+    .slice(0, 12)
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={380}>
         <PieChart>
           <Pie
-            data={data}
+            data={topData}
             cx="50%"
             cy="50%"
             innerRadius={type === 'donut' ? 80 : 0}
@@ -30,7 +34,7 @@ const PieDonutChart = ({ title, data, type = 'pie' }) => {
             dataKey="value"
             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
           >
-            {data.map((entry, index) => (
+            {topData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Pie>
