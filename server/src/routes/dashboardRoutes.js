@@ -33,9 +33,5 @@ router.get('/report-tambahan', authenticate, getReportTambahan)
 router.get('/report-datin', authenticate, getReportDatin)
 router.get('/report-analysis', authenticate, getReportAnalysis)
 router.get('/report-hsi', authenticate, getReportHSI)
-router.get('/export/report-analysis', authenticate, exportReportAnalysis)
-router.get('/export/report-datin', authenticate, exportReportDatin)
-router.get('/export/report-tambahan', authenticate, exportReportTambahan)
-router.get('/export/report-hsi', authenticate, exportReportHSI)
 
 export default router

@@ -14,7 +14,7 @@ import Tambahan from './pages/Tambahan'
 import DATIN from './pages/DATIN'
 import HSI from './pages/HSI'
 import FlowProcessHSI from './pages/FlowProcessHSI'
-import ReportsAnalysis from './pages/ReportsAnalysis'
+import ReportDigPro from './pages/ReportDigPro'
 import ReportsHSI from './pages/ReportsHSI'
 import ReportsDatin from './pages/ReportsDatin'
 import ReportsTambahan from './pages/ReportsTambahan'
@@ -101,10 +101,10 @@ function App() {
             }
           />
           <Route
-            path="/reports-analysis"
+            path="/report-digpro"
             element={
               <ProtectedRoute>
-                <ReportsAnalysis />
+                <ReportDigPro />
               </ProtectedRoute>
             }
           />

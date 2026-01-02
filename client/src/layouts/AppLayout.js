@@ -299,7 +299,7 @@ const AppLayout = ({ children, pageTitle }) => {
       '/datin': 'Dashboard Datin',
       '/hsi': 'Dashboard HSI',
       '/flow-process-hsi': 'Flow Process HSI',
-      '/reports-analysis': 'Report Digital Product',
+      '/report-digpro': 'Report Digital Product',
       '/reports-tambahan': 'Report Jaringan Tambahan',
       '/reports-datin': 'Report Datin',
       '/reports-hsi': 'Report HSI',
@@ -311,10 +311,9 @@ const AppLayout = ({ children, pageTitle }) => {
 
   const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
-  const isAdminMode = ['admin', 'superadmin'].includes(activeRole)
-  // Always show switch button if user base role is admin (NOT superadmin)
+  const isAdminMode = ['admin'].includes(activeRole)
   const showSwitchButton = user?.role === 'admin'
-  const isSuperAdmin = activeRole === 'superadmin'
+  const isSuperAdmin = ['superadmin'].includes(activeRole)
 
   // Debug: log user role
   console.log('AppLayout Debug:', { userRole: user?.role, activeRole, showSwitchButton, isAdminMode })
@@ -339,7 +338,7 @@ const AppLayout = ({ children, pageTitle }) => {
 
         {/* Navigation */}
         <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
-          {/* Dashboard Section - Only in user mode or admin mode (NOT superadmin) */}
+          {/* Dashboard Section - Only in user mode or   admin mode (NOT superadmin) */}
           {!isSuperAdmin && (
             <div className="relative">
               <button
@@ -464,9 +463,9 @@ const AppLayout = ({ children, pageTitle }) => {
             {isSidebarOpen && isReportsOpen && (
               <div className="pl-8 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
                 <Link
-                  to="/reports-analysis"
+                  to="/report-digpro"
                   className={`block px-4 py-2 text-sm rounded-md text-left ${
-                    isActive('/reports-analysis') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
+                    isActive('/report-digpro') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
                   }`}
                 >
                   Report Digital Product
