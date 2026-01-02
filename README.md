@@ -1,10 +1,10 @@
-# Telkom Dashboard - Node.js Migration Project
+#  Dashboard - Node.js Migration Project
 
 ![Status](https://img.shields.io/badge/Week%201-Completed-success)
 ![Backend](https://img.shields.io/badge/Backend-Express%20%2B%20PostgreSQL-blue)
 ![Frontend](https://img.shields.io/badge/Frontend-React%2019-61dafb)
 
-Migrasi Dashboard Telkom HSI dari **Laravel 11** ke **Node.js + Express + PostgreSQL (Supabase)** + **React 19**.
+Migrasi Dashboard  HSI dari **Laravel 11** ke **Node.js + Express + PostgreSQL (Supabase)** + **React 19**.
 
 ## 📊 Project Overview
 
@@ -53,7 +53,7 @@ npm start
 ## 📁 Project Structure
 
 ```
-Telkom Dashboard Nodejs/
+ Dashboard Nodejs/
 ├── server/              # Backend API (Node.js + Express)
 │   ├── src/
 │   ├── prisma/
