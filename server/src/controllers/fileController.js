@@ -1,16 +1,55 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import XLSX from 'xlsx'
 import csv from 'csv-parser'
 import { createReadStream } from 'fs'
 import { unlink } from 'fs/promises'
 import path from 'path'
+// import { fileImportQueue } from '../queues/index.js'
+// import { Redis } from 'ioredis'
+// import config from '../config/index.js'
 
-const prisma = new PrismaClient()
+// Redis disabled until queue system activated
+// const redis = new Redis({
+//   host: config.redis.host,
+//   port: config.redis.port,
+//   password: config.redis.password
+// })
 
 function pickCaseInsensitive(obj, key) {
   const found = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())
   return found ? obj[found] : undefined
+}
+
+// Normalize header keys: lowercase and strip spaces/underscores/non-alnum
+const normalizeKey = (key) => key.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+
+// Build a map of normalizedKey -> originalKey for fast lookup per record
+const buildKeyMap = (record) => {
+  const map = {}
+  Object.keys(record).forEach((k) => {
+    map[normalizeKey(k)] = k
+  })
+  return map
+}
+
+// Get value by trying multiple candidate keys (normalized)
+const getValue = (record, keyMap, ...candidates) => {
+  for (const cand of candidates) {
+    const norm = normalizeKey(cand)
+    if (keyMap[norm] !== undefined) {
+      return record[keyMap[norm]]
+    }
+  }
+  return undefined
+}
+
+// Clean numeric-like values (strip non-digits except dot)
+const cleanNumber = (value) => {
+  if (value === null || value === undefined) return 0
+  if (typeof value === 'number') return value
+  const cleaned = value.toString().replace(/[^0-9.]/g, '')
+  return cleaned ? parseFloat(cleaned) : 0
 }
 
 // Upload Excel/CSV file
@@ -18,7 +57,12 @@ export const uploadFile = async (req, res, next) => {
   try {
     const userId = req.user.id
     const userRole = req.user.role
-    const type = (req.query.type || 'sos').toString().toLowerCase()
+    let type = (req.query.type || 'sos').toString().toLowerCase()
+
+    // Normalize type: digital_product, digital, analysis, dp all map to 'sos'
+    if (['digital_product', 'digital', 'analysis', 'dp'].includes(type)) {
+      type = 'sos'
+    }
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -43,8 +87,28 @@ export const uploadFile = async (req, res, next) => {
     } else if (ext === '.csv') {
       records = await new Promise((resolve, reject) => {
         const results = []
-        createReadStream(filePath)
-          .pipe(csv())
+        // Detect delimiter: check first line to determine if TSV (tab) or CSV (comma)
+        let firstLine = ''
+        let delimiter = ','
+        
+        const stream = createReadStream(filePath)
+          .on('data', (chunk) => {
+            if (!firstLine) {
+              firstLine += chunk.toString()
+              const newlineIndex = firstLine.indexOf('\n')
+              if (newlineIndex > 0) {
+                firstLine = firstLine.substring(0, newlineIndex)
+                // Count tabs vs commas
+                const tabCount = (firstLine.match(/\t/g) || []).length
+                const commaCount = (firstLine.match(/,/g) || []).length
+                delimiter = tabCount > commaCount ? '\t' : ','
+                console.log(`📊 CSV Delimiter detected: ${delimiter === '\t' ? 'TAB (TSV)' : 'COMMA (CSV)'}`)
+              }
+            }
+          })
+        
+        stream
+          .pipe(csv({ delimiter }))
           .on('data', (data) => results.push(data))
           .on('end', () => resolve(results))
           .on('error', (err) => reject(err))
@@ -59,6 +123,12 @@ export const uploadFile = async (req, res, next) => {
       return errorResponse(res, 'Empty file', 'File contains no data', 400)
     }
 
+    // DEBUG: Log first row headers
+    if (records.length > 0) {
+      console.log('🔍 DEBUG - File headers:', Object.keys(records[0]).slice(0, 10))
+      console.log('🔍 DEBUG - Total records to process:', records.length)
+    }
+
     // Process records based on type
     let successCount = 0
     let failedCount = 0
@@ -67,132 +137,240 @@ export const uploadFile = async (req, res, next) => {
     // Generate Batch ID for this upload session
     const currentBatchId = `batch_${Date.now()}`
 
-    for (const record of records) {
+    // Batch configuration
+    const BATCH_SIZE = 100
+    const sosBuffer = []
+    const hsiBuffer = []
+    const jtBuffer = []
+    const datinBuffer = []
+    let batchCounter = 0
+    const progressLogs = []
+
+    console.log(`🚀 Starting batch import of ${records.length} records (batch size: ${BATCH_SIZE})`)
+    
+    // Helper function to flush a buffer
+    const flushBuffer = async (buffer, model, label, mode = 'createMany') => {
+      if (buffer.length === 0) return 0
+      
+      try {
+        batchCounter++
+        const logMsg = `📦 Batch ${batchCounter}: Processing ${buffer.length} ${label} rows`
+        console.log(logMsg)
+        progressLogs.push({ batch: batchCounter, type: label, count: buffer.length, timestamp: new Date() })
+        
+        let insertedCount = 0
+
+        if (mode === 'upsert' && label === 'SOS') {
+          // Raw upsert for SOS in one round trip (faster than many Prisma upserts)
+          const columns = [
+            'order_id','nipnas','standard_name','order_subtype','order_description','segmen','sub_segmen',
+            'cust_city','cust_witel','bill_witel','li_product_name','li_milestone','li_status','kategori',
+            'revenue','biaya_pasang','hrg_bulanan','batch_id'
+          ]
+
+          const values = []
+          const placeholders = buffer.map((row, rowIdx) => {
+            const base = rowIdx * columns.length
+            values.push(
+              row.orderId,
+              row.nipnas ?? null,
+              row.standardName ?? null,
+              row.orderSubtype ?? null,
+              row.orderDescription ?? null,
+              row.segmen ?? null,
+              row.subSegmen ?? null,
+              row.custCity ?? null,
+              row.custWitel ?? null,
+              row.billWitel ?? null,
+              row.liProductName ?? null,
+              row.liMilestone ?? null,
+              row.liStatus ?? null,
+              row.kategori ?? null,
+              row.revenue ?? 0,
+              row.biayaPasang ?? 0,
+              row.hrgBulanan ?? 0,
+              row.batchId ?? currentBatchId
+            )
+            const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
+            return `(${params.join(',')})`
+          }).join(',')
+
+          const setClause = columns
+            .filter(col => col !== 'order_id')
+            .map(col => `"${col}" = EXCLUDED."${col}"`)
+            .join(', ')
+
+          const sql = `INSERT INTO "SosData" (${columns.map(c => `"${c}"`).join(',')}) VALUES ${placeholders} ON CONFLICT ("order_id") DO UPDATE SET ${setClause};`
+
+          await prisma.$executeRawUnsafe(sql, ...values)
+          insertedCount = buffer.length
+        } else {
+          const result = await model.createMany({
+            data: buffer,
+            skipDuplicates: true
+          })
+          insertedCount = result.count
+        }
+        
+        const successMsg = `✅ Batch ${batchCounter}: Inserted ${insertedCount} ${label} rows`
+        console.log(successMsg)
+        progressLogs.push({ batch: batchCounter, type: label, inserted: insertedCount, status: 'success', timestamp: new Date() })
+        
+        buffer.length = 0 // Clear buffer
+        return insertedCount
+      } catch (err) {
+        batchCounter++
+        const errorMsg = `❌ Batch ${batchCounter}: Error inserting ${label} - ${err.message}`
+        console.error(errorMsg)
+        progressLogs.push({ batch: batchCounter, type: label, error: err.message, status: 'failed', timestamp: new Date() })
+        buffer.length = 0 // Clear buffer anyway to prevent data corruption
+        return 0
+      }
+    }
+
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i]
+      const keyMap = buildKeyMap(record)
+      
+      // DEBUG: Log keyMap for first row only
+      if (i === 0) {
+        console.log('🔍 DEBUG - Sample keyMap:', Object.keys(keyMap).slice(0, 15))
+        console.log('🔍 DEBUG - Looking for orderid in keyMap:', keyMap['orderid'])
+        console.log('🔍 DEBUG - Test getValue for Order Id:', getValue(record, keyMap, 'order id', 'orderid'))
+      }
+      
       try {
         if (type === 'sos') {
-          // Insert/update SOS data
-          const orderId = pickCaseInsensitive(record, 'order_id') || pickCaseInsensitive(record, 'ORDER_ID')
-          if (!orderId) continue
+          // Prepare SOS data for batch insert
+          const orderId = getValue(
+            record,
+            keyMap,
+            'order_id',
+            'orderid',
+            'order id',
+            'product + order id',
+            'productorderid',
+            'product_order_id',
+            'no_order',
+            'order'
+          )
+          if (!orderId) {
+            if (i < 5) console.log('⚠️  Row skipped - Missing order_id')
+            failedCount++
+            errors.push({ row: record, error: 'Missing order_id' })
+            continue
+          }
 
-          await prisma.sosData.upsert({
-            where: { orderId: orderId.toString() },
-            update: {
-              nipnas: pickCaseInsensitive(record, 'nipnas'),
-              standardName: pickCaseInsensitive(record, 'standard_name'),
-              orderSubtype: pickCaseInsensitive(record, 'order_subtype'),
-              orderDescription: pickCaseInsensitive(record, 'order_description'),
-              segmen: pickCaseInsensitive(record, 'segmen'),
-              subSegmen: pickCaseInsensitive(record, 'sub_segmen'),
-              custCity: pickCaseInsensitive(record, 'cust_city'),
-              custWitel: pickCaseInsensitive(record, 'cust_witel'),
-              billWitel: pickCaseInsensitive(record, 'bill_witel'),
-              liProductName: pickCaseInsensitive(record, 'li_product_name'),
-              liMilestone: pickCaseInsensitive(record, 'li_milestone'),
-              liStatus: pickCaseInsensitive(record, 'li_status'),
-              kategori: pickCaseInsensitive(record, 'kategori'),
-              revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
-              biayaPasang: parseFloat(pickCaseInsensitive(record, 'biaya_pasang')) || 0,
-              hrgBulanan: parseFloat(pickCaseInsensitive(record, 'hrg_bulanan')) || 0,
-              batchId: currentBatchId
-            },
-            create: {
-              orderId: orderId.toString(),
-              nipnas: pickCaseInsensitive(record, 'nipnas'),
-              standardName: pickCaseInsensitive(record, 'standard_name'),
-              orderSubtype: pickCaseInsensitive(record, 'order_subtype'),
-              orderDescription: pickCaseInsensitive(record, 'order_description'),
-              segmen: pickCaseInsensitive(record, 'segmen'),
-              subSegmen: pickCaseInsensitive(record, 'sub_segmen'),
-              custCity: pickCaseInsensitive(record, 'cust_city'),
-              custWitel: pickCaseInsensitive(record, 'cust_witel'),
-              billWitel: pickCaseInsensitive(record, 'bill_witel'),
-              liProductName: pickCaseInsensitive(record, 'li_product_name'),
-              liMilestone: pickCaseInsensitive(record, 'li_milestone'),
-              liStatus: pickCaseInsensitive(record, 'li_status'),
-              kategori: pickCaseInsensitive(record, 'kategori'),
-              revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
-              biayaPasang: parseFloat(pickCaseInsensitive(record, 'biaya_pasang')) || 0,
-              hrgBulanan: parseFloat(pickCaseInsensitive(record, 'hrg_bulanan')) || 0,
-              batchId: currentBatchId
-            }
+          sosBuffer.push({
+            orderId: orderId.toString(),
+            nipnas: getValue(record, keyMap, 'nipnas'),
+            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
+            orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
+            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'produk details', 'productdetails'),
+            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
+            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
+            custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
+            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'nama witel', 'namawitel'),
+            billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel', 'nama witel'),
+            liProductName: getValue(record, keyMap, 'li_product_name', 'liproductname', 'nama produk', 'product name', 'product', 'productname'),
+            liMilestone: getValue(record, keyMap, 'li_milestone', 'limilestone', 'milestone', 'order status', 'orderstatus'),
+            liStatus: getValue(record, keyMap, 'li_status', 'listatus', 'order_status_n', 'order status', 'orderstatus'),
+            kategori: getValue(record, keyMap, 'kategori'),
+            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice')),
+            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
+            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
+            batchId: currentBatchId
           })
-          successCount++
+
+          // Process batch when buffer reaches BATCH_SIZE
+          if (sosBuffer.length >= BATCH_SIZE) {
+            const count = await flushBuffer(sosBuffer, prisma.sosData, 'SOS', 'upsert')
+            successCount += count
+          }
         } else if (type === 'hsi') {
-          // Insert/update HSI data
-          const orderId = pickCaseInsensitive(record, 'order_id')
-          const noorder = pickCaseInsensitive(record, 'no_order')
+          // Prepare HSI data for batch insert
+          const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'order id', 'no_order')
+          const nomor = getValue(record, keyMap, 'nomor')
+          const witel = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel')
+          const datel = getValue(record, keyMap, 'datel')
+          const customerName = getValue(record, keyMap, 'customer_name', 'customername')
+          const statusResume = getValue(record, keyMap, 'status_resume', 'statusresume')
+          const provider = getValue(record, keyMap, 'provider')
 
-          await prisma.hsiData.create({
-            data: {
-              orderId: orderId || noorder || `order_${Date.now()}`,
-              nomor: pickCaseInsensitive(record, 'nomor'),
-              witel: pickCaseInsensitive(record, 'witel'),
-              datel: pickCaseInsensitive(record, 'datel'),
-              customerName: pickCaseInsensitive(record, 'customer_name'),
-              statusResume: pickCaseInsensitive(record, 'status_resume'),
-              provider: pickCaseInsensitive(record, 'provider'),
-              jenisPsb: pickCaseInsensitive(record, 'jenis_psb'),
-              ncli: pickCaseInsensitive(record, 'ncli'),
-              speedy: pickCaseInsensitive(record, 'speedy'),
-              pots: pickCaseInsensitive(record, 'pots')
-              // Note: hsiData might not have batchId in schema based on your snippet, 
-              // if it does, add: batchId: currentBatchId
-            }
+          hsiBuffer.push({
+            orderId: orderId || `order_${Date.now()}_${i}`,
+            nomor: nomor,
+            witel: witel,
+            datel: datel,
+            customerName: customerName,
+            statusResume: statusResume,
+            provider: provider,
+            batchId: currentBatchId
           })
-          successCount++
+
+          if (hsiBuffer.length >= BATCH_SIZE) {
+            const count = await flushBuffer(hsiBuffer, prisma.hsiData, 'HSI')
+            successCount += count
+          }
         } else if (type === 'jt' || type === 'tambahan') {
-          // Insert to SPMK MOM for JT data
-          const noNdeSpmk = pickCaseInsensitive(record, 'no_nde_spmk') || pickCaseInsensitive(record, 'NO_NDE_SPMK')
+          // Prepare SPMK MOM for JT data
+          const noNdeSpmk = getValue(record, keyMap, 'no_nde_spmk', 'nondeSpmk')
+          const witelBaru = getValue(record, keyMap, 'witel_baru', 'witelbaru')
+          const revenuePlan = cleanNumber(getValue(record, keyMap, 'revenue_plan', 'revenueplan'))
 
-          await prisma.spmkMom.create({
-            data: {
-              noNdeSpmk: noNdeSpmk,
-              witelBaru: pickCaseInsensitive(record, 'witel_baru') || pickCaseInsensitive(record, 'WITEL_BARU'),
-              statusProyek: 'JT',
-              revenuePlan: parseFloat(pickCaseInsensitive(record, 'revenue_plan')) || 0,
-              batchId: currentBatchId,
-              poName: pickCaseInsensitive(record, 'po_name'),
-              segmen: pickCaseInsensitive(record, 'segmen')
-            }
+          jtBuffer.push({
+            noNdeSpmk: noNdeSpmk || `nd_${Date.now()}_${i}`,
+            witelBaru: witelBaru,
+            statusProyek: 'JT',
+            revenuePlan: revenuePlan || 0,
+            batchId: currentBatchId,
+            poName: getValue(record, keyMap, 'po_name', 'poname'),
+            segmen: getValue(record, keyMap, 'segmen', 'segmen_n')
           })
-          successCount++
+
+          if (jtBuffer.length >= BATCH_SIZE) {
+            const count = await flushBuffer(jtBuffer, prisma.spmkMom, 'JT')
+            successCount += count
+          }
         } else if (type === 'datin') {
-          // Insert to SPMK MOM for DATIN data
-          const noNdeSpmk = pickCaseInsensitive(record, 'no_nde_spmk')
+          // Prepare SPMK MOM for DATIN data
+          const noNdeSpmk = getValue(record, keyMap, 'no_nde_spmk', 'nondeSpmk')
+          const witelBaru = getValue(record, keyMap, 'witel_baru', 'witelbaru')
+          const revenuePlan = cleanNumber(getValue(record, keyMap, 'revenue_plan', 'revenueplan'))
 
-          await prisma.spmkMom.create({
-            data: {
-              noNdeSpmk: noNdeSpmk,
-              witelBaru: pickCaseInsensitive(record, 'witel_baru'),
-              statusProyek: 'DATIN',
-              revenuePlan: parseFloat(pickCaseInsensitive(record, 'revenue_plan')) || 0,
-              batchId: currentBatchId,
-              poName: pickCaseInsensitive(record, 'po_name'),
-              segmen: pickCaseInsensitive(record, 'segmen')
-            }
+          datinBuffer.push({
+            noNdeSpmk: noNdeSpmk || `nd_${Date.now()}_${i}`,
+            witelBaru: witelBaru,
+            statusProyek: 'DATIN',
+            revenuePlan: revenuePlan || 0,
+            batchId: currentBatchId,
+            poName: getValue(record, keyMap, 'po_name', 'poname'),
+            segmen: getValue(record, keyMap, 'segmen', 'segmen_n')
           })
-          successCount++
-        } else if (type === 'analysis') {
-          // Insert to SOS data for analysis
-          const orderId = pickCaseInsensitive(record, 'order_id')
 
-          await prisma.sosData.create({
-            data: {
-              orderId: orderId || `order_${Date.now()}`,
-              segmen: pickCaseInsensitive(record, 'segmen'),
-              billWitel: pickCaseInsensitive(record, 'bill_witel'),
-              liProductName: pickCaseInsensitive(record, 'li_product_name'),
-              revenue: parseFloat(pickCaseInsensitive(record, 'revenue')) || 0,
-              batchId: currentBatchId
-            }
-          })
-          successCount++
+          if (datinBuffer.length >= BATCH_SIZE) {
+            const count = await flushBuffer(datinBuffer, prisma.spmkMom, 'DATIN')
+            successCount += count
+          }
         }
       } catch (err) {
+        if (failedCount < 5) {
+          console.error(`❌ ERROR on row ${i + 1}:`, err.message)
+          console.error('   Data:', JSON.stringify(record).substring(0, 200))
+        }
         failedCount++
         errors.push({ row: record, error: err.message })
       }
     }
+
+    // Flush remaining data in all buffers
+    console.log('📤 Flushing remaining buffers...')
+    successCount += await flushBuffer(sosBuffer, prisma.sosData, 'SOS (final)', 'upsert')
+    successCount += await flushBuffer(hsiBuffer, prisma.hsiData, 'HSI (final)')
+    successCount += await flushBuffer(jtBuffer, prisma.spmkMom, 'JT (final)')
+    successCount += await flushBuffer(datinBuffer, prisma.spmkMom, 'DATIN (final)')
+
+    console.log(`✅ Import complete: ${successCount} success, ${failedCount} failed`)
 
     // Clean up temp file
     await unlink(filePath)
@@ -206,6 +384,8 @@ export const uploadFile = async (req, res, next) => {
         successRows: successCount,
         failedRows: failedCount,
         batchId: currentBatchId,
+        totalBatches: batchCounter,
+        progressLogs: progressLogs,
         errors: errors.length > 0 ? errors.slice(0, 5) : [] // Return first 5 errors
       },
       'File uploaded successfully'

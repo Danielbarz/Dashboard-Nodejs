@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from '../lib/prisma.js'
 import ExcelJS from 'exceljs'
-
-const prisma = new PrismaClient()
 
 export const listDigitalProducts = async ({ page = 1, limit = 20, search, witel, branch, status }) => {
   const offset = (page - 1) * limit

@@ -47,16 +47,27 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${process.env.PUBLIC_URL}/images/tlt-surabaya.jpg)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#0f172a'
+      }}
+    >
+      <div className="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+      <div className="relative w-full max-w-md">
         {/* Logo / Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Telkom Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back</p>
+        <div className="text-center mb-8 text-white drop-shadow-md">
+          <img src={`${process.env.PUBLIC_URL}/images/logotelkom.png`} alt="Telkom" className="mx-auto h-12 w-auto mb-3" />
+          <h1 className="text-3xl font-bold">Telkom Dashboard</h1>
+          <p className="text-gray-200 mt-2">Welcome back</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white/90 backdrop-blur rounded-lg shadow-md p-8">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
               {error}

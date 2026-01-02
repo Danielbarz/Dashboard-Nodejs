@@ -1,10 +1,9 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import config from '../config/index.js'
-import { PrismaClient } from '@prisma/client'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 
-const prisma = new PrismaClient()
 
 const formatUser = (user) => ({
   id: user.id?.toString(),

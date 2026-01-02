@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { successResponse, errorResponse } from '../utils/response.js'
 import bcryptjs from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import prisma from '../lib/prisma.js'
 
 // Get all users
 export const getAllUsers = async (req, res, next) => {
