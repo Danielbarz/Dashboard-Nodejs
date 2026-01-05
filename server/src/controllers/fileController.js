@@ -150,12 +150,19 @@ export const uploadFile = async (req, res, next) => {
         id BIGSERIAL PRIMARY KEY,
         order_number TEXT UNIQUE,
         product_name TEXT,
+        customer_name TEXT,
+        po_name TEXT,
         witel TEXT,
         branch TEXT,
         revenue NUMERIC(18,2) DEFAULT 0,
         amount NUMERIC(18,2) DEFAULT 0,
         status TEXT,
+        milestone TEXT,
+        segment TEXT,
+        category TEXT,
         sub_type TEXT,
+        order_date TIMESTAMPTZ,
+        batch_id TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -241,7 +248,7 @@ export const uploadFile = async (req, res, next) => {
         } else if (mode === 'digital') {
           // Raw upsert into digital_products (single round trip)
           const columns = [
-            'order_number','product_name','witel','branch','revenue','amount','status','sub_type','created_at','updated_at'
+            'order_number','product_name','customer_name','po_name','witel','branch','revenue','amount','status','milestone','segment','category','sub_type','order_date','batch_id','created_at','updated_at'
           ]
 
           // Deduplicate within batch by order_number to avoid ON CONFLICT double-hit
@@ -258,12 +265,19 @@ export const uploadFile = async (req, res, next) => {
             values.push(
               row.order_number,
               row.product_name,
+              row.customer_name,
+              row.po_name,
               row.witel,
               row.branch,
               row.revenue,
               row.amount,
               row.status,
+              row.milestone,
+              row.segment,
+              row.category,
               row.sub_type,
+              row.order_date,
+              row.batch_id,
               row.created_at,
               row.updated_at
             )
@@ -323,24 +337,37 @@ export const uploadFile = async (req, res, next) => {
           const now = new Date()
           const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
           const productName = type === 'digital_product'
-            ? (getValue(record, keyMap, 'product_name', 'product', 'productname') || 'DIGITAL_PRODUCT')
+            ? (getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name') || 'DIGITAL_PRODUCT')
             : type.toUpperCase()
+          const customerName = getValue(record, keyMap, 'customer_name', 'customername', 'standard_name', 'standardname', 'customer')
+          const poName = getValue(record, keyMap, 'po_name', 'poname', 'po')
           const witelVal = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel', 'cust_witel', 'bill_witel')
           const branchVal = getValue(record, keyMap, 'branch', 'datel', 'cust_city', 'sto')
           const revenueVal = cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice'))
           const amountVal = cleanNumber(getValue(record, keyMap, 'amount', 'qty', 'quantity', 'jumlah')) || 0
           const statusVal = getValue(record, keyMap, 'status', 'status_resume', 'order_status', 'li_status') || 'progress'
-          const subTypeVal = getValue(record, keyMap, 'sub_type', 'subtype', 'kategori', 'segmen')
+          const milestoneVal = getValue(record, keyMap, 'milestone', 'li_milestone', 'status_detail')
+          const segmentVal = getValue(record, keyMap, 'segment', 'segmen', 'segmen_n')
+          const categoryVal = getValue(record, keyMap, 'category', 'kategori')
+          const subTypeVal = getValue(record, keyMap, 'sub_type', 'subtype', 'order_subtype', 'ordersubtype')
+          const orderDateVal = cleanDate(getValue(record, keyMap, 'order_date', 'order_created_date', 'created_date', 'date'))
 
           digitalBuffer.push({
             order_number: orderNumber.toString(),
             product_name: productName,
+            customer_name: customerName || null,
+            po_name: poName || null,
             witel: witelVal || null,
             branch: branchVal || null,
             revenue: revenueVal || 0,
             amount: amountVal || 0,
             status: statusVal,
+            milestone: milestoneVal || null,
+            segment: segmentVal || null,
+            category: categoryVal || null,
             sub_type: subTypeVal || null,
+            order_date: orderDateVal || null,
+            batch_id: currentBatchId,
             created_at: now,
             updated_at: now
           })
@@ -550,7 +577,19 @@ export const getImportLogs = async (req, res, next) => {
       take: 10
     })
 
-    // 3. Format data agar seragam
+    // 3. Ambil Batch dari Digital Product
+    const digitalBatches = await prisma.digitalProduct.groupBy({
+      by: ['batchId', 'createdAt'],
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    })
+
+    // 4. Format data agar seragam
     const formattedSos = sosBatches
       .filter(b => b.batchId) // Hanya yang punya batchId
       .map(batch => ({
@@ -569,8 +608,17 @@ export const getImportLogs = async (req, res, next) => {
         type: 'SPMK (JT/Datin)'
       }))
 
-    // 4. Gabungkan dan urutkan berdasarkan tanggal terbaru
-    const allLogs = [...formattedSos, ...formattedSpmk].sort((a, b) => {
+    const formattedDigital = digitalBatches
+      .filter(b => b.batchId)
+      .map(batch => ({
+        batchId: batch.batchId,
+        importDate: batch.createdAt,
+        recordCount: batch._count.id,
+        type: 'Digital Product'
+      }))
+
+    // 5. Gabungkan dan urutkan berdasarkan tanggal terbaru
+    const allLogs = [...formattedSos, ...formattedSpmk, ...formattedDigital].sort((a, b) => {
       return new Date(b.importDate) - new Date(a.importDate)
     })
 
