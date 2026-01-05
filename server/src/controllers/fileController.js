@@ -428,18 +428,31 @@ export const uploadFile = async (req, res, next) => {
           }
         } else if (type === 'jt' || type === 'tambahan') {
           // Prepare SPMK MOM for JT data
-          const noNdeSpmk = getValue(record, keyMap, 'no_nde_spmk', 'nondeSpmk')
-          const witelBaru = getValue(record, keyMap, 'witel_baru', 'witelbaru')
-          const revenuePlan = cleanNumber(getValue(record, keyMap, 'revenue_plan', 'revenueplan'))
+          const noNdeSpmk = getValue(record, keyMap, 'no_nde_spmk', 'nondeSpmk', 'no_nde', 'nde')
+          const witelBaru = getValue(record, keyMap, 'witel_baru', 'witelbaru', 'witel', 'nama_witel')
+          const revenuePlan = cleanNumber(getValue(record, keyMap, 'revenue_plan', 'revenueplan', 'revenue', 'rev_all'))
+
+          const goLiveVal = (getValue(record, keyMap, 'go_live', 'golive', 'status_golive') || 'N').toString().toUpperCase().startsWith('Y') ? 'Y' : 'N'
+          const populasiNonDropVal = (getValue(record, keyMap, 'populasi_non_drop', 'non_drop') || 'Y').toString().toUpperCase().startsWith('N') ? 'N' : 'Y'
 
           jtBuffer.push({
             noNdeSpmk: noNdeSpmk || `nd_${Date.now()}_${i}`,
-            witelBaru: witelBaru,
+            witelBaru: witelBaru || 'Unknown',
             statusProyek: 'JT',
             revenuePlan: revenuePlan || 0,
             batchId: currentBatchId,
             poName: getValue(record, keyMap, 'po_name', 'poname'),
-            segmen: getValue(record, keyMap, 'segmen', 'segmen_n')
+            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
+            goLive: goLiveVal,
+            populasiNonDrop: populasiNonDropVal,
+            baDrop: getValue(record, keyMap, 'ba_drop', 'badrop') || null,
+            statusTompsLastActivity: getValue(record, keyMap, 'status_tomps_last_activity', 'status_tomps', 'last_activity'),
+            statusTompsNew: getValue(record, keyMap, 'status_tomps_new', 'status_tompsnew'),
+            statusIHld: getValue(record, keyMap, 'status_i_hld', 'status_ihld', 'status_ihd'),
+            tanggalMom: cleanDate(getValue(record, keyMap, 'tanggal_mom', 'tgl_mom', 'mom_date', 'tanggal')),
+            usia: parseInt(getValue(record, keyMap, 'usia', 'age')) || null,
+            rab: cleanNumber(getValue(record, keyMap, 'rab')) || null,
+            region: getValue(record, keyMap, 'region', 'witel_lama') || null
           })
 
           if (jtBuffer.length >= BATCH_SIZE) {

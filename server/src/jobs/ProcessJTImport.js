@@ -75,11 +75,11 @@ export class ProcessJTImport {
       console.log(`✅ File parsed: ${records.length} rows found\n`)
       
       await this.updateProgress(15, `Found ${records.length} rows, clearing table...`)
-      
+
       // Delete all existing records instead of TRUNCATE (more efficient with connection pooling)
       await prisma.spmkMom.deleteMany({})
 
-      const chunkSize = 100
+      const chunkSize = 500
       let successCount = 0
       let failedCount = 0
       const errors = []
@@ -88,7 +88,7 @@ export class ProcessJTImport {
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize)
         console.log(`📦 Batch ${batchNum}: Processing ${chunk.length} JT rows`)
-        
+
         const result = await this.processChunk(chunk, batchId)
         successCount += result.success
         failedCount += result.failed
@@ -100,8 +100,9 @@ export class ProcessJTImport {
           console.log(`⚠️  Batch ${batchNum}: ${result.failed} rows failed`)
         }
 
-        const progress = 15 + Math.floor((i / records.length) * 80)
-        await this.updateProgress(progress, `Processed ${Math.min(i + chunk.length, records.length)}/${records.length} rows`)
+        const processed = Math.min(i + chunk.length, records.length)
+        const progress = 15 + Math.floor((processed / records.length) * 80)
+        await this.updateProgress(progress, `Processed ${processed}/${records.length} rows`)
         
         batchNum++
       }
@@ -151,35 +152,35 @@ export class ProcessJTImport {
     let success = 0
     let failed = 0
     const errors = []
+    const chunkData = []
 
-    for (const record of chunk) {
+    for (let idx = 0; idx < chunk.length; idx++) {
+      const record = chunk[idx]
       try {
         const keyMap = buildKeyMap(record)
-        
-        // Debug: log first record to see actual keys
-        if (chunk.indexOf(record) === 0) {
+
+        if (idx === 0) {
           console.log('First record keys:', Object.keys(record).slice(0, 10))
           console.log('Normalized keyMap sample:', Object.keys(keyMap).slice(0, 10))
         }
-        
+
         const tanggalMom = parseDate(getValue(record, keyMap, 'tanggalmom', 'tanggal_mom', 'tgl_mom', 'tanggal mom'))
         const usia = tanggalMom ? dayjs().diff(dayjs(tanggalMom), 'day') : null
         const statusTompsNew = getValue(record, keyMap, 'statustompsnew', 'status_tomps_new', 'status tomps new') || ''
-        const statusProyek = getValue(record, keyMap, 'statusproyek', 'status_proyek', 'status proyek') || ''
+        const statusProyek = getValue(record, keyMap, 'statusproyek', 'status_proyek', 'status proyek') || 'JT'
         const { goLive, populasiNonDrop } = deriveFlags(statusTompsNew, statusProyek)
 
-        // Use file USIA/GOLIVE if present, otherwise derive
         const usiaFromFile = getValue(record, keyMap, 'usia')
         const goliveFromFile = getValue(record, keyMap, 'golive', 'go live')
         const populasiFromFile = getValue(record, keyMap, 'populasinondrop', 'populasi_non_drop', 'populasi non drop', 'populasi')
 
-        const data = {
+        chunkData.push({
           batchId,
           bulan: getValue(record, keyMap, 'bulan'),
           tahun: parseInt(getValue(record, keyMap, 'tahun')) || null,
           region: getValue(record, keyMap, 'region'),
           witelLama: getValue(record, keyMap, 'witellama', 'witel_lama', 'witel lama'),
-          witelBaru: getValue(record, keyMap, 'witelbaru', 'witel_baru', 'witel baru'),
+          witelBaru: getValue(record, keyMap, 'witelbaru', 'witel_baru', 'witel baru') || 'Unknown',
           idIHld: getValue(record, keyMap, 'idihld', 'id_i_hld', 'id ihld'),
           noNdeSpmk: getValue(record, keyMap, 'nondespmk', 'no_nde_spmk', 'no nde spmk'),
           uraianKegiatan: getValue(record, keyMap, 'uraiankegiatan', 'uraian_kegiatan', 'uraian kegiatan'),
@@ -212,13 +213,30 @@ export class ProcessJTImport {
           bak: getValue(record, keyMap, 'bak'),
           keteranganPelimpahan: getValue(record, keyMap, 'keteranganpelimpahan', 'keterangan_pelimpahan', 'keterangan pelimpahan'),
           mitraLokal: getValue(record, keyMap, 'mitralokal', 'mitra_lokal', 'mitra lokal')
-        }
-
-        await prisma.spmkMom.create({ data })
-        success += 1
+        })
       } catch (err) {
         failed += 1
         errors.push(err.message)
+      }
+    }
+
+    if (chunkData.length === 0) {
+      return { success, failed, errors }
+    }
+
+    try {
+      const result = await prisma.spmkMom.createMany({ data: chunkData })
+      success += result.count
+    } catch (bulkErr) {
+      console.error('createMany failed, falling back to row-by-row:', bulkErr.message)
+      for (const data of chunkData) {
+        try {
+          await prisma.spmkMom.create({ data })
+          success += 1
+        } catch (err) {
+          failed += 1
+          errors.push(err.message)
+        }
       }
     }
 
@@ -226,6 +244,14 @@ export class ProcessJTImport {
   }
 
   async updateProgress(progress, message) {
+    // Persist progress for polling and also update Bull's progress for visibility
     await redis.set(this.progressKey, JSON.stringify({ progress, message }), 'EX', 60 * 60)
+    if (this.job && typeof this.job.progress === 'function') {
+      try {
+        await this.job.progress(progress)
+      } catch (err) {
+        console.error('Failed to update Bull progress', err.message)
+      }
+    }
   }
 }

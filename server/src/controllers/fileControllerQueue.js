@@ -107,7 +107,9 @@ export const getJobStatus = async (req, res, next) => {
     }
 
     const state = await job.getState()
-    const progress = job.progress()
+    const bullProgress = await job.progress()
+    const redisProgressRaw = await redis.get(`import:progress:${jobId}`)
+    const redisProgress = redisProgressRaw ? JSON.parse(redisProgressRaw) : null
     const result = job.returnvalue
 
     // Safely serialize result to avoid circular references
@@ -116,7 +118,8 @@ export const getJobStatus = async (req, res, next) => {
     successResponse(res, {
       jobId: job.id,
       state,
-      progress,
+      progress: redisProgress?.progress ?? bullProgress ?? 0,
+      message: redisProgress?.message,
       result: safeResult,
       timestamp: job.timestamp,
       processedOn: job.processedOn,

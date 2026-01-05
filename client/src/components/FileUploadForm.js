@@ -69,8 +69,37 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
   // Poll job status until completion
   const pollJobStatus = async (jobId, batchId) => {
-    // Polling removed - just show success immediately
-    return { totalRows: 0, successRows: 0, failedRows: 0 }
+    const maxAttempts = 300 // ~10 minutes at 2s interval
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const res = await fileService.getJobStatus(jobId)
+        const payload = res.data?.data
+        const state = payload?.state
+        const progressVal = typeof payload?.progress === 'number' ? payload.progress : null
+        if (progressVal !== null) {
+          setUploadProgress(Math.min(progressVal, 99))
+        }
+
+        if (state === 'completed') {
+          const result = payload?.result || {}
+          return {
+            batchId: batchId || result.batchId,
+            totalRows: result.totalRows ?? 0,
+            successRows: result.successRows ?? 0,
+            failedRows: result.failedRows ?? 0
+          }
+        }
+
+        if (state === 'failed') {
+          throw new Error(payload?.message || 'Job failed di server')
+        }
+      } catch (err) {
+        // swallow and retry until maxAttempts
+        if (attempt === maxAttempts - 1) throw err
+      }
+      await new Promise((r) => setTimeout(r, 2000))
+    }
+    throw new Error('Timeout menunggu job selesai')
   }
 
   const handleSubmit = async (e) => {
@@ -107,17 +136,27 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       const uploadData = response?.data?.data
       if (!uploadData) throw new Error('No response data from upload')
 
-      const { batchId } = uploadData
+      const { batchId, jobId } = uploadData
       
-      setSuccess(true)
-      setFileUploaded(true)
-      setUploadProgress(null)
-
       setLogLines((prev) => [
         ...prev,
-        `✅ Selesai diproses. Batch: ${batchId}`,
-        `⏳ Data sedang diproses di server...`
+        `✅ Upload selesai. Batch: ${batchId}`,
+        jobId ? '⏳ Memproses di server (queue)...' : '⏳ Memproses di server...'
       ])
+
+      if (jobId) {
+        const result = await pollJobStatus(jobId, batchId)
+        setUploadProgress(null)
+        setLogLines((prev) => [
+          ...prev,
+          `✅ Job selesai. Berhasil: ${result.successRows}, Gagal: ${result.failedRows}, Total: ${result.totalRows}`
+        ])
+      } else {
+        setUploadProgress(null)
+      }
+
+      setSuccess(true)
+      setFileUploaded(true)
 
       if (onSuccess) {
         onSuccess(uploadData)

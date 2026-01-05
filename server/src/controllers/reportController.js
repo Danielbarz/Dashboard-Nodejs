@@ -8,13 +8,30 @@ export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = { statusProyek: 'JT' }
+    // Accept any JT (case-insensitive) records and allow either tanggalMom or createdAt to satisfy the date filter
+    const whereClause = {
+      statusProyek: { equals: 'JT', mode: 'insensitive' }
+    }
 
     if (start_date && end_date) {
-      whereClause.createdAt = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
+      whereClause.AND = [
+        {
+          OR: [
+            {
+              tanggalMom: {
+                gte: new Date(start_date),
+                lte: new Date(end_date)
+              }
+            },
+            {
+              createdAt: {
+                gte: new Date(start_date),
+                lte: new Date(end_date)
+              }
+            }
+          ]
+        }
+      ]
     }
 
     // Fetch all raw data to aggregate in memory for complex logic
