@@ -20,6 +20,7 @@ import ReportsDatin from './pages/ReportsDatin'
 import ReportsTambahan from './pages/ReportsTambahan'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
+import MasterDataPO from './pages/MasterDataPO'
 
 function App() {
   return (
@@ -145,6 +146,14 @@ function App() {
             element={
               <AdminModeRoute superOnly>
                 <AdminRollback />
+              </AdminModeRoute>
+            }
+          />
+          <Route
+            path="/admin/master-po"
+            element={
+              <AdminModeRoute>
+                <MasterDataPO />
               </AdminModeRoute>
             }
           />

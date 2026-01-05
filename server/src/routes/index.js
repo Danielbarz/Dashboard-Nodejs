@@ -6,6 +6,7 @@ import fileRoutesQueue from './fileRoutesQueue.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import reportRoutes from './reportRoutes.js'
+import masterRoutes from './masterRoutes.js'
 
 const router = express.Router()
 
@@ -33,12 +34,13 @@ router.use('/roles', roleRoutes)
 // Admin routes
 router.use('/admin', adminRoutes)
 
+// Master Data routes
+router.use('/master', masterRoutes)
+
 // Report routes
 router.use('/report', reportRoutes)
 
 // Analysis routes
 router.use('/analysis', analysisRoutes)
-// router.use('/dashboard', dashboardRoutes)
-// router.use('/import', importRoutes)
 
 export default router

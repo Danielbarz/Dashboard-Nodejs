@@ -517,7 +517,21 @@ const AppLayout = ({ children, pageTitle }) => {
           </div>
           )}
 
-          {/* Admin Section - Only for superadmin */}
+          {/* Admin Section - Only for admin and superadmin */}
+          {(isAdminMode || isSuperAdmin) && (
+            <>
+              <NavLink
+                href="/admin/master-po"
+                active={isActive('/admin/master-po')}
+                icon={MdPeople}
+                isSidebarOpen={isSidebarOpen}
+              >
+                Master Data PO
+              </NavLink>
+            </>
+          )}
+
+          {/* Superadmin Only Section */}
           {isSuperAdmin && (
             <>
               <NavLink

@@ -79,7 +79,7 @@ export class ProcessJTImport {
       // Delete all existing records instead of TRUNCATE (more efficient with connection pooling)
       await prisma.spmkMom.deleteMany({})
 
-      const chunkSize = 500
+      const chunkSize = 1000
       let successCount = 0
       let failedCount = 0
       const errors = []
