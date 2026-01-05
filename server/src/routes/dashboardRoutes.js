@@ -9,7 +9,6 @@ import {
   getCancelByFCC,
   getFilterOptions,
   getDashboardData,
-  getReportTambahan,
   getReportDatin,
   getReportAnalysis,
   getReportHSI,
@@ -18,6 +17,9 @@ import {
   exportReportTambahan,
   exportReportHSI
 } from '../controllers/dashboardController.js'
+import {
+  getReportTambahan
+} from '../controllers/reportController.js'
 
 const router = express.Router()
 

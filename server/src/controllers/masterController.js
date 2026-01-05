@@ -17,11 +17,11 @@ export const getAccountOfficers = async (req, res, next) => {
 
 export const createAccountOfficer = async (req, res, next) => {
   try {
-    const { nama, displayWitel, filterWitelLama, specialFilterColumn, specialFilterValue } = req.body
+    const { name, displayWitel, filterWitelLama, specialFilterColumn, specialFilterValue } = req.body
 
     const accountOfficer = await prisma.accountOfficer.create({
       data: {
-        name: nama,
+        name,
         displayWitel,
         filterWitelLama,
         specialFilterColumn: specialFilterColumn || null,

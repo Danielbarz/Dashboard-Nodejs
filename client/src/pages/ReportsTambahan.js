@@ -43,7 +43,7 @@ const ReportsTambahan = () => {
     try {
       const token = localStorage.getItem('accessToken')
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/tambahan`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report-tambahan`,
         {
           params: { start_date: startDate, end_date: endDate },
           headers: { Authorization: `Bearer ${token}` }

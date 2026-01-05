@@ -12,7 +12,7 @@ const MasterDataPO = () => {
   const [selectedOrder, setSelectedOrder] = useState(null)
 
   const [aoForm, setAoForm] = useState({
-    nama: '',
+    name: '',
     displayWitel: '',
     filterWitelLama: '',
     specialFilterColumn: '',
@@ -87,7 +87,7 @@ const MasterDataPO = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setShowAOForm(false)
-      setAoForm({ nama: '', displayWitel: '', filterWitelLama: '', specialFilterColumn: '', specialFilterValue: '' })
+      setAoForm({ name: '', displayWitel: '', filterWitelLama: '', specialFilterColumn: '', specialFilterValue: '' })
       fetchAccountOfficers()
     } catch (error) {
       console.error('Failed to add account officer:', error)
@@ -202,8 +202,8 @@ const MasterDataPO = () => {
                 <input
                   type="text"
                   placeholder="Contoh: Alfonsus..."
-                  value={aoForm.nama}
-                  onChange={(e) => setAoForm({ ...aoForm, nama: e.target.value })}
+                  value={aoForm.name}
+                  onChange={(e) => setAoForm({ ...aoForm, name: e.target.value })}
                   className="w-full border-gray-300 rounded-md shadow-sm text-sm"
                 />
               </div>
@@ -279,7 +279,7 @@ const MasterDataPO = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {accountOfficers.map((ao) => (
                 <tr key={ao.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{ao.nama}</td>
+                  <td className="px-4 py-2 border">{ao.name}</td>
                   <td className="px-4 py-2 border">{ao.displayWitel}</td>
                   <td className="px-4 py-2 border">{ao.filterWitelLama}</td>
                   <td className="px-4 py-2 border">
