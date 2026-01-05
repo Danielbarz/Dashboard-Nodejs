@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DigitalProduct {
+  id           BigInt    @id @default(autoincrement())
+  orderNumber  String?   @unique @map("order_number")
+  productName  String?   @map("product_name")
+  customerName String?   @map("customer_name")
+  poName       String?   @map("po_name")
+  witel        String?
+  branch       String?
+  revenue      Decimal   @default(0) @db.Decimal(18, 2)
+  amount       Decimal   @default(0) @db.Decimal(18, 2)
+  status       String?
+  milestone    String?
+  segment      String?
+  category     String?
+  subType      String?   @map("sub_type")
+  orderDate    DateTime? @map("order_date")
+  batchId      String?   @map("batch_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([witel])
+  @@index([branch])
+  @@index([status])
+  @@index([orderDate])
+  @@map("digital_products")
+}
+
+model User {
+  id              BigInt    @id @default(autoincrement())
+  name            String
+  email           String    @unique
+  password        String
+  role            String    @default("user")
+  currentRoleAs   String?   @map("current_role_as")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  rememberToken   String?   @map("remember_token")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  customTargets           CustomTarget[]
+  userTableConfigurations UserTableConfiguration[]
+
+  @@map("users")
+}
+
+model AccountOfficer {
+  id                  BigInt   @id @default(autoincrement())
+  name                String
+  displayWitel        String   @map("display_witel")
+  filterWitelLama     String   @map("filter_witel_lama")
+  specialFilterColumn String?  @map("special_filter_column")
+  specialFilterValue  String?  @map("special_filter_value")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("account_officers")
+}
+
+model SosData {
+  id               BigInt    @id @default(autoincrement())
+  nipnas           String?
+  standardName     String?   @map("standard_name")
+  orderId          String    @unique @map("order_id")
+  orderSubtype     String?   @map("order_subtype")
+  orderDescription String?   @db.Text
+  segmen           String?
+  subSegmen        String?   @map("sub_segmen")
+  custCity         String?   @map("cust_city")
+  custWitel        String?   @map("cust_witel")
+  servCity         String?   @map("serv_city")
+  serviceWitel     String?   @map("service_witel")
+  billWitel        String?   @map("bill_witel")
+  liProductName    String?   @map("li_product_name")
+  liBilldate       DateTime? @map("li_billdate") @db.Date
+  liMilestone      String?   @map("li_milestone")
+  kategori         String?
+  liStatus         String?   @map("li_status")
+  liStatusDate     DateTime? @map("li_status_date") @db.Date
+  isTermin         String?   @map("is_termin")
+  biayaPasang      Decimal   @default(0.00) @map("biaya_pasang") @db.Decimal(15, 2)
+  hrgBulanan       Decimal   @default(0.00) @map("hrg_bulanan") @db.Decimal(15, 2)
+  revenue          Decimal   @default(0.00) @db.Decimal(15, 2)
+  orderCreatedDate DateTime? @map("order_created_date")
+  agreeType        String?   @map("agree_type")
+  agreeStartDate   DateTime? @map("agree_start_date") @db.Date
+  agreeEndDate     DateTime? @map("agree_end_date") @db.Date
+  lamaKontrakHari  Int       @default(0) @map("lama_kontrak_hari")
+  amortisasi       String?
+  actionCd         String?   @map("action_cd")
+  kategoriUmur     String?   @map("kategori_umur")
+  umurOrder        Int       @default(0) @map("umur_order")
+  billCity         String?   @map("bill_city")
+  poName           String?   @map("po_name")
+  tipeOrder        String?   @map("tipe_order")
+  segmenBaru       String?   @map("segmen_baru")
+  scalling1        String?
+  scalling2        String?
+  tipeGrup         String?   @map("tipe_grup")
+  witelBaru        String?   @map("witel_baru")
+  kategoriBaru     String?   @map("kategori_baru")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  batchId          String?   @map("batch_id")
+
+  @@index([billWitel])
+  @@index([kategori])
+  @@index([kategoriUmur])
+  @@index([batchId])
+  @@map("sos_data")
+}
+
+model HsiData {
+  id               BigInt    @id @default(autoincrement())
+  nomor            String?
+  orderId          String?   @map("order_id")
+  regional         String?
+  witel            String?
+  regionalOld      String?   @map("regional_old")
+  witelOld         String?   @map("witel_old")
+  datel            String?
+  sto              String?
+  unit             String?
+  jenisPsb         String?   @map("jenis_psb")
+  typeTrans        String?   @map("type_trans")
+  typeLayanan      String?   @map("type_layanan")
+  statusResume     String?   @map("status_resume")
+  provider         String?
+  orderDate        DateTime? @map("order_date")
+  lastUpdatedDate  DateTime? @map("last_updated_date")
+  ncli             String?
+  pots             String?
+  speedy           String?
+  customerName     String?   @map("customer_name")
+  locId            String?   @map("loc_id")
+  wonum            String?
+  flagDeposit      String?   @map("flag_deposit")
+  contactHp        String?   @map("contact_hp")
+  insAddress       String?   @map("ins_address") @db.Text
+  gpsLongitude     String?   @map("gps_longitude")
+  gpsLatitude      String?   @map("gps_latitude")
+  kcontact         String?
+  channel          String?
+  statusInet       String?   @map("status_inet")
+  statusOnu        String?   @map("status_onu")
+  upload           String?
+  download         String?
+  lastProgram      String?   @map("last_program")
+  statusVoice      String?   @map("status_voice")
+  clid             String?
+  lastStart        String?   @map("last_start")
+  tindakLanjut     String?   @map("tindak_lanjut")
+  isiComment       String?   @map("isi_comment") @db.Text
+  userIdTl         String?   @map("user_id_tl")
+  tglComment       DateTime? @map("tgl_comment")
+  tanggalManja     DateTime? @map("tanggal_manja")
+  kelompokKendala  String?   @map("kelompok_kendala")
+  kelompokStatus   String?   @map("kelompok_status")
+  hero             String?
+  addon            String?
+  tglPs            DateTime? @map("tgl_ps")
+  statusMessage    String?   @map("status_message")
+  packageName      String?   @map("package_name")
+  groupPaket       String?   @map("group_paket")
+  reasonCancel     String?   @map("reason_cancel")
+  keteranganCancel String?   @map("keterangan_cancel") @db.Text
+  tglManja         DateTime? @map("tgl_manja")
+  detailManja      String?   @map("detail_manja")
+  suberrorcode     String?
+  engineermemo     String?
+  tahun            Int?
+  bulan            Int?
+  tanggal          Int?
+  ps1              String?   @map("ps_1")
+  cek              String?
+  hasil            String?
+  telda            String?
+  dataProses       String?   @map("data_proses")
+  noOrderRevoke    String?   @map("no_order_revoke")
+  datasPsRevoke    String?   @map("data_ps_revoke")
+  untukPsPi        String?   @map("untuk_ps_pi")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@map("hsi_data")
+}
+
+model SpmkMom {
+  id                      BigInt    @id @default(autoincrement())
+  bulan                   String?
+  tahun                   Int?
+  region                  String?
+  witelLama               String?   @map("witel_lama")
+  witelBaru               String?   @map("witel_baru")
+  idIHld                  String?   @map("id_i_hld")
+  noNdeSpmk               String?   @map("no_nde_spmk")
+  uraianKegiatan          String?   @map("uraian_kegiatan") @db.Text
+  segmen                  String?
+  poName                  String?   @map("po_name")
+  tanggalGolive           DateTime? @map("tanggal_golive") @db.Date
+  konfirmasiPo            String?   @map("konfirmasi_po")
+  tanggalCb               DateTime? @map("tanggal_cb") @db.Date
+  jenisKegiatan           String?   @map("jenis_kegiatan")
+  revenuePlan             Decimal?  @map("revenue_plan") @db.Decimal(15, 2)
+  statusProyek            String?   @map("status_proyek")
+  goLive                  String    @default("N") @map("go_live") @db.Char(1)
+  keteranganToc           String?   @map("keterangan_toc") @db.Text
+  perihalNdeSpmk          String?   @map("perihal_nde_spmk") @db.Text
+  mom                     String?
+  baDrop                  String?   @map("ba_drop")
+  populasiNonDrop         String    @default("Y") @map("populasi_non_drop") @db.Char(1)
+  tanggalMom              DateTime? @map("tanggal_mom") @db.Date
+  usia                    Int?
+  rab                     Decimal?  @db.Decimal(15, 2)
+  totalPort               String?   @map("total_port")
+  templateDurasi          String?   @map("template_durasi")
+  toc                     String?
+  umurPekerjaan           String?   @map("umur_pekerjaan")
+  kategoriUmurPekerjaan   String?   @map("kategori_umur_pekerjaan")
+  statusTompsLastActivity String?   @map("status_tomps_last_activity")
+  statusTompsNew          String?   @map("status_tomps_new")
+  statusIHld              String?   @map("status_i_hld")
+  namaOdpGoLive           String?   @map("nama_odp_go_live")
+  bak                     String?
+  keteranganPelimpahan    String?   @map("keterangan_pelimpahan") @db.Text
+  mitraLokal              String?   @map("mitra_lokal")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  batchId                 String?   @map("batch_id")
+
+  @@index([batchId])
+  @@index([noNdeSpmk])
+  @@index([idIHld])
+  @@map("spmk_mom")
+}
+
+model DocumentData {
+  id                BigInt    @id @default(autoincrement())
+  batchId           String?   @map("batch_id")
+  orderId           String    @map("order_id")
+  product           String?   @db.Text
+  netPrice          Decimal   @default(0.00) @map("net_price") @db.Decimal(15, 2)
+  isTemplatePrice   Boolean   @default(false) @map("is_template_price")
+  productsProcessed Boolean   @default(false) @map("products_processed")
+  milestone         String?   @db.Text
+  previousMilestone String?   @map("previous_milestone") @db.Text
+  segment           String?
+  namaWitel         String?   @map("nama_witel")
+  statusWfm         String?   @map("status_wfm")
+  customerName      String?   @map("customer_name")
+  channel           String?
+  layanan           String?   @db.Text
+  filterProduk      String?   @map("filter_produk")
+  witelLama         String?   @map("witel_lama")
+  orderStatus       String?   @map("order_status") @db.Text
+  orderSubType      String?   @map("order_sub_type")
+  orderStatusN      String?   @map("order_status_n")
+  tahun             String?
+  telda             String?
+  week              String?
+  orderDate         DateTime? @map("order_date")
+  orderCreatedDate  DateTime? @map("order_created_date")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([batchId])
+  @@index([orderId])
+  @@map("document_data")
+}
+
+model OrderProduct {
+  id          BigInt   @id @default(autoincrement())
+  orderId     String   @map("order_id")
+  productName String?  @map("product_name")
+  netPrice    Decimal  @default(0.00) @map("net_price") @db.Decimal(15, 2)
+  channel     String?
+  statusWfm   String?  @map("status_wfm")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@map("order_products")
+}
+
+model Target {
+  id          BigInt   @id @default(autoincrement())
+  segment     String
+  namaWitel   String   @map("nama_witel")
+  metricType  String   @map("metric_type")
+  productName String   @map("product_name")
+  targetValue Decimal  @map("target_value") @db.Decimal(15, 2)
+  period      DateTime @db.Date
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("targets")
+}
+
+model CustomTarget {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  pageName  String   @map("page_name")
+  targetKey String   @map("target_key")
+  witel     String
+  period    DateTime @db.Date
+  value     Decimal  @default(0.00) @db.Decimal(15, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("custom_targets")
+}
+
+model UserTableConfiguration {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt?  @map("user_id")
+  pageName      String   @unique @map("page_name")
+  configuration Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_table_configurations")
+}
