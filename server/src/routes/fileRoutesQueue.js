@@ -40,8 +40,8 @@ const upload = multer({
 })
 
 router.post('/upload', authenticate, upload.single('file'), uploadFile)
-router.get('/job/:jobId/progress', authenticate, getJobProgress)
-router.get('/job/:jobId/status', authenticate, getJobStatus)
+router.get('/job/:jobId/progress', getJobProgress)
+router.get('/job/:jobId/status', getJobStatus)
 router.get('/import-logs', authenticate, getImportLogs)
 
 export default router

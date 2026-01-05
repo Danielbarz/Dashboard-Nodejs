@@ -88,6 +88,14 @@ export const fileService = {
     })
   },
 
+  getJobStatus: (jobId) => {
+    return api.get(`/files/job/${jobId}/status`)
+  },
+
+  getJobProgress: (jobId) => {
+    return api.get(`/files/job/${jobId}/progress`)
+  },
+
   getImportLogs: () => {
     return api.get('/files/import-logs')
   }

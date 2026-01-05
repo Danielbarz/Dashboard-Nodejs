@@ -1,13 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { FiDownload } from 'react-icons/fi'
-import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsDatin = () => {
-  const { user } = useAuth()
-  const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
-  const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -22,40 +17,60 @@ const ReportsDatin = () => {
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
-  const [tableDataFromAPI, setTableDataFromAPI] = useState([])
-  const [refreshKey, setRefreshKey] = useState(0)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  // Fetch data from API
-  const fetchReportData = async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-datin`,
-        {
-          params: { start_date: startDate, end_date: endDate },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-      if (response.data?.data) {
-        setTableDataFromAPI(response.data.data.tableData || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch report data:', error)
-    }
-  }
+  const table1Data = useMemo(() => [
+    { id: 1, category: 'SME', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 2, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 3, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 4, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 5, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 6, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 7, category: 'GOV', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 8, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 9, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 10, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 11, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 12, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 13, category: 'PRIVATE', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 14, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 15, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 16, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 17, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 18, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 19, category: 'SOE', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 20, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 21, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+  ], [])
 
-  useEffect(() => {
-    fetchReportData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, refreshKey])
+  const table2Data = useMemo(() => [
+    { id: 1, witel: 'SME', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 2, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 3, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 4, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 5, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 6, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 7, witel: 'GOV', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 8, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 9, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 10, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 11, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 12, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 13, witel: 'PRIVATE', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 14, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 15, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 16, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 17, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 18, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 19, witel: 'SOE', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 20, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 21, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+  ], [])
 
-  const table1Data = useMemo(() => tableDataFromAPI, [tableDataFromAPI])
-
-  const table2Data = useMemo(() => [], [])
-
-  const galaksiData = useMemo(() => [], [])
+  const galaksiData = useMemo(() => [
+    { id: 1, po: 'Grand Total', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0, achievement: '100%' },
+  ], [])
 
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
@@ -229,18 +244,10 @@ const ReportsDatin = () => {
         </div>
       </div>
 
-      {isAdminMode && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Datin</h2>
-          <FileUploadForm 
-            type="datin"
-            onSuccess={() => {
-              // Refresh data after successful upload
-              setRefreshKey(prev => prev + 1)
-            }}
-          />
-        </div>
-      )}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Datin</h2>
+        <FileUploadForm reportType="datin" />
+      </div>
     </>
   )
 }

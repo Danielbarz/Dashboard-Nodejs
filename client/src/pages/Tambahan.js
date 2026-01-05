@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import AppLayout from '../layouts/AppLayout'
 
 const Tambahan = () => {
   const [startDate, setStartDate] = useState('')
@@ -27,7 +28,8 @@ const Tambahan = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <AppLayout pageTitle="Dashboard Jaringan Tambahan">
+      <div className="space-y-6">
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
@@ -133,6 +135,7 @@ const Tambahan = () => {
           </div>
         </div>
       </div>
+    </AppLayout>
   )
 }
 
