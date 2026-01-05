@@ -129,23 +129,6 @@ const DashboardPage = () => {
       <div className="bg-white rounded-lg shadow p-6 relative">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Rentang Tanggal</h3>
-          {/* Admin Mode Button */}
-          {user?.role === 'admin' && !adminMode && (
-            <button
-              onClick={() => setAdminMode(true)}
-              className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition shadow-sm"
-            >
-              Masuk Mode Admin
-            </button>
-          )}
-          {user?.role === 'admin' && adminMode && (
-            <button
-              onClick={() => setAdminMode(false)}
-              className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition shadow-sm"
-            >
-              Keluar Mode Admin
-            </button>
-          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">

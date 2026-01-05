@@ -52,6 +52,22 @@ const cleanNumber = (value) => {
   return cleaned ? parseFloat(cleaned) : 0
 }
 
+// Clean date values
+const cleanDate = (value) => {
+  if (!value) return null
+  
+  // Handle Excel serial dates (numbers)
+  if (typeof value === 'number') {
+    // Excel base date is Dec 30, 1899
+    const date = new Date((value - 25569) * 86400 * 1000)
+    return isNaN(date.getTime()) ? null : date
+  }
+
+  // Handle string dates
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? null : date
+}
+
 // Upload Excel/CSV file
 export const uploadFile = async (req, res, next) => {
   try {
@@ -60,7 +76,8 @@ export const uploadFile = async (req, res, next) => {
     let type = (req.query.type || 'sos').toString().toLowerCase()
 
     // Normalize aliases
-    if (['digital', 'analysis', 'dp'].includes(type)) type = 'digital_product'
+    // 'analysis' removed from here so it defaults to 'sos' logic (which populates SosData)
+    if (['digital', 'dp'].includes(type)) type = 'digital_product'
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -181,7 +198,7 @@ export const uploadFile = async (req, res, next) => {
           const columns = [
             'order_id','nipnas','standard_name','order_subtype','order_description','segmen','sub_segmen',
             'cust_city','cust_witel','bill_witel','li_product_name','li_milestone','li_status','kategori',
-            'revenue','biaya_pasang','hrg_bulanan','batch_id'
+            'revenue','biaya_pasang','hrg_bulanan','order_created_date','batch_id'
           ]
 
           const values = []
@@ -205,6 +222,7 @@ export const uploadFile = async (req, res, next) => {
               row.revenue ?? 0,
               row.biayaPasang ?? 0,
               row.hrgBulanan ?? 0,
+              row.orderCreatedDate ?? null,
               row.batchId ?? currentBatchId
             )
             const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
@@ -374,6 +392,7 @@ export const uploadFile = async (req, res, next) => {
             revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice')),
             biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
             hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
+            orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date')),
             batchId: currentBatchId
           })
 
