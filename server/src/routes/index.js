@@ -2,7 +2,7 @@ import express from 'express'
 import authRoutes from './authRoutes.js'
 import analysisRoutes from './analysisRoutes.js'
 import dashboardRoutes from './dashboardRoutes.js'
-import fileRoutes from './fileRoutes.js'
+import fileRoutesQueue from './fileRoutesQueue.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import reportRoutes from './reportRoutes.js'
@@ -25,7 +25,7 @@ router.use('/auth', authRoutes)
 router.use('/dashboard', dashboardRoutes)
 
 // File routes
-router.use('/files', fileRoutes)
+router.use('/files', fileRoutesQueue)
 
 // Role routes
 router.use('/roles', roleRoutes)

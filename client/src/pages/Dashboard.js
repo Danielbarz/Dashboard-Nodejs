@@ -72,8 +72,7 @@ const DashboardPage = () => {
       setTotalOrderRegional(regionalRes.data.data)
       setSebaranDataPS(psRes.data.data)
       setCancelByFCC(fccRes.data.data)
-      const opts = optionsRes.data.data
-      setFilterOptions(opts.filters || opts)
+      setFilterOptions(optionsRes.data.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -265,6 +264,7 @@ const DashboardPage = () => {
             type="pie"
           />
         )}
+       (activeRole === 'superadmin' || (activeRole === 'admin' && adminMode)
         {sebaranDataPS.length > 0 && (
           <PieDonutChart
             title="Product by Channel"

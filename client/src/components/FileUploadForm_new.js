@@ -67,10 +67,34 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     if (fileInput) fileInput.value = ''
   }
 
-  // Poll job status until completion
-  const pollJobStatus = async (jobId, batchId) => {
-    // Polling removed - just show success immediately
-    return { totalRows: 0, successRows: 0, failedRows: 0 }
+  // Check job status - polls a few times to get final result
+  const checkJobStatus = async (jobId, batchId) => {
+    let attempts = 0
+    const maxAttempts = 30 // 30 seconds
+    
+    while (attempts < maxAttempts) {
+      attempts++
+      try {
+        const statusResponse = await fileService.getJobStatus(jobId)
+        const jobData = statusResponse?.data?.data
+        
+        if (jobData?.state === 'completed' && jobData?.result) {
+          console.log('✅ Job completed:', jobData.result)
+          return jobData.result
+        } else if (jobData?.state === 'failed') {
+          throw new Error('Job processing failed')
+        }
+      } catch (err) {
+        console.error(`Check attempt ${attempts} error:`, err.message)
+      }
+      
+      // Wait 1 second before next attempt
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    
+    // Timeout - return default result
+    console.log('Job status check timeout after 30 seconds')
+    return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
   }
 
   const handleSubmit = async (e) => {
@@ -107,27 +131,32 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       const uploadData = response?.data?.data
       if (!uploadData) throw new Error('No response data from upload')
 
-      const { batchId } = uploadData
+      const { jobId, batchId } = uploadData
+      setLogLines((prev) => [...prev, `⏳ Menunggu hasil pemrosesan... (Job ID: ${jobId})`])
+
+      // Check job status after upload
+      const result = await checkJobStatus(jobId, batchId)
       
       setSuccess(true)
       setFileUploaded(true)
       setUploadProgress(null)
 
+      const { totalRows, successRows, failedRows } = result
       setLogLines((prev) => [
         ...prev,
         `✅ Selesai diproses. Batch: ${batchId}`,
-        `⏳ Data sedang diproses di server...`
+        `📊 Total: ${successRows ?? 0}/${totalRows ?? 0} berhasil, ${failedRows ?? 0} gagal`
       ])
 
       if (onSuccess) {
-        onSuccess(uploadData)
+        onSuccess(result)
       }
 
       setTimeout(() => {
         setSuccess(false)
       }, 3000)
     } catch (err) {
-      console.error('❌ Upload/Poll error:', err.message, err)
+      console.error('Upload error:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
       setError(errorMessage)
       setUploadProgress(null)

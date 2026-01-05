@@ -1,6 +1,7 @@
 import { fileImportQueue } from '../queues/index.js'
 import { ProcessSOSImport } from '../jobs/ProcessSOSImport.js'
 import { ProcessHSIImport } from '../jobs/ProcessHSIImport.js'
+import { ProcessJTImport } from '../jobs/ProcessJTImport.js'
 import logger from '../config/logger.js'
 
 // Process SOS/Digital Product imports
@@ -20,8 +21,8 @@ fileImportQueue.process('hsi-import', 5, async (job) => {
 // Process JT/Tambahan imports
 fileImportQueue.process('jt-import', 5, async (job) => {
   logger.info(`Processing JT import job ${job.id}`)
-  // TODO: Implement ProcessJTImport similar to above
-  return { success: true, message: 'JT import placeholder' }
+  const processor = new ProcessJTImport(job)
+  return await processor.handle()
 })
 
 // Process Datin imports
