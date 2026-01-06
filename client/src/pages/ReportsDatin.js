@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload } from 'react-icons/fi'
-import DropdownCheckbox from '../components/DropdownCheckbox'
+import { FiDownload, FiChevronDown } from 'react-icons/fi'
 import FileUploadForm from '../components/FileUploadForm'
 import api from '../services/api'
 
@@ -19,10 +18,19 @@ const ReportsDatin = () => {
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState([])
+  const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [apiData, setApiData] = useState({ table1Data: [], table2Data: [], galaksiData: [] })
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+
+  const toggleWitel = (option) => {
+    if (selectedWitel.includes(option)) {
+      setSelectedWitel(selectedWitel.filter(item => item !== option))
+    } else {
+      setSelectedWitel([...selectedWitel, option])
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -86,13 +94,36 @@ const ReportsDatin = () => {
             </div>
           </div>
 
-          <div className="w-64">
-            <DropdownCheckbox
-              title="Semua Witel"
-              options={witelList}
-              selectedOptions={selectedWitel}
-              onSelectionChange={setSelectedWitel}
-            />
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+            <div className="flex flex-col justify-center px-2 h-full w-40">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
+              <div 
+                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
+              >
+                <span className="truncate">{selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}</span>
+                <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            {isWitelDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                {witelList.map(option => (
+                  <div 
+                    key={option} 
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    onClick={() => toggleWitel(option)}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={selectedWitel.includes(option)} 
+                      readOnly
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    />
+                    <span className="text-sm text-gray-700">{option}</span>
+                  </div>
+                ))} 
+              </div>
+            )}
           </div>
 
           <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
@@ -197,8 +228,8 @@ const ReportsDatin = () => {
             <thead className="bg-gray-700">
               <tr>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">PO</th>
-                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&lt; 3 BLN</th>
-                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&gt; 3 BLN</th>
+                <th colSpan="6" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&lt; 3 BLN</th>
+                <th colSpan="6" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&gt; 3 BLN</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">Achievement<br/>&gt;3bln</th>
               </tr>
               <tr>
@@ -217,21 +248,21 @@ const ReportsDatin = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {galaksiData.map((row) => (
-                <tr key={row.id} className="bg-gray-800 font-bold text-white">
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.po}</td>
+              {galaksiData.map((row, idx) => (
+                <tr key={row.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 text-gray-700`}>
+                  <td className="px-2 py-1 whitespace-nowrap border text-left font-medium">{row.po}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border font-bold bg-blue-50">{row.total_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border font-bold bg-blue-50">{row.total_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.achievement}</td>
                 </tr>
               ))}
