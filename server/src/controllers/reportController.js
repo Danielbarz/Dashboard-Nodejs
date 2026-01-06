@@ -198,10 +198,19 @@ export const getReportAnalysis = async (req, res, next) => {
     }
 
     let selectedRegion = null
+    let targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+
     if (witel) {
       const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
-      if (witelList.length === 1) {
+      
+      // Case 1: Single Region Selected -> Drilldown to Branches
+      if (witelList.length === 1 && regionMapping[witelList[0]]) {
         selectedRegion = witelList[0]
+        targetRows = regionMapping[selectedRegion]
+      } 
+      // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
+      else if (witelList.length > 0) {
+        targetRows = targetRows.filter(r => witelList.includes(r))
       }
     }
 
@@ -225,15 +234,6 @@ export const getReportAnalysis = async (req, res, next) => {
 
       // Process data
       const witelMap = {}
-      let targetRows = []
-
-      if (selectedRegion && regionMapping[selectedRegion]) {
-        // Drill down mode: Show branches for the selected region
-        targetRows = regionMapping[selectedRegion]
-      } else {
-        // Default mode: Show all regions
-        targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
-      }
       
       targetRows.forEach(w => {
         witelMap[w] = {

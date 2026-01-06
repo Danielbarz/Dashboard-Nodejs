@@ -249,7 +249,8 @@ const ReportDigPro = () => {
   const [selectedSegment, setSelectedSegment] = useState(['SME'])
   const segmentOptions = ['SME', 'LEGS']
   const [selectedWitel, setSelectedWitel] = useState([])
-  const [witelOptions, setWitelOptions] = useState([])
+  const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+  const [witelOptions, setWitelOptions] = useState(witelList)
   const [reportData, setReportData] = useState({ legs: [], sme: [], detailsLegs: {}, detailsSme: {} })
   const [detailData, setDetailData] = useState([])
   const [kpiData, setKpiData] = useState([])
@@ -350,7 +351,7 @@ const ReportDigPro = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data?.data?.filters) {
-          if (response.data.data.filters.witels) {
+          if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
             setWitelOptions(response.data.data.filters.witels)
           }
         }
