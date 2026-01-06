@@ -25,6 +25,17 @@ export const switchRole = async (req, res, next) => {
       return errorResponse(res, 'Admins can only switch between user and admin roles', 403)
     }
 
+    console.log(`Switching role for user ID: ${userId} to ${targetRole}`)
+
+    // Check if user exists first
+    const userExists = await prisma.user.findUnique({
+      where: { id: BigInt(userId) }
+    })
+
+    if (!userExists) {
+      return errorResponse(res, 'User not found in database. Please logout and login again.', 404)
+    }
+
     // Update current_role_as in database
     await prisma.user.update({
       where: { id: BigInt(userId) },

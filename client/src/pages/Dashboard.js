@@ -264,7 +264,6 @@ const DashboardPage = () => {
             type="pie"
           />
         )}
-       (activeRole === 'superadmin' || (activeRole === 'admin' && adminMode)
         {sebaranDataPS.length > 0 && (
           <PieDonutChart
             title="Product by Channel"
