@@ -30,7 +30,8 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // If 401 and not already retried, try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't retry if the failed request was login
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
       originalRequest._retry = true
 
       try {

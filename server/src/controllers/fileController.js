@@ -78,6 +78,10 @@ export const uploadFile = async (req, res, next) => {
     // Normalize aliases
     // 'analysis' removed from here so it defaults to 'sos' logic (which populates SosData)
     if (['digital', 'dp'].includes(type)) type = 'digital_product'
+    if (type === 'datin') type = 'sos'
+
+    console.log(`📂 Processing Upload - Original Type: ${req.query.type}, Resolved Type: ${type}`)
+
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -203,12 +207,13 @@ export const uploadFile = async (req, res, next) => {
         if (mode === 'upsert' && label === 'SOS') {
           // Raw upsert for SOS in one round trip (faster than many Prisma upserts)
           const columns = [
-            'order_id','nipnas','standard_name','order_subtype','order_description','segmen','sub_segmen',
+            'order_id','nipnas','standard_name','order_subtype','segmen','sub_segmen',
             'cust_city','cust_witel','bill_witel','li_product_name','li_milestone','li_status','kategori',
-            'revenue','biaya_pasang','hrg_bulanan','order_created_date','batch_id'
+            'revenue','biaya_pasang','hrg_bulanan','order_created_date','action_cd','batch_id','created_at','updated_at'
           ]
 
           const values = []
+          const now = new Date()
           const placeholders = buffer.map((row, rowIdx) => {
             const base = rowIdx * columns.length
             values.push(
@@ -216,7 +221,6 @@ export const uploadFile = async (req, res, next) => {
               row.nipnas ?? null,
               row.standardName ?? null,
               row.orderSubtype ?? null,
-              row.orderDescription ?? null,
               row.segmen ?? null,
               row.subSegmen ?? null,
               row.custCity ?? null,
@@ -230,7 +234,10 @@ export const uploadFile = async (req, res, next) => {
               row.biayaPasang ?? 0,
               row.hrgBulanan ?? 0,
               row.orderCreatedDate ?? null,
-              row.batchId ?? currentBatchId
+              row.actionCd ?? null,
+              row.batchId ?? currentBatchId,
+              now,
+              now
             )
             const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
             return `(${params.join(',')})`
@@ -241,7 +248,7 @@ export const uploadFile = async (req, res, next) => {
             .map(col => `"${col}" = EXCLUDED."${col}"`)
             .join(', ')
 
-          const sql = `INSERT INTO "SosData" (${columns.map(c => `"${c}"`).join(',')}) VALUES ${placeholders} ON CONFLICT ("order_id") DO UPDATE SET ${setClause};`
+          const sql = `INSERT INTO "sos_data" (${columns.map(c => `"${c}"`).join(',')}) VALUES ${placeholders} ON CONFLICT ("order_id") DO UPDATE SET ${setClause};`
 
           await prisma.$executeRawUnsafe(sql, ...values)
           insertedCount = buffer.length
@@ -326,14 +333,16 @@ export const uploadFile = async (req, res, next) => {
       
       // DEBUG: Log keyMap for first row only
       if (i === 0) {
-        console.log('🔍 DEBUG - Sample keyMap:', Object.keys(keyMap).slice(0, 15))
+        console.log('🔍 DEBUG - Sample keyMap:', Object.keys(keyMap).slice(0, 50))
         console.log('🔍 DEBUG - Looking for orderid in keyMap:', keyMap['orderid'])
-        console.log('🔍 DEBUG - Test getValue for Order Id:', getValue(record, keyMap, 'order id', 'orderid'))
+        console.log('🔍 DEBUG - looking for actionCd (action_cd/action cd):', getValue(record, keyMap, 'action_cd', 'action cd', 'actioncd'))
+        console.log('🔍 DEBUG - looking for liStatus (li_status/status):', getValue(record, keyMap, 'li_status', 'listatus', 'status'))
+        console.log('🔍 DEBUG - looking for custWitel (cust_witel/witel):', getValue(record, keyMap, 'cust_witel', 'custwitel', 'witel'))
       }
       
       try {
         // Unified digital_products intake for dashboard/reports
-        if (['digital_product', 'hsi', 'jt', 'datin'].includes(type)) {
+        if (['digital_product', 'hsi', 'jt'].includes(type)) {
           const now = new Date()
           const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
           const productName = type === 'digital_product'
@@ -395,9 +404,13 @@ export const uploadFile = async (req, res, next) => {
             'order'
           )
           if (!orderId) {
-            if (i < 5) console.log('⚠️  Row skipped - Missing order_id')
-            failedCount++
-            errors.push({ row: record, error: 'Missing order_id' })
+            // Check if row is empty or total
+            const hasData = Object.values(record).some(val => val && val.toString().trim() !== '')
+            if (hasData) {
+               if (failedCount < 5) console.log('⚠️  Row skipped - Missing order_id:', JSON.stringify(record).substring(0, 100) + '...')
+               failedCount++
+               errors.push({ row: record, error: 'Missing order_id' })
+            }
             continue
           }
 
@@ -406,7 +419,6 @@ export const uploadFile = async (req, res, next) => {
             nipnas: getValue(record, keyMap, 'nipnas'),
             standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
             orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
-            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'produk details', 'productdetails'),
             segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
             subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
             custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
@@ -420,6 +432,7 @@ export const uploadFile = async (req, res, next) => {
             biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
             hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
             orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date')),
+            actionCd: getValue(record, keyMap, 'action_cd', 'actioncd', 'action cd', 'action', 'type order', 'typeorder', 'order type', 'ordertype'),
             batchId: currentBatchId
           })
 
