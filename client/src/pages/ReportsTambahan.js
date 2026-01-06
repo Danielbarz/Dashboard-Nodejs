@@ -40,17 +40,25 @@ const ReportsTambahan = () => {
   const fetchReportData = async () => {
     try {
       const token = localStorage.getItem('token')
+      console.log('[DEBUG ReportsTambahan] Fetching with dates:', { startDate, endDate })
+      console.log('[DEBUG ReportsTambahan] Token exists:', !!token)
+
       const response = await axios.get('/api/dashboard/report-tambahan', {
         params: { start_date: startDate, end_date: endDate },
         headers: { Authorization: `Bearer ${token}` }
       })
 
+      console.log('[DEBUG ReportsTambahan] Response:', response.data)
+
       if (response.data?.data) {
+        console.log('[DEBUG ReportsTambahan] Table data:', response.data.data.tableData)
+        console.log('[DEBUG ReportsTambahan] Project data:', response.data.data.projectData)
         setTableDataFromAPI(response.data.data.tableData || [])
         setProjectDataFromAPI(response.data.data.projectData || [])
       }
     } catch (error) {
-      console.error('Failed to fetch report data:', error)
+      console.error('[ERROR ReportsTambahan] Failed to fetch report data:', error)
+      console.error('[ERROR ReportsTambahan] Error response:', error.response?.data)
     }
   }
 

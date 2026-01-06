@@ -301,12 +301,19 @@ export const getReportTambahan = async (req, res, next) => {
 
     let whereClause = {}
 
+    // Optional date filtering - only apply if both dates provided
     if (start_date && end_date) {
       whereClause.tanggalMom = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
     }
+
+    // First, get all data count to debug
+    const totalCount = await prisma.spmkMom.count()
+    console.log('[DEBUG] Total SpmkMom records:', totalCount)
+    console.log('[DEBUG] Date filter:', { start_date, end_date })
+    console.log('[DEBUG] Where clause:', whereClause)
 
     const tableData = await prisma.spmkMom.groupBy({
       by: ['witelBaru'],
@@ -319,6 +326,8 @@ export const getReportTambahan = async (req, res, next) => {
       }
     })
 
+    console.log('[DEBUG] GroupBy result count:', tableData.length)
+
     const formattedTableData = tableData.map(row => ({
       witel: row.witelBaru || 'Unknown',
       jumlahLop: row._count.id,
@@ -328,8 +337,11 @@ export const getReportTambahan = async (req, res, next) => {
       perizinan: 0,
       instalasi: 0,
       piOgp: 0,
-      golive: row.goLive === 'Y' ? row._count.id : 0,
-      drop: 0
+      golive: 0,
+      golive_jml: 0,
+      golive_rev: 0,
+      drop: 0,
+      persen_close: '0%'
     }))
 
     // Get project data (belum GO LIVE)
@@ -346,6 +358,8 @@ export const getReportTambahan = async (req, res, next) => {
       }
     })
 
+    console.log('[DEBUG] Project data count:', projectData.length)
+
     successResponse(
       res,
       {
@@ -355,6 +369,7 @@ export const getReportTambahan = async (req, res, next) => {
       'Report Tambahan data retrieved successfully'
     )
   } catch (error) {
+    console.error('[ERROR] getReportTambahan:', error)
     next(error)
   }
 }
