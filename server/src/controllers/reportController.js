@@ -1,5 +1,6 @@
 ﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
+import PO_MAPPING from '../utils/poMapping.js'
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
@@ -832,11 +833,11 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     // Mapping Constants
     const witelMappings = {
-      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'],
-      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
-      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
-      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
-      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+      'BALI': ['DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
     }
 
     const data = await prisma.sosData.findMany({
@@ -844,11 +845,14 @@ export const getReportDatinSummary = async (req, res, next) => {
       select: {
         segmen: true,
         custWitel: true,
+        custCity: true,
         serviceWitel: true,
         orderCreatedDate: true,
         actionCd: true,
         liStatus: true,
-        revenue: true
+        revenue: true,
+        poName: true,
+        nipnas: true
       }
     })
 
@@ -908,12 +912,19 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     const getOrderType = (actionCd) => {
       const a = (actionCd || '').toUpperCase()
-      if (a.startsWith('A')) return 'AO'
-      if (a.startsWith('S')) return 'SO'
-      if (a.startsWith('D')) return 'DO'
-      if (a.startsWith('M')) return 'MO'
-      if (a.startsWith('R')) return 'RO'
+      if (a.startsWith('A')) return 'AO' // Add -> AO
+      if (a.startsWith('S')) return 'SO' // Suspend -> SO
+      if (a.startsWith('D')) return 'DO' // Delete -> DO
+      if (a.startsWith('M')) return 'MO' // Modify/Move -> MO
+      if (a.startsWith('R')) return 'RO' // Resume -> RO
       return 'OTHER'
+    }
+
+    // Helper to normalize PO name - just uppercase, nothing else
+    const normalizePOName = (poName) => {
+      if (!poName) return null
+      const trimmed = (poName || '').trim()
+      return trimmed.length > 0 ? trimmed.toUpperCase() : null
     }
 
     const getStatusGroup = (status) => {
@@ -959,47 +970,120 @@ export const getReportDatinSummary = async (req, res, next) => {
     })
 
     // Galaksi Structure
-    const galaksiMap = {
-      ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0,
-      ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
-    }
+    const galaksiMap = {}
 
     // Process Data
     const now = new Date()
     
     data.forEach(row => {
       const category = getCategory(row.segmen)
-      const witel = getWitelKey(row.serviceWitel || row.custWitel)
       
-      if (witel === 'OTHER') return // Skip unknown witels or handle them?
-
+      // Process Galaksi FIRST (before witel validation skip)
       const orderDate = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
       const diffTime = Math.abs(now - orderDate)
       const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) 
       const isLessThan3Months = diffMonths <= 3
-
       const orderType = getOrderType(row.actionCd)
+      
+      // Update Galaksi - process this BEFORE witel validation
+      let poKey = row.poName
+
+      // If poName is not available, try to map from NIPNAS
+      if (!poKey && row.nipnas) {
+         const mappedName = PO_MAPPING[row.nipnas]
+         if (mappedName) {
+            poKey = mappedName
+         }
+      }
+
+      // Only process if we have a valid PO name
+      if (poKey) {
+        const poName = normalizePOName(poKey)
+        
+        if (poName) {
+          if (!galaksiMap[poName]) {
+            galaksiMap[poName] = {
+               po: poName,
+               ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0,
+               ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
+            }
+          }
+          
+          const g = galaksiMap[poName]
+          if (isLessThan3Months) {
+            if (orderType === 'AO') g.ao_3bln++
+            else if (orderType === 'SO') g.so_3bln++
+            else if (orderType === 'DO') g.do_3bln++
+            else if (orderType === 'MO') g.mo_3bln++
+            else if (orderType === 'RO') g.ro_3bln++
+            
+            g.total_3bln++
+          } else {
+            if (orderType === 'AO') g.ao_3bln2++
+            else if (orderType === 'SO') g.so_3bln2++
+            else if (orderType === 'DO') g.do_3bln2++
+            else if (orderType === 'MO') g.mo_3bln2++
+            else if (orderType === 'RO') g.ro_3bln2++
+            
+            g.total_3bln2++
+          }
+        }
+      }
+      
+      // ============ NOW do witel validation for tables 1 & 2 ============
+      // Try to resolve Witel/Branch from most specific source (City) to least specific (Region)
+      // Check City first (often contains granular branch data like 'Denpasar', 'Malang')
+      let witel = getWitelKey(row.custCity)
+      
+      if (row.custCity && (row.custCity.includes('MADIUN') || row.custCity.includes('KEDIRI'))) {
+          // console.log(`DEBUG: City=${row.custCity}, ResolvedWitel=${witel}, isBranchMode=${isBranchMode}`)
+      }
+
+      // If City didn't yield a valid branch (returned OTHER) or just returned the generic Region name
+      // Try the Witel columns
+      const isGeneric = (w) => ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'].includes(w)
+      
+      if (witel === 'OTHER') {
+         witel = getWitelKey(row.serviceWitel || row.custWitel)
+      } else if (isBranchMode && isGeneric(witel)) {
+         // If City returned a generic name (unlikely but possible), see if Witel col has something different?
+         // Actually usually if City is generic, Witel is also generic. 
+         // But let's check just in case Witel has a specific override (unlikely).
+         const alt = getWitelKey(row.serviceWitel || row.custWitel)
+         if (alt !== 'OTHER' && !isGeneric(alt)) {
+             witel = alt
+         }
+      }
+      
+      if (witel === 'OTHER') return // Skip unknown witels for table processing
+
+      const orderDate2 = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
+      const diffTime2 = Math.abs(now - orderDate2)
+      const diffMonths2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24 * 30)) 
+      const isLessThan3Months2 = diffMonths2 <= 3
+      const orderType2 = getOrderType(row.actionCd)
+
       const status = getStatusGroup(row.liStatus)
       const revenue = parseFloat(row.revenue || 0)
 
       // Update Table 1
       const t1 = table1Map[category].witels[witel]
       if (t1) {
-        if (isLessThan3Months) {
-          if (orderType === 'AO') t1.ao_3bln++
-          else if (orderType === 'SO') t1.so_3bln++
-          else if (orderType === 'DO') t1.do_3bln++
-          else if (orderType === 'MO') t1.mo_3bln++
-          else if (orderType === 'RO') t1.ro_3bln++
+        if (isLessThan3Months2) {
+          if (orderType2 === 'AO') t1.ao_3bln++
+          else if (orderType2 === 'SO') t1.so_3bln++
+          else if (orderType2 === 'DO') t1.do_3bln++
+          else if (orderType2 === 'MO') t1.mo_3bln++
+          else if (orderType2 === 'RO') t1.ro_3bln++
           
           t1.est_3bln += revenue
           t1.total_3bln++
         } else {
-          if (orderType === 'AO') t1.ao_3bln2++
-          else if (orderType === 'SO') t1.so_3bln2++
-          else if (orderType === 'DO') t1.do_3bln2++
-          else if (orderType === 'MO') t1.mo_3bln2++
-          else if (orderType === 'RO') t1.ro_3bln2++
+          if (orderType2 === 'AO') t1.ao_3bln2++
+          else if (orderType2 === 'SO') t1.so_3bln2++
+          else if (orderType2 === 'DO') t1.do_3bln2++
+          else if (orderType2 === 'MO') t1.mo_3bln2++
+          else if (orderType2 === 'RO') t1.ro_3bln2++
           
           t1.est_3bln2 += revenue
           t1.total_3bln2++
@@ -1010,7 +1094,7 @@ export const getReportDatinSummary = async (req, res, next) => {
       // Update Table 2
       const t2 = table2Map[category].witels[witel]
       if (t2) {
-        if (isLessThan3Months) {
+        if (isLessThan3Months2) {
           if (status === 'PROVIDE_ORDER') t2.provide_order++
           else if (status === 'IN_PROCESS') t2.in_process++
           else if (status === 'READY_BILL') t2.ready_bill++
@@ -1024,25 +1108,6 @@ export const getReportDatinSummary = async (req, res, next) => {
           t2.total_3bln2++
         }
         t2.grand_total++
-      }
-
-      // Update Galaksi
-      if (isLessThan3Months) {
-        if (orderType === 'AO') galaksiMap.ao_3bln++
-        else if (orderType === 'SO') galaksiMap.so_3bln++
-        else if (orderType === 'DO') galaksiMap.do_3bln++
-        else if (orderType === 'MO') galaksiMap.mo_3bln++
-        else if (orderType === 'RO') galaksiMap.ro_3bln++
-        
-        galaksiMap.total_3bln++
-      } else {
-        if (orderType === 'AO') galaksiMap.ao_3bln2++
-        else if (orderType === 'SO') galaksiMap.so_3bln2++
-        else if (orderType === 'DO') galaksiMap.do_3bln2++
-        else if (orderType === 'MO') galaksiMap.mo_3bln2++
-        else if (orderType === 'RO') galaksiMap.ro_3bln2++
-        
-        galaksiMap.total_3bln2++
       }
     })
 
@@ -1113,12 +1178,11 @@ export const getReportDatinSummary = async (req, res, next) => {
       table2Data.push(catHeader2, ...witelRows2)
     })
 
-    const galaksiData = [{
-      id: 1,
-      po: 'Grand Total',
-      ...galaksiMap,
-      achievement: '100%' // Placeholder
-    }]
+    const galaksiData = Object.values(galaksiMap).map((item, index) => ({
+      ...item,
+      id: index + 1,
+      achievement: '0%' // Placeholder
+    })).sort((a, b) => a.po.localeCompare(b.po))
 
     successResponse(res, {
       table1Data,
