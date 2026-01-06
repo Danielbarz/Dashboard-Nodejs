@@ -131,9 +131,9 @@ const ReportsTambahan = () => {
         </div>
       </div>
 
-      {/* Table 1: Data Report JT */}
+      {/* Table 1: Data Report Jaringan Tambahan */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report JT</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report Jaringan Tambahan</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
             <thead>
