@@ -299,58 +299,337 @@ export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = {}
+    // Reuse the richer JT aggregation logic from reportController (parent/child, status buckets)
+    const excludedParentWitels = [
+      'SEMARANG JATENG UTARA',
+      'YOGYA JATENG SELATAN',
+      'SOLO JATENG TIMUR',
+      'BALI',
+      'WITEL BALI',
+      'WITEL YOGYA JATENG SELATAN',
+      'WITEL SEMARANG JATENG UTARA',
+      'WITEL SOLO JATENG TIMUR'
+    ]
 
-    if (start_date && end_date) {
-      whereClause.tanggalMom = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
+    const whereClause = {
+      witelBaru: {
+        notIn: excludedParentWitels
       }
     }
 
-    const tableData = await prisma.spmkMom.groupBy({
-      by: ['witelBaru'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        revenuePlan: true
+    const applyDateFilter = (clause) => {
+      if (start_date && end_date) {
+        return {
+          ...clause,
+          AND: [
+            {
+              OR: [
+                {
+                  tanggalMom: {
+                    gte: new Date(start_date),
+                    lte: new Date(end_date)
+                  }
+                },
+                {
+                  createdAt: {
+                    gte: new Date(start_date),
+                    lte: new Date(end_date)
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+      return clause
+    }
+
+    let rawData = await prisma.spmkMom.findMany({
+      where: applyDateFilter(whereClause),
+      select: {
+        witelBaru: true,
+        witelLama: true,
+        revenuePlan: true,
+        goLive: true,
+        populasiNonDrop: true,
+        baDrop: true,
+        statusTompsLastActivity: true,
+        statusIHld: true
       }
     })
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witelBaru || 'Unknown',
-      jumlahLop: row._count.id,
-      revAll: parseFloat(row._sum.revenuePlan || 0),
-      initial: 0,
-      survey: 0,
-      perizinan: 0,
-      instalasi: 0,
-      piOgp: 0,
-      golive: row.goLive === 'Y' ? row._count.id : 0,
-      drop: 0
+    // Fallback: if no data in date range but dates provided, drop the date filter
+    if (rawData.length === 0 && start_date && end_date) {
+      rawData = await prisma.spmkMom.findMany({
+        where: whereClause,
+        select: {
+          witelBaru: true,
+          witelLama: true,
+          revenuePlan: true,
+          goLive: true,
+          populasiNonDrop: true,
+          baDrop: true,
+          statusTompsLastActivity: true,
+          statusIHld: true
+        }
+      })
+    }
+
+    // Aggregate per parent/child witel with progress buckets
+    const witelMap = {}
+
+    rawData.forEach(row => {
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const parentKey = parent
+      const childKey = `${parent}|${child}`
+
+      if (!witelMap[parentKey]) {
+        witelMap[parentKey] = {
+          witel: parent,
+          parentWitel: parent,
+          isParent: true,
+          jumlahLop: 0,
+          revAll: 0,
+          initial: 0,
+          survey: 0,
+          perizinan: 0,
+          instalasi: 0,
+          piOgp: 0,
+          golive_jml: 0,
+          golive_rev: 0,
+          drop: 0
+        }
+      }
+
+      if (!witelMap[childKey]) {
+        witelMap[childKey] = {
+          witel: child,
+          parentWitel: parent,
+          isParent: false,
+          jumlahLop: 0,
+          revAll: 0,
+          initial: 0,
+          survey: 0,
+          perizinan: 0,
+          instalasi: 0,
+          piOgp: 0,
+          golive_jml: 0,
+          golive_rev: 0,
+          drop: 0
+        }
+      }
+
+      const revenue = parseFloat(row.revenuePlan || 0)
+      const isDrop = row.populasiNonDrop === 'N' || row.baDrop !== null
+      const isGoLive = row.goLive === 'Y'
+
+      witelMap[parentKey].jumlahLop++
+      witelMap[parentKey].revAll += revenue
+      witelMap[childKey].jumlahLop++
+      witelMap[childKey].revAll += revenue
+
+      if (isDrop) {
+        witelMap[parentKey].drop++
+        witelMap[childKey].drop++
+      }
+
+      if (isGoLive) {
+        witelMap[parentKey].golive_jml++
+        witelMap[parentKey].golive_rev += revenue
+        witelMap[childKey].golive_jml++
+        witelMap[childKey].golive_rev += revenue
+      } else if (!isDrop) {
+        const status = (row.statusTompsLastActivity || '').toLowerCase()
+        let statusCode = 'initial'
+
+        if (status.includes('survey') || status.includes('drm')) {
+          statusCode = 'survey'
+        } else if (status.includes('izin') || status.includes('mos')) {
+          statusCode = 'perizinan'
+        } else if (status.includes('instal') || status.includes('deploy')) {
+          statusCode = 'instalasi'
+        } else if (status.includes('ogp') || status.includes('live')) {
+          statusCode = 'piOgp'
+        }
+
+        witelMap[parentKey][statusCode]++
+        witelMap[childKey][statusCode]++
+      }
+    })
+
+    const formattedTableData = Object.values(witelMap).map(row => ({
+      ...row,
+      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
-    // Get project data (belum GO LIVE)
-    const projectData = await prisma.spmkMom.findMany({
+    // Project data (belum GO LIVE, non-drop) for TOC stats + top usia
+    let projectRows = await prisma.spmkMom.findMany({
       where: {
-        ...whereClause,
-        goLive: 'N'
+        ...applyDateFilter(whereClause),
+        goLive: 'N',
+        populasiNonDrop: { not: 'N' }
       },
       select: {
         witelBaru: true,
+        witelLama: true,
         region: true,
         revenuePlan: true,
-        usia: true
+        usia: true,
+        templateDurasi: true,
+        idIHld: true,
+        uraianKegiatan: true,
+        statusTompsLastActivity: true,
+        tanggalMom: true,
+        poName: true
       }
+    })
+
+    if (projectRows.length === 0 && start_date && end_date) {
+      projectRows = await prisma.spmkMom.findMany({
+        where: {
+          ...whereClause,
+          goLive: 'N',
+          populasiNonDrop: { not: 'N' }
+        },
+        select: {
+          witelBaru: true,
+          witelLama: true,
+          region: true,
+          revenuePlan: true,
+          usia: true,
+          templateDurasi: true,
+          idIHld: true,
+          uraianKegiatan: true,
+          statusTompsLastActivity: true,
+          tanggalMom: true,
+          poName: true
+        }
+      })
+    }
+
+    const projectMap = {}
+    projectRows.forEach(row => {
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const parentKey = parent
+      const childKey = `${parent}|${child}`
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      const tocThreshold = row.templateDurasi ? parseInt(row.templateDurasi) : 90
+      const dalamToc = usiaVal !== null && usiaVal <= tocThreshold
+
+      if (!projectMap[parentKey]) {
+        projectMap[parentKey] = {
+          witel: parent,
+          parentWitel: parent,
+          isParent: true,
+          dalam_toc: 0,
+          lewat_toc: 0,
+          jumlah_lop_progress: 0,
+          persen_dalam_toc: '0%'
+        }
+      }
+
+      if (!projectMap[childKey]) {
+        projectMap[childKey] = {
+          witel: child,
+          parentWitel: parent,
+          isParent: false,
+          dalam_toc: 0,
+          lewat_toc: 0,
+          jumlah_lop_progress: 0,
+          persen_dalam_toc: '0%'
+        }
+      }
+
+      if (usiaVal !== null) {
+        if (dalamToc) {
+          projectMap[parentKey].dalam_toc += 1
+          projectMap[childKey].dalam_toc += 1
+        } else {
+          projectMap[parentKey].lewat_toc += 1
+          projectMap[childKey].lewat_toc += 1
+        }
+      }
+
+      projectMap[parentKey].jumlah_lop_progress += 1
+      projectMap[childKey].jumlah_lop_progress += 1
+    })
+
+    const projectData = Object.values(projectMap).map(row => ({
+      ...row,
+      persen_dalam_toc: row.jumlah_lop_progress > 0
+        ? `${((row.dalam_toc / row.jumlah_lop_progress) * 100).toFixed(1)}%`
+        : '0%'
+    }))
+
+    // Top 3 usia per witel (parent only)
+    const topByWitel = {}
+    projectRows.forEach(row => {
+      const witel = row.witelBaru || 'Unknown'
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      if (usiaVal === null) return
+
+      if (!topByWitel[witel]) topByWitel[witel] = []
+      topByWitel[witel].push({
+        witel,
+        ihld: row.idIHld,
+        nama_project: row.uraianKegiatan,
+        tanggal_mom: row.tanggalMom,
+        revenue: row.revenuePlan,
+        status_tomps: row.statusTompsLastActivity,
+        usia: usiaVal
+      })
+    })
+
+    const topUsiaByWitel = Object.entries(topByWitel).map(([witel, items]) => ({
+      witel,
+      items: items.sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 3)
+    }))
+
+    // Top 3 usia per PO (parent + child context)
+    const topByPo = {}
+    projectRows.forEach(row => {
+      const po = row.poName || 'Unknown'
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      if (usiaVal === null) return
+      if (!topByPo[po]) topByPo[po] = []
+      topByPo[po].push({
+        po,
+        witel: parent,
+        parentWitel: parent,
+        childWitel: child,
+        ihld: row.idIHld,
+        nama_project: row.uraianKegiatan,
+        tanggal_mom: row.tanggalMom,
+        revenue: row.revenuePlan,
+        status_tomps: row.statusTompsLastActivity,
+        usia: usiaVal
+      })
+    })
+
+    const topUsiaByPo = Object.entries(topByPo).map(([po, items]) => ({
+      po,
+      items: items.sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 3)
+    }))
+
+    // Preview data: highest usia first (limit to avoid huge payload)
+    const previewData = await prisma.spmkMom.findMany({
+      where: applyDateFilter(whereClause),
+      orderBy: { usia: 'desc' },
+      take: 200
     })
 
     successResponse(
       res,
       {
         tableData: formattedTableData,
-        projectData
+        projectData,
+        topUsiaByWitel,
+        topUsiaByPo,
+        previewData
       },
       'Report Tambahan data retrieved successfully'
     )

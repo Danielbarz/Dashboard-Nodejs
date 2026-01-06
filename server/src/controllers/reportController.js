@@ -1,7 +1,5 @@
-﻿import { PrismaClient } from '@prisma/client'
+﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
-
-const prisma = new PrismaClient()
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
