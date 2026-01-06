@@ -18,6 +18,7 @@ import ReportDigPro from './pages/ReportDigPro'
 import ReportsHSI from './pages/ReportsHSI'
 import ReportsDatin from './pages/ReportsDatin'
 import ReportsTambahan from './pages/ReportsTambahan'
+import ReportsJaringanTambahan from './pages/ReportsJaringanTambahan'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
 
@@ -129,6 +130,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReportsTambahan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports-jt"
+            element={
+              <ProtectedRoute>
+                <ReportsJaringanTambahan />
               </ProtectedRoute>
             }
           />

@@ -301,6 +301,7 @@ const AppLayout = ({ children, pageTitle }) => {
       '/flow-process-hsi': 'Flow Process HSI',
       '/report-digpro': 'Report Digital Product',
       '/reports-tambahan': 'Report Jaringan Tambahan',
+      '/reports-jt': 'Report Jaringan Tambahan',
       '/reports-datin': 'Report Datin',
       '/reports-hsi': 'Report HSI',
       '/admin/users': 'User Management',
@@ -492,6 +493,14 @@ const AppLayout = ({ children, pageTitle }) => {
                         }`}
                       >
                         Report Jaringan Tambahan
+                      </Link>
+                      <Link
+                        to="/reports-jt"
+                        className={`block px-4 py-2 text-sm rounded-md text-left ${
+                          isActive('/reports-jt') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Report Jaringan Tambahan (Ringkas)
                       </Link>
                       <Link
                         to="/reports-datin"
