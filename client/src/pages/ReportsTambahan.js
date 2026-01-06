@@ -39,7 +39,7 @@ const ReportsTambahan = () => {
   // Fetch data from API
   const fetchReportData = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('accessToken')
       console.log('[DEBUG ReportsTambahan] Fetching with dates:', { startDate, endDate })
       console.log('[DEBUG ReportsTambahan] Token exists:', !!token)
 
@@ -58,7 +58,9 @@ const ReportsTambahan = () => {
       }
     } catch (error) {
       console.error('[ERROR ReportsTambahan] Failed to fetch report data:', error)
-      console.error('[ERROR ReportsTambahan] Error response:', error.response?.data)
+      console.error('[ERROR ReportsTambahan] Error status:', error.response?.status)
+      console.error('[ERROR ReportsTambahan] Error message:', error.response?.data?.message)
+      console.error('[ERROR ReportsTambahan] Full error response:', error.response?.data)
     }
   }
 
