@@ -44,7 +44,7 @@ const ReportsTambahan = () => {
       console.log('[DEBUG ReportsTambahan] Token exists:', !!token)
 
       const response = await axios.get('/api/dashboard/report-tambahan', {
-        params: { start_date: startDate, end_date: endDate },
+        // params: { start_date: startDate, end_date: endDate }, // TEMP: Disable date filter to test
         headers: { Authorization: `Bearer ${token}` }
       })
 
@@ -52,7 +52,9 @@ const ReportsTambahan = () => {
 
       if (response.data?.data) {
         console.log('[DEBUG ReportsTambahan] Table data:', response.data.data.tableData)
+        console.log('[DEBUG ReportsTambahan] Table data sample:', response.data.data.tableData[0])
         console.log('[DEBUG ReportsTambahan] Project data:', response.data.data.projectData)
+        console.log('[DEBUG ReportsTambahan] Project data sample:', response.data.data.projectData[0])
         setTableDataFromAPI(response.data.data.tableData || [])
         setProjectDataFromAPI(response.data.data.projectData || [])
       }
@@ -165,8 +167,8 @@ const ReportsTambahan = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
-              {filteredTableData.map((row) => (
-                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+              {filteredTableData.map((row, idx) => (
+                <tr key={row.witel || idx} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
                   <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
                     {row.isParent ? `WITEL ${row.witel}` : row.witel}
                   </td>
@@ -206,8 +208,8 @@ const ReportsTambahan = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
-              {filteredProjectData.map((row) => (
-                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+              {filteredProjectData.map((row, idx) => (
+                <tr key={row.witelBaru + '-' + row.region + '-' + idx} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
                   <td className={`px-2 py-1 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
                     {row.isParent ? `WITEL ${row.witel}` : row.witel}
                   </td>
