@@ -1,0 +1,12 @@
+{
+  "name": "telkom-dashboard-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "echo 'Linting skipped - no linter configured'",
+    "test": "echo 'Testing skipped - no tests configured'",
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "install:all": "cd client && npm install && cd ../server && npm install"
+  }
+}

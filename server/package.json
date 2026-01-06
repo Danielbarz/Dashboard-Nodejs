@@ -10,6 +10,7 @@
     "worker": "node src/workers/index.js",
     "worker:dev": "nodemon src/workers/index.js",
     "test": "jest",
+    "lint": "echo 'No linting configured'",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

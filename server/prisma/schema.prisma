@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -11,12 +12,19 @@ model DigitalProduct {
   id           BigInt   @id @default(autoincrement())
   orderNumber  String?  @unique @map("order_number")
   productName  String?  @map("product_name")
+  customerName String?  @map("customer_name")
+  poName       String?  @map("po_name")
   witel        String?
   branch       String?
   revenue      Decimal  @db.Decimal(18, 2) @default(0)
   amount       Decimal  @db.Decimal(18, 2) @default(0)
   status       String?
+  milestone    String?
+  segment      String?
+  category     String?
   subType      String?  @map("sub_type")
+  orderDate    DateTime? @map("order_date")
+  batchId      String?  @map("batch_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -24,6 +32,7 @@ model DigitalProduct {
   @@index([witel])
   @@index([branch])
   @@index([status])
+  @@index([orderDate])
 }
 
 model User {

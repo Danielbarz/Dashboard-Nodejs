@@ -395,14 +395,14 @@ export const getReportDatin = async (req, res, next) => {
   }
 }
 
-// Get Report Analysis - from SOS data segmentation
+// Get Report Analysis - from Digital Product data segmentation
 export const getReportAnalysis = async (req, res, next) => {
   try {
     const { start_date, end_date, witel } = req.query
 
     let whereClause = {}
     if (start_date && end_date) {
-      whereClause.orderCreatedDate = {
+      whereClause.orderDate = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
@@ -430,15 +430,15 @@ export const getReportAnalysis = async (req, res, next) => {
       // Allow single string or array of strings
       const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
       
-      const data = await prisma.sosData.findMany({
+      const data = await prisma.digitalProduct.findMany({
         where: {
           ...whereClause,
-          OR: keywords.map(k => ({ segmen: { contains: k, mode: 'insensitive' } }))
+          OR: keywords.map(k => ({ segment: { contains: k, mode: 'insensitive' } }))
         },
         select: {
-          billWitel: true,
-          liProductName: true,
-          liStatus: true,
+          witel: true,
+          productName: true,
+          status: true,
           revenue: true
         }
       })
@@ -471,7 +471,7 @@ export const getReportAnalysis = async (req, res, next) => {
       let totalClosed = 0
 
       data.forEach(row => {
-        let rawWitel = (row.billWitel || '').toUpperCase()
+        let rawWitel = (row.witel || '').toUpperCase()
         let mappedName = null
 
         if (selectedRegion) {
@@ -506,15 +506,15 @@ export const getReportAnalysis = async (req, res, next) => {
         if (!mappedName || !witelMap[mappedName]) return 
 
         let productCode = ''
-        const pName = (row.liProductName || '').toLowerCase()
+        const pName = (row.productName || '').toLowerCase()
         if (pName.includes('netmonk')) productCode = 'n'
         else if (pName.includes('oca')) productCode = 'o'
-        else if (pName.includes('antares')) productCode = 'ae'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
         else if (pName.includes('pijar')) productCode = 'ps'
         
         if (!productCode) return
 
-        const status = (row.liStatus || '').toLowerCase()
+        const status = (row.status || '').toLowerCase()
         const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
         const isInProgress = !isCompleted
 
@@ -539,7 +539,7 @@ export const getReportAnalysis = async (req, res, next) => {
     }
 
     const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG']) 
-    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM'])
+    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'])
 
     successResponse(
       res,
@@ -607,7 +607,7 @@ export const getReportDetails = async (req, res, next) => {
 
     let whereClause = {}
     if (start_date && end_date) {
-      whereClause.orderCreatedDate = {
+      whereClause.orderDate = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
@@ -616,8 +616,20 @@ export const getReportDetails = async (req, res, next) => {
     if (segment) {
       const segmentList = segment.split(',').map(s => s.trim()).filter(s => s)
       if (segmentList.length > 0) {
-        whereClause.OR = segmentList.map(s => ({
-          segmen: { contains: s, mode: 'insensitive' }
+        // Expand 'SME' to include its sub-segments
+        const expandedSegments = []
+        segmentList.forEach(s => {
+          if (s.toUpperCase() === 'SME') {
+            expandedSegments.push('SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE')
+          } else if (s.toUpperCase() === 'LEGS') {
+            expandedSegments.push('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG')
+          } else {
+            expandedSegments.push(s)
+          }
+        })
+
+        whereClause.OR = expandedSegments.map(s => ({
+          segment: { contains: s, mode: 'insensitive' }
         }))
       }
     }
@@ -647,28 +659,22 @@ export const getReportDetails = async (req, res, next) => {
         })
 
         if (targetWitels.length > 0) {
-          whereClause.billWitel = { in: targetWitels }
+          whereClause.witel = { in: targetWitels }
         }
       }
     }
 
     // Filter for relevant products (Netmonk, OCA, Antares, Pijar)
-    // and In Progress status (NOT completed/activated/live/done/closed)
-    
-    // Combine existing OR (from segment) with Product OR
-    // Prisma AND/OR structure needs care.
-    // If we already have an OR from segment, we need to wrap it.
-    // Actually, Prisma supports multiple conditions in AND array implicitly if we use AND: [...]
-    // But here we are mixing top-level properties.
-    // If whereClause.OR exists (from segment), we can't just overwrite it with Product OR.
-    // We should use AND to combine them.
-    
     const productFilter = {
       OR: [
-        { liProductName: { contains: 'netmonk', mode: 'insensitive' } },
-        { liProductName: { contains: 'oca', mode: 'insensitive' } },
-        { liProductName: { contains: 'antares', mode: 'insensitive' } },
-        { liProductName: { contains: 'pijar', mode: 'insensitive' } }
+        { productName: { contains: 'netmonk', mode: 'insensitive' } },
+        { productName: { contains: 'oca', mode: 'insensitive' } },
+        { productName: { contains: 'antares', mode: 'insensitive' } },
+        { productName: { contains: 'camera', mode: 'insensitive' } },
+        { productName: { contains: 'cctv', mode: 'insensitive' } },
+        { productName: { contains: 'iot', mode: 'insensitive' } },
+        { productName: { contains: 'recording', mode: 'insensitive' } },
+        { productName: { contains: 'pijar', mode: 'insensitive' } }
       ]
     }
 
@@ -677,15 +683,12 @@ export const getReportDetails = async (req, res, next) => {
       const statusList = status.split(',').map(s => s.trim()).filter(s => s)
       if (statusList.length > 0) {
         statusFilter = {
-          OR: statusList.map(s => ({ liStatus: { contains: s, mode: 'insensitive' } }))
+          OR: statusList.map(s => ({ status: { contains: s, mode: 'insensitive' } }))
         }
       }
     }
 
     // Construct final where clause
-    // If whereClause has OR (from segment), we need to preserve it.
-    // We can put everything into AND array to be safe.
-    
     const finalWhere = {
       AND: [
         whereClause,
@@ -697,24 +700,24 @@ export const getReportDetails = async (req, res, next) => {
       finalWhere.AND.push(statusFilter)
     }
 
-    const data = await prisma.sosData.findMany({
+    const data = await prisma.digitalProduct.findMany({
       where: finalWhere,
       select: {
-        orderId: true,
-        liProductName: true,
-        billWitel: true,
-        standardName: true, // Customer Name
-        liMilestone: true, // Milestone
-        orderCreatedDate: true,
-        segmen: true,
+        orderNumber: true,
+        productName: true,
+        witel: true,
+        customerName: true,
+        milestone: true,
+        orderDate: true,
+        segment: true,
         batchId: true,
-        orderSubtype: true,
-        liStatus: true,
+        subType: true,
+        status: true,
         revenue: true,
-        kategori: true,
+        category: true,
       },
       orderBy: {
-        orderCreatedDate: 'desc'
+        orderDate: 'desc'
       }
     })
 
@@ -727,23 +730,40 @@ export const getReportDetails = async (req, res, next) => {
       return weekNo;
     }
 
-    const formattedData = data.map(row => ({
-      order_id: row.orderId,
-      product_name: row.liProductName,
-      witel: row.billWitel,
-      customer_name: row.standardName,
-      milestone: row.liMilestone,
-      order_created_date: row.orderCreatedDate,
-      segment: row.segmen,
-      branch: row.billWitel, // Using billWitel as proxy for branch
-      batch_id: row.batchId,
-      order_subtype: row.orderSubtype,
-      order_status: row.liStatus,
-      net_price: parseFloat(row.revenue || 0),
-      week: getWeekNumber(row.orderCreatedDate),
-      channel: '-', // Not available in SosData
-      layanan: row.kategori
-    }))
+    const formattedData = data.map(row => {
+      // Product Name Shortening
+      let shortProductName = row.productName || '-'
+      const pNameLower = shortProductName.toLowerCase()
+      
+      if (pNameLower.includes('netmonk')) shortProductName = 'Netmonk'
+      else if (pNameLower.includes('oca')) shortProductName = 'OCA'
+      else if (pNameLower.includes('pijar')) shortProductName = 'Pijar'
+      else if (pNameLower.includes('antares') || pNameLower.includes('iot') || pNameLower.includes('camera') || pNameLower.includes('cctv') || pNameLower.includes('recording')) shortProductName = 'Antares'
+      
+      // Channel Logic
+      let channel = 'SC-ONE'
+      if ((row.witel && row.witel.includes('NCX')) || (row.branch && row.branch.includes('NCX'))) {
+        channel = 'NCX'
+      }
+
+      return {
+        order_id: row.orderNumber,
+        product_name: shortProductName,
+        witel: row.witel,
+        customer_name: row.customerName,
+        milestone: row.milestone,
+        order_created_date: row.orderDate,
+        segment: row.segment,
+        branch: row.witel, // Using witel as proxy for branch
+        batch_id: row.batchId,
+        order_subtype: row.subType,
+        order_status: row.status,
+        net_price: parseFloat(row.revenue || 0),
+        week: getWeekNumber(row.orderDate),
+        channel: channel, 
+        layanan: row.category
+      }
+    })
 
     successResponse(res, formattedData, 'Report details retrieved successfully')
   } catch (error) {
@@ -768,20 +788,28 @@ export const getKPIPOData = async (req, res, next) => {
     // 2. Build Date Filter
     let whereClause = {}
     if (start_date && end_date) {
-      whereClause.orderCreatedDate = {
+      whereClause.orderDate = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
     }
 
     // 3. Filter for relevant products
-    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
     const productFilter = {
-      OR: products.map(p => ({ liProductName: { contains: p, mode: 'insensitive' } }))
+      OR: [
+        { productName: { contains: 'netmonk', mode: 'insensitive' } },
+        { productName: { contains: 'oca', mode: 'insensitive' } },
+        { productName: { contains: 'antares', mode: 'insensitive' } },
+        { productName: { contains: 'camera', mode: 'insensitive' } },
+        { productName: { contains: 'cctv', mode: 'insensitive' } },
+        { productName: { contains: 'iot', mode: 'insensitive' } },
+        { productName: { contains: 'recording', mode: 'insensitive' } },
+        { productName: { contains: 'pijar', mode: 'insensitive' } }
+      ]
     }
 
-    // 4. Fetch SOS Data
-    const sosData = await prisma.sosData.findMany({
+    // 4. Fetch Digital Product Data
+    const digitalData = await prisma.digitalProduct.findMany({
       where: {
         AND: [
           whereClause,
@@ -789,20 +817,20 @@ export const getKPIPOData = async (req, res, next) => {
         ]
       },
       select: {
-        billWitel: true,
-        liStatus: true,
-        liProductName: true,
-        segmen: true // Needed for special filter
+        witel: true,
+        status: true,
+        productName: true,
+        segment: true // Needed for special filter
       }
     })
 
     // 5. Process Data
     const result = accountOfficers.map(ao => {
       // Filter data for this AO
-      const relevantData = sosData.filter(row => {
+      const relevantData = digitalData.filter(row => {
         // 1. Witel Filter
         const filterWitels = (ao.filterWitelLama || '').split(',').map(s => s.trim().toLowerCase())
-        const rowWitel = (row.billWitel || '').toLowerCase()
+        const rowWitel = (row.witel || '').toLowerCase()
         
         if (filterWitels.length === 0 || (filterWitels.length === 1 && filterWitels[0] === '')) {
            return false
@@ -817,8 +845,8 @@ export const getKPIPOData = async (req, res, next) => {
            const val = ao.specialFilterValue // e.g. 'SME'
            
            // Check if row has this column
-           // Note: In Prisma result, 'segmen' is the property name for segment
-           const rowCol = col === 'segment' ? 'segmen' : col
+           // Note: In Prisma result, 'segment' is the property name for segment
+           const rowCol = col === 'segment' ? 'segment' : col
 
            if (row[rowCol] === undefined) {
              specialMatch = false
@@ -840,8 +868,9 @@ export const getKPIPOData = async (req, res, next) => {
       let ogp_scone = 0
 
       relevantData.forEach(row => {
-        const isNcx = row.billWitel && row.billWitel.toUpperCase().includes('NCX')
-        const isDone = ['completed', 'activated', 'live', 'closed', 'done'].includes((row.liStatus || '').toLowerCase())
+        const isNcx = row.witel && row.witel.toUpperCase().includes('NCX')
+        const statusLower = (row.status || '').toLowerCase()
+        const isDone = ['completed', 'activated', 'live', 'closed', 'done'].some(s => statusLower.includes(s))
 
         if (isDone) {
           if (isNcx) done_ncx++
