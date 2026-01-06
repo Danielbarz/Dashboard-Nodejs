@@ -303,7 +303,7 @@ const AppLayout = ({ children, pageTitle }) => {
       '/reports-tambahan': 'Report Jaringan Tambahan',
       '/reports-datin': 'Report Datin',
       '/reports-hsi': 'Report HSI',
-      '/reports-jt': 'Report Jaringan Tambahan Khusus',
+      '/reports-jt': 'Report JT',
       '/admin/users': 'User Management',
       '/admin/rollback': 'Rollback Batch'
     }
@@ -516,7 +516,7 @@ const AppLayout = ({ children, pageTitle }) => {
                           isActive('/reports-jt') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        Report JT (Khusus)
+                        Report JT
                       </Link>
                     </div>
                   )}
