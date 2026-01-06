@@ -39,14 +39,12 @@ const ReportsTambahan = () => {
   // Fetch data from API
   const fetchReportData = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-tambahan`,
-        {
-          params: { start_date: startDate, end_date: endDate },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const token = localStorage.getItem('token')
+      const response = await axios.get('/api/dashboard/report-tambahan', {
+        params: { start_date: startDate, end_date: endDate },
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
       if (response.data?.data) {
         setTableDataFromAPI(response.data.data.tableData || [])
         setProjectDataFromAPI(response.data.data.projectData || [])
