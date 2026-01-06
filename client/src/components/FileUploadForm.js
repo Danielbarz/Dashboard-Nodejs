@@ -103,11 +103,20 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
         }
       })
       console.log('Upload response:', response)
+      console.log('Response data structure:', response?.data)
 
       const uploadData = response?.data?.data
-      if (!uploadData) throw new Error('No response data from upload')
+      console.log('Upload data extracted:', uploadData)
+      console.log('uploadData successRows:', uploadData?.successRows, 'totalRows:', uploadData?.totalRows)
+      
+      if (!uploadData) {
+        console.error('No response data from upload. Full response:', response?.data)
+        throw new Error('No response data from upload')
+      }
 
       const { batchId } = uploadData
+      console.log('batchId extracted:', batchId)
+      console.log('About to call onSuccess with uploadData:', uploadData)
       
       setSuccess(true)
       setFileUploaded(true)
@@ -120,7 +129,10 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       ])
 
       if (onSuccess) {
+        console.log('✅ Calling onSuccess callback with:', uploadData)
         onSuccess(uploadData)
+      } else {
+        console.warn('⚠️ onSuccess callback not provided')
       }
 
       setTimeout(() => {

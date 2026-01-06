@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import FileUploadForm from '../components/FileUploadForm'
 
 // --- KOMPONEN DROPDOWN (Reusable) ---
 const MultiSelectDropdown = ({ options, selected, onChange, placeholder, isMapControl = false }) => {
@@ -64,6 +65,10 @@ const MultiSelectDropdown = ({ options, selected, onChange, placeholder, isMapCo
 const HSI = () => {
   const [dateRange, setDateRange] = useState([null, null])
   const [startDate, endDate] = dateRange
+  const [uploadMessage, setUploadMessage] = useState('')
+  const [uploadError, setUploadError] = useState('')
+  const [hsiData, setHsiData] = useState([])
+  const [loading, setLoading] = useState(false)
 
   // State Filter
   const [selectedWitels, setSelectedWitels] = useState([])
@@ -80,15 +85,35 @@ const HSI = () => {
     'TIDAK ADA ODP', 'PENDING', 'LAINNYA', 'KENDALA JALUR/RUTE TARIKAN', 'GANTI PAKET'
   ]
 
-  // Mock stats data
-  const stats = {
-    total: 0,
-    completed: 0,
-    open: 0
+  // Fetch HSI data from backend
+  const fetchHSIData = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/hsi')
+      if (!response.ok) throw new Error('Failed to fetch HSI data')
+      const result = await response.json()
+      console.log('Fetched HSI data:', result)
+      const data = result.data?.data || result.data || []
+      setHsiData(data)
+    } catch (error) {
+      console.error('Error fetching HSI data:', error)
+      setHsiData([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Mock table data
-  const mockTableData = []
+  // Load data on component mount
+  useEffect(() => {
+    fetchHSIData()
+  }, [])
+
+  // Mock stats data
+  const stats = {
+    total: hsiData.length,
+    completed: hsiData.filter(d => d.kelompok_status === 'PS').length,
+    open: hsiData.filter(d => d.kelompok_status !== 'PS' && d.kelompok_status !== 'CANCEL').length
+  }
 
   const branchOptions = useMemo(() => {
     if (selectedWitels.length === 0) return branches
@@ -133,6 +158,55 @@ const HSI = () => {
     setCurrentPage(1)
   }
 
+  const handleUploadSuccess = (response) => {
+    console.log('handleUploadSuccess received:', response)
+    const count = response?.successRows || response?.totalRows || 0
+    const message = `✅ Upload berhasil: ${count} baris data HSI ditambahkan`
+    console.log('Setting upload message:', message)
+    setUploadMessage(message)
+    setUploadError('')
+    setTimeout(() => setUploadMessage(''), 5000)
+    // Refresh data after successful upload
+    fetchHSIData()
+  }
+
+  const handleDeleteRow = async (orderId) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus data dengan Order ID: ${orderId}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/hsi/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Gagal menghapus data')
+      }
+
+      const result = await response.json()
+      setUploadMessage(`✅ ${result.message}`)
+      setUploadError('')
+      setTimeout(() => setUploadMessage(''), 5000)
+      // Refresh data after successful delete
+      fetchHSIData()
+    } catch (error) {
+      setUploadError(`❌ Gagal menghapus data: ${error.message}`)
+      setUploadMessage('')
+      setTimeout(() => setUploadError(''), 5000)
+    }
+  }
+
+  const handleUploadError = (error) => {
+    const errorMsg = error.response?.data?.message || error.message || 'Gagal upload file'
+    setUploadError(`❌ ${errorMsg}`)
+    setUploadMessage('')
+    setTimeout(() => setUploadError(''), 5000)
+  }
+
   const hasData = (data) => data && data.length > 0
 
   return (
@@ -141,6 +215,25 @@ const HSI = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard HSI - Overview</h1>
           <p className="text-gray-600 mt-1">High Speed Internet - Monitoring & Analytics</p>
+        </div>
+
+        {/* UPLOAD SECTION */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Import Data HSI</h2>
+          <FileUploadForm 
+            type="hsi"
+            onSuccess={handleUploadSuccess}
+          />
+          {uploadMessage && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded text-green-800">
+              {uploadMessage}
+            </div>
+          )}
+          {uploadError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-red-800">
+              {uploadError}
+            </div>
+          )}
         </div>
 
         {/* SECTION 1: GLOBAL FILTER */}
@@ -311,7 +404,7 @@ const HSI = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Order ID', 'Order Date', 'Customer Name', 'Witel', 'STO', 'Layanan', 'Status Group', 'Detail Status'].map((head) => (
+                  {['Order ID', 'Order Date', 'Customer Name', 'Witel', 'STO', 'Layanan', 'Status Group', 'Detail Status', 'Aksi'].map((head) => (
                     <th key={head} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       {head}
                     </th>
@@ -319,30 +412,44 @@ const HSI = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {mockTableData && mockTableData.length > 0 ? (
-                  mockTableData.map((row, idx) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="9" className="px-6 py-10 text-center text-sm text-gray-500 bg-gray-50">
+                      Loading data...
+                    </td>
+                  </tr>
+                ) : hsiData && hsiData.length > 0 ? (
+                  hsiData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{row.order_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.order_date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{row.customer_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{row.orderId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.orderDate ? new Date(row.orderDate).toLocaleDateString() : '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{row.customerName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.witel}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.sto}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.type_layanan}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.typeLayanan}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                          ${row.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' :
-                            (row.kelompok_status === 'CANCEL' || row.kelompok_status === 'REJECT_FCC') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {row.kelompok_status}
+                          ${row.kelompokStatus === 'PS' ? 'bg-green-100 text-green-800' :
+                            (row.kelompokStatus === 'CANCEL' || row.kelompokStatus === 'REJECT_FCC') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {row.kelompokStatus}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 max-w-xs truncate" title={row.status_resume}>
-                        {row.status_resume}
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 max-w-xs truncate" title={row.statusResume}>
+                        {row.statusResume}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteRow(row.orderId)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 transition"
+                        >
+                          Hapus
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="px-6 py-10 text-center text-sm text-gray-500 bg-gray-50">
+                    <td colSpan="9" className="px-6 py-10 text-center text-sm text-gray-500 bg-gray-50">
                       Tidak ada data ditemukan.
                     </td>
                   </tr>

@@ -2,9 +2,10 @@ import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import XLSX from 'xlsx'
 import csv from 'csv-parser'
-import { createReadStream } from 'fs'
+import { createReadStream, writeFileSync } from 'fs'
 import { unlink } from 'fs/promises'
 import path from 'path'
+import AdmZip from 'adm-zip'
 // import { fileImportQueue } from '../queues/index.js'
 // import { Redis } from 'ioredis'
 // import config from '../config/index.js'
@@ -15,6 +16,9 @@ import path from 'path'
 //   port: config.redis.port,
 //   password: config.redis.password
 // })
+
+// Daftar Witel yang diizinkan (Sesuai HsiDataImport.php Laravel)
+const ALLOWED_WITELS = ['JATIM TIMUR', 'JATIM BARAT', 'SURAMADU', 'NUSA TENGGARA', 'BALI']
 
 function pickCaseInsensitive(obj, key) {
   const found = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())
@@ -53,19 +57,43 @@ const cleanNumber = (value) => {
 }
 
 // Clean date values
-const cleanDate = (value) => {
+const cleanDate = (value, dateFormat = 'm/d/Y') => {
   if (!value) return null
   
+  let date
   // Handle Excel serial dates (numbers)
   if (typeof value === 'number') {
     // Excel base date is Dec 30, 1899
-    const date = new Date((value - 25569) * 86400 * 1000)
-    return isNaN(date.getTime()) ? null : date
+    date = new Date((value - 25569) * 86400 * 1000)
+  } else {
+    // Handle string dates
+    date = new Date(value)
   }
 
-  // Handle string dates
-  const date = new Date(value)
-  return isNaN(date.getTime()) ? null : date
+  if (isNaN(date.getTime())) return null
+
+  // Logic Tukar Bulan/Tanggal (US Format Fix) - Porting dari Laravel HsiDataImport.php
+  // Jika format m/d/Y dan tanggal <= 12, tukar tanggal dengan bulan
+  if (dateFormat === 'm/d/Y') {
+    const day = date.getDate()
+    const month = date.getMonth() // 0-indexed (0 = Jan)
+    
+    if (day <= 12) {
+      // Swap: Day jadi Month, Month jadi Day
+      // date.setMonth(index) -> index 0-11
+      // date.setDate(value) -> value 1-31
+      
+      // Contoh: 4 Des (4/12). Terbaca 12 April (12/4). Day=12, Month=3 (April).
+      // Target: Month=11 (Des), Day=4.
+      // New Month = Day - 1 (12 - 1 = 11)
+      // New Day = Month + 1 (3 + 1 = 4)
+      
+      date.setMonth(day - 1)
+      date.setDate(month + 1)
+    }
+  }
+
+  return date
 }
 
 // Upload Excel/CSV file
@@ -74,6 +102,7 @@ export const uploadFile = async (req, res, next) => {
     const userId = req.user.id
     const userRole = req.user.role
     let type = (req.query.type || 'sos').toString().toLowerCase()
+    const dateFormat = req.body.date_format || 'm/d/Y' // Default format dari request
 
     // Normalize aliases
     // 'analysis' removed from here so it defaults to 'sos' logic (which populates SosData)
@@ -88,11 +117,43 @@ export const uploadFile = async (req, res, next) => {
       return errorResponse(res, 'No file uploaded', 'Please provide a file', 400)
     }
 
-    const filePath = req.file.path
+    let filePath = req.file.path
     const fileName = req.file.originalname
-    const ext = path.extname(fileName).toLowerCase()
+    let ext = path.extname(fileName).toLowerCase()
 
     let records = []
+
+    // Handle ZIP Extraction (Porting dari ReportHsiAdminController.php)
+    if (ext === '.zip') {
+      try {
+        const zip = new AdmZip(filePath)
+        const zipEntries = zip.getEntries()
+        // Cari file excel/csv pertama dalam zip
+        const entry = zipEntries.find(e => e.entryName.match(/\.(xlsx|xls|csv)$/i))
+        
+        if (!entry) {
+          await unlink(filePath)
+          return errorResponse(res, 'Invalid ZIP', 'File ZIP tidak berisi file Excel (.xlsx/.xls) atau CSV yang valid.', 400)
+        }
+
+        // Ekstrak file
+        const buffer = zip.readFile(entry)
+        const extractName = `extracted-${Date.now()}-${path.basename(entry.entryName)}`
+        const extractDir = path.dirname(filePath)
+        zip.extractEntryTo(entry, extractDir, false, true, extractName)
+        const newPath = path.join(extractDir, extractName)
+        
+        writeFileSync(newPath, buffer)
+        
+        // Hapus zip asli dan update path ke file hasil ekstrak
+        await unlink(filePath)
+        filePath = path.join(extractDir, extractName)
+        filePath = newPath
+        ext = path.extname(extractName).toLowerCase()
+      } catch (err) {
+        return errorResponse(res, 'ZIP Error', 'Gagal mengekstrak file ZIP: ' + err.message, 400)
+      }
+    }
 
     // Parse file
     if (ext === '.xlsx' || ext === '.xls') {
@@ -333,12 +394,10 @@ export const uploadFile = async (req, res, next) => {
       
       try {
         // Unified digital_products intake for dashboard/reports
-        if (['digital_product', 'hsi', 'jt', 'datin'].includes(type)) {
+        if (type === 'digital_product') {
           const now = new Date()
           const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
-          const productName = type === 'digital_product'
-            ? (getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name') || 'DIGITAL_PRODUCT')
-            : type.toUpperCase()
+          const productName = getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name') || 'DIGITAL_PRODUCT'
           const customerName = getValue(record, keyMap, 'customer_name', 'customername', 'standard_name', 'standardname', 'customer')
           const poName = getValue(record, keyMap, 'po_name', 'poname', 'po')
           const witelVal = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel', 'cust_witel', 'bill_witel')
@@ -366,7 +425,7 @@ export const uploadFile = async (req, res, next) => {
             segment: segmentVal || null,
             category: categoryVal || null,
             sub_type: subTypeVal || null,
-            order_date: orderDateVal || null,
+            order_date: cleanDate(getValue(record, keyMap, 'order_date', 'order_created_date', 'created_date', 'date'), dateFormat),
             batch_id: currentBatchId,
             created_at: now,
             updated_at: now
@@ -419,7 +478,7 @@ export const uploadFile = async (req, res, next) => {
             revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice')),
             biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
             hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
-            orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date')),
+            orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date'), dateFormat),
             batchId: currentBatchId
           })
 
@@ -429,24 +488,116 @@ export const uploadFile = async (req, res, next) => {
             successCount += count
           }
         } else if (type === 'hsi') {
-          // Prepare HSI data for batch insert
-          const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'order id', 'no_order')
-          const nomor = getValue(record, keyMap, 'nomor')
-          const witel = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel')
+          // Prepare HSI data for batch insert with all available fields
+          // Gunakan cleanDate yang sudah di-update dengan logic swap date
+          const parseDate = (dateVal) => cleanDate(dateVal, dateFormat)
+          const parseDecimal = (val) => val ? parseFloat(val) : 0
+
+          const orderId = String(getValue(record, keyMap, 'order_id', 'orderid', 'order id', 'no_order') || '')
+          const nomor = String(getValue(record, keyMap, 'nomor') || '')
+          const witelRaw = getValue(record, keyMap, 'witel', 'nama witel', 'namawitel')
+          const witel = witelRaw ? witelRaw.toString().toUpperCase().trim() : null
           const datel = getValue(record, keyMap, 'datel')
+
+          // Filter Witel (Porting dari HsiDataImport.php)
+          if (!witel || !ALLOWED_WITELS.includes(witel)) {
+            continue // Skip baris ini jika witel tidak diizinkan
+          }
+
           const customerName = getValue(record, keyMap, 'customer_name', 'customername')
           const statusResume = getValue(record, keyMap, 'status_resume', 'statusresume')
           const provider = getValue(record, keyMap, 'provider')
+          
+          // Extended field mapping
+          const regional = String(getValue(record, keyMap, 'regional') || '')
+          const regionalOld = String(getValue(record, keyMap, 'regional_old', 'regionalold') || '')
+          const witelOld = getValue(record, keyMap, 'witel_old', 'witelold')
+          const sto = getValue(record, keyMap, 'sto')
+          const unit = getValue(record, keyMap, 'unit')
+          const jenisPsb = getValue(record, keyMap, 'jenis_psb', 'jenispsb', 'jenis psb')
+          const typeTrans = getValue(record, keyMap, 'type_trans', 'typetrans', 'type trans')
+          const typeLayanan = getValue(record, keyMap, 'type_layanan', 'typelayanan', 'type layanan')
+          const orderDate = parseDate(getValue(record, keyMap, 'order_date', 'orderdate'))
+          const lastUpdatedDate = parseDate(getValue(record, keyMap, 'last_updated_date', 'lastupdateddate'))
+          const ncli = String(getValue(record, keyMap, 'ncli') || '')
+          const pots = String(getValue(record, keyMap, 'pots') || '')
+          const speedy = getValue(record, keyMap, 'speedy')
+          const locId = getValue(record, keyMap, 'loc_id', 'locid')
+          const wonum = getValue(record, keyMap, 'wonum')
+          const flagDeposit = getValue(record, keyMap, 'flag_deposit', 'flagdeposit')
+          const contactHp = getValue(record, keyMap, 'contact_hp', 'contacthp', 'kontak hp')
+          const insAddress = getValue(record, keyMap, 'ins_address', 'insaddress', 'alamat instalasi')
+          const gpsLongitude = String(getValue(record, keyMap, 'gps_longitude', 'gpslongitude') || '')
+          const gpsLatitude = String(getValue(record, keyMap, 'gps_latitude', 'gpslatitude') || '')
+          const kcontact = getValue(record, keyMap, 'kcontact')
+          const channel = getValue(record, keyMap, 'channel', 'saluran')
+          const statusInet = getValue(record, keyMap, 'status_inet', 'statusiinet')
+          const statusOnu = getValue(record, keyMap, 'status_onu', 'statusonu')
+          const upload = getValue(record, keyMap, 'upload', 'upload_speed')
+          const download = getValue(record, keyMap, 'download', 'download_speed')
+          const lastProgram = getValue(record, keyMap, 'last_program', 'lastprogram')
+          const statusVoice = getValue(record, keyMap, 'status_voice', 'statusvoice')
+          const clid = getValue(record, keyMap, 'clid')
+          const lastStart = getValue(record, keyMap, 'last_start', 'laststart')
+          const tindakLanjut = getValue(record, keyMap, 'tindak_lanjut', 'tindaklanjut')
+          const isiComment = String(getValue(record, keyMap, 'isi_comment', 'isicomment') || '')
+          const userIdTl = getValue(record, keyMap, 'user_id_tl', 'useridtl')
+          const tglComment = parseDate(getValue(record, keyMap, 'tgl_comment', 'tglcomment'))
+          const tanggalManja = parseDate(getValue(record, keyMap, 'tanggal_manja', 'tanggalmanja'))
+          const kelompokKendala = getValue(record, keyMap, 'kelompok_kendala', 'kelompok kendala')
+          const kelompokStatus = getValue(record, keyMap, 'kelompok_status', 'kelompok status')
+          const hero = getValue(record, keyMap, 'hero')
+          const addon = getValue(record, keyMap, 'addon')
+          const tglPs = parseDate(getValue(record, keyMap, 'tgl_ps', 'tglps'))
 
           hsiBuffer.push({
             orderId: orderId || `order_${Date.now()}_${i}`,
             nomor: nomor,
             witel: witel,
+            regional: regional,
+            regionalOld: regionalOld,
+            witelOld: witelOld,
             datel: datel,
-            customerName: customerName,
+            sto: sto,
+            unit: unit,
+            jenisPsb: jenisPsb,
+            typeTrans: typeTrans,
+            typeLayanan: typeLayanan,
             statusResume: statusResume,
             provider: provider,
-            batchId: currentBatchId
+            orderDate: orderDate,
+            lastUpdatedDate: lastUpdatedDate,
+            ncli: ncli,
+            pots: pots,
+            speedy: speedy,
+            customerName: customerName,
+            locId: locId,
+            wonum: wonum,
+            flagDeposit: flagDeposit,
+            contactHp: contactHp,
+            insAddress: insAddress,
+            gpsLongitude: gpsLongitude,
+            gpsLatitude: gpsLatitude,
+            kcontact: kcontact,
+            channel: channel,
+            statusInet: statusInet,
+            statusOnu: statusOnu,
+            upload: upload,
+            download: download,
+            lastProgram: lastProgram,
+            statusVoice: statusVoice,
+            clid: clid,
+            lastStart: lastStart,
+            tindakLanjut: tindakLanjut,
+            isiComment: isiComment,
+            userIdTl: userIdTl,
+            tglComment: tglComment,
+            tanggalManja: tanggalManja,
+            kelompokKendala: kelompokKendala,
+            kelompokStatus: kelompokStatus,
+            hero: hero,
+            addon: addon,
+            tglPs: tglPs
           })
 
           if (hsiBuffer.length >= BATCH_SIZE) {

@@ -6,6 +6,7 @@ import fileRoutes from './fileRoutes.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import reportRoutes from './reportRoutes.js'
+import hsiRoutes from './hsiRoutes.js'
 
 const router = express.Router()
 
@@ -35,6 +36,9 @@ router.use('/admin', adminRoutes)
 
 // Report routes
 router.use('/report', reportRoutes)
+
+// HSI routes
+router.use('/hsi', hsiRoutes)
 
 // Analysis routes
 router.use('/analysis', analysisRoutes)
