@@ -246,7 +246,7 @@ const ReportsDatin = () => {
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Datin</h2>
-        <FileUploadForm reportType="datin" />
+        <FileUploadForm type="datin" />
       </div>
     </>
   )
