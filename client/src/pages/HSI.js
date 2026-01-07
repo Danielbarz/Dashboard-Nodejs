@@ -1,4 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { fetchHSIDashboard } from '../services/dashboardService'
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+} from 'recharts'
+
+// Warna untuk Chart
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 // --- KOMPONEN DROPDOWN (Reusable) ---
 const MultiSelectDropdown = ({ options, selected, onChange, placeholder, isMapControl = false }) => {
@@ -71,24 +79,28 @@ const HSI = () => {
   const [selectedMapStatus, setSelectedMapStatus] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [loading, setLoading] = useState(false)
 
-  const witels = ['JABAR', 'JATIM', 'JATENG']
+  // DATA STATE (Real Data)
+  const [stats, setStats] = useState({ total: 0, completed: 0, open: 0 })
+  const [tableData, setTableData] = useState([])
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 })
+  const [chartData, setChartData] = useState({
+    orderByWitel: [],
+    psByWitel: [],
+    statusComposition: [],
+    trendLayanan: [],
+    trendDaily: []
+  })
+
+  // Options
+  const witels = ['JABAR', 'JATIM', 'JATENG', 'BALI', 'NUSRA', 'KALIMANTAN', 'SULAWESI']
   const branches = ['Branch A', 'Branch B', 'Branch C']
   const mapStatusOptions = [
-    'Completed', 'Open', 'Cancel',
-    'ODP JAUH', 'ODP FULL', 'DOUBLE INPUT', 'BATAL',
-    'TIDAK ADA ODP', 'PENDING', 'LAINNYA', 'KENDALA JALUR/RUTE TARIKAN', 'GANTI PAKET'
+    'Completed', 'Open', 'Cancel', 'ODP JAUH', 'ODP FULL', 
+    'DOUBLE INPUT', 'BATAL', 'TIDAK ADA ODP', 'PENDING', 
+    'LAINNYA', 'KENDALA JALUR/RUTE TARIKAN', 'GANTI PAKET'
   ]
-
-  // Mock stats data
-  const stats = {
-    total: 0,
-    completed: 0,
-    open: 0
-  }
-
-  // Mock table data
-  const mockTableData = []
 
   const branchOptions = useMemo(() => {
     if (selectedWitels.length === 0) return branches
@@ -101,28 +113,52 @@ const HSI = () => {
     }
   }, [selectedWitels, branchOptions])
 
-  const formatDate = (date) => {
-    if (!date) return ''
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, '0')
-    const d = String(date.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
+  // --- LOAD DATA FROM API ---
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const params = {
+        page: currentPage,
+        limit: 10,
+        search: searchQuery,
+        witel: selectedWitels.join(','),
+        branch: selectedBranches.join(','),
+        startDate: startDate ? startDate.toISOString() : undefined,
+        endDate: endDate ? endDate.toISOString() : undefined
+      }
+
+      const result = await fetchHSIDashboard(params)
+      
+      if (result.data) {
+        setStats(result.data.stats)
+        setTableData(result.data.table)
+        setPagination(result.data.pagination)
+        setChartData(result.data.charts || {})
+      }
+    } catch (error) {
+      console.error("Error loading HSI data", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const applyFilter = () => {
-    // Implement filter logic here
-    setCurrentPage(1)
-  }
-
-  const applyMapFilter = () => {
-    applyFilter()
-  }
+  useEffect(() => {
+    loadData()
+  }, [startDate, endDate, selectedWitels, selectedBranches, currentPage])
 
   const handleSearchEnter = (e) => {
     if (e.key === 'Enter') {
-      applyFilter()
+      setCurrentPage(1)
+      loadData()
     }
   }
+
+  const applyFilter = () => {
+    setCurrentPage(1)
+    loadData()
+  }
+
+  const applyMapFilter = () => { applyFilter() }
 
   const resetFilter = () => {
     setDateRange([null, null])
@@ -132,8 +168,6 @@ const HSI = () => {
     setSearchQuery('')
     setCurrentPage(1)
   }
-
-  const hasData = (data) => data && data.length > 0
 
   return (
     <div className="py-8">
@@ -151,17 +185,13 @@ const HSI = () => {
               <div className="flex gap-2">
                 <input
                   type="date"
-                  value={startDate ? startDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setDateRange([e.target.value ? new Date(e.target.value) : null, endDate])}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Dari"
                 />
                 <input
                   type="date"
-                  value={endDate ? endDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setDateRange([startDate, e.target.value ? new Date(e.target.value) : null])}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Hingga"
                 />
               </div>
             </div>
@@ -174,10 +204,10 @@ const HSI = () => {
               <MultiSelectDropdown options={branchOptions} selected={selectedBranches} onChange={setSelectedBranches} placeholder="Semua Branch" />
             </div>
             <div className="flex gap-2">
-              <button onClick={applyFilter} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-4 rounded shadow w-full">Terapkan</button>
-              {(startDate || selectedWitels.length > 0 || selectedBranches.length > 0) && (
-                <button onClick={resetFilter} className="bg-white border border-gray-300 text-gray-700 text-sm font-bold py-2.5 px-4 rounded shadow">Reset</button>
-              )}
+              <button onClick={applyFilter} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-4 rounded shadow w-full">
+                {loading ? 'Loading...' : 'Terapkan'}
+              </button>
+              <button onClick={resetFilter} className="bg-white border border-gray-300 text-gray-700 text-sm font-bold py-2.5 px-4 rounded shadow">Reset</button>
             </div>
           </div>
         </div>
@@ -202,46 +232,90 @@ const HSI = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">Total Order per Regional (Witel)</h3>
-            <div className="h-80 flex justify-center items-center">
-              <div className="text-gray-400">No Data</div>
+            <div className="h-80 w-full">
+              {chartData.orderByWitel.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData.orderByWitel} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{fontSize: 12}} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" name="Jumlah Order" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">No Data</div>
+              )}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">Sebaran PS per Regional (Witel)</h3>
-            <div className="h-80 flex justify-center items-center">
-              <div className="text-gray-400">Data PS Kosong</div>
+            <div className="h-80 w-full">
+              {chartData.psByWitel.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData.psByWitel} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{fontSize: 12}} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" name="Completed (PS)" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">Data PS Kosong</div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* CHART ROW 2: CANCEL */}
+        {/* CHART ROW 2: Status & Layanan */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">CANCEL BY FCC</h3>
-            <div className="h-96 flex items-center justify-center text-gray-400">Tidak ada data Cancel FCC</div>
+            <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">Komposisi Status</h3>
+            <div className="h-80 w-full">
+              {chartData.statusComposition.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData.statusComposition}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {chartData.statusComposition.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">No Data</div>
+              )}
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">CANCEL NON-FCC</h3>
-            <div className="h-96 flex items-center justify-center text-gray-400">Tidak ada data Cancel Biasa</div>
-          </div>
-        </div>
-
-        {/* CHART ROW 3 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center border-b pb-2 mb-4">
-              <h3 className="text-md font-bold text-gray-700">Komposisi Status</h3>
-            </div>
-            <div className="h-80 flex justify-center items-center">
-              <div className="text-gray-400">No Data</div>
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center border-b pb-2 mb-4">
-              <h3 className="text-md font-bold text-gray-700">Tren Jenis Layanan</h3>
-            </div>
-            <div className="h-80 flex justify-center items-center">
-              <div className="text-gray-400">No Data</div>
+            <h3 className="text-md font-bold text-gray-700 mb-4 text-center border-b pb-2">Tren Jenis Layanan</h3>
+            <div className="h-80 w-full">
+              {chartData.trendLayanan.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart layout="vertical" data={chartData.trendLayanan} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 11}} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Jumlah" fill="#ffc658" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">No Data</div>
+              )}
             </div>
           </div>
         </div>
@@ -251,15 +325,33 @@ const HSI = () => {
           <div className="flex justify-between items-center border-b pb-4 mb-4">
             <div>
               <h3 className="text-lg font-bold text-gray-800">Trend Penjualan Harian</h3>
-              <p className="text-sm text-gray-500">Perbandingan Total Order Masuk vs Completed (PS)</p>
+              <p className="text-sm text-gray-500">Pergerakan Total Order Masuk (Harian)</p>
             </div>
           </div>
-          <div className="h-80 w-full flex items-center justify-center text-gray-400">
-            Data Trend Tidak Tersedia
+          <div className="h-80 w-full">
+            {chartData.trendDaily.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData.trendDaily} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="count" stroke="#8884d8" fillOpacity={1} fill="url(#colorCount)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">Data Trend Tidak Tersedia</div>
+            )}
           </div>
         </div>
 
-        {/* PETA SEBARAN */}
+        {/* PETA SEBARAN (Placeholder) */}
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mt-6 mb-10 relative">
           <div className="flex flex-col md:flex-row justify-between items-center border-b pb-4 mb-4">
             <h3 className="text-md font-bold text-gray-700">Peta Sebaran Order HSI</h3>
@@ -273,17 +365,6 @@ const HSI = () => {
           <div className="h-96 w-full z-0 relative bg-gray-50 rounded border border-dashed border-gray-300 flex items-center justify-center text-gray-400">
             <p className="text-center">Data koordinat tidak tersedia dengan filter ini.</p>
           </div>
-          <div className="flex gap-4 mt-4 justify-center text-xs text-gray-600">
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-green-500 block"></span> Completed (PS)
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-blue-500 block"></span> Open/Proses
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-red-500 block"></span> Cancel
-            </div>
-          </div>
         </div>
 
         {/* DATA PREVIEW TABLE */}
@@ -291,15 +372,10 @@ const HSI = () => {
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <h3 className="text-lg font-bold text-gray-800">Data Preview</h3>
             <div className="relative w-full md:w-1/3">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Cari Order ID / Nama / Layanan..."
+                className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                placeholder="Cari Order ID / Nama..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchEnter}
@@ -319,11 +395,15 @@ const HSI = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {mockTableData && mockTableData.length > 0 ? (
-                  mockTableData.map((row, idx) => (
+                {loading ? (
+                  <tr><td colSpan="8" className="px-6 py-10 text-center">Loading data...</td></tr>
+                ) : tableData.length > 0 ? (
+                  tableData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{row.order_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.order_date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.order_date ? new Date(row.order_date).toLocaleDateString() : '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{row.customer_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.witel}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.sto}</td>
@@ -331,7 +411,7 @@ const HSI = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                           ${row.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' :
-                            (row.kelompok_status === 'CANCEL' || row.kelompok_status === 'REJECT_FCC') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            (row.kelompok_status && (row.kelompok_status.includes('CANCEL') || row.kelompok_status.includes('REJECT'))) ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                           {row.kelompok_status}
                         </span>
                       </td>
@@ -353,26 +433,29 @@ const HSI = () => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">1</span> to <span className="font-medium">3</span> of <span className="font-medium">3</span> results
-                </p>
-              </div>
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  <button className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0 rounded-l-md cursor-not-allowed opacity-50">
-                    Previous
-                  </button>
-                  <button className="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-                    1
-                  </button>
-                  <button className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0 rounded-r-md cursor-not-allowed opacity-50">
-                    Next
-                  </button>
-                </nav>
-              </div>
-            </div>
+             <div className="flex flex-1 justify-between sm:hidden">
+                <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</button>
+                <button disabled={currentPage === pagination.totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</button>
+             </div>
+             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                   <p className="text-sm text-gray-700">
+                      Showing page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{pagination.totalPages}</span>
+                   </p>
+                </div>
+                <div>
+                   <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50">
+                         <span className="sr-only">Previous</span>
+                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" /></svg>
+                      </button>
+                      <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))} disabled={currentPage === pagination.totalPages} className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50">
+                         <span className="sr-only">Next</span>
+                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+                      </button>
+                   </nav>
+                </div>
+             </div>
           </div>
         </div>
       </div>

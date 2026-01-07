@@ -3,9 +3,59 @@ import { successResponse, errorResponse } from '../utils/response.js'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc.js'
 import timezone from 'dayjs/plugin/timezone.js'
-
+import ExcelJS from 'exceljs';
 dayjs.extend(utc)
 dayjs.extend(timezone)
+
+// --- HELPER: Coordinate Fixer (Migrasi dari PHP) ---
+const fixCoordinate = (val, isLat) => {
+  if (!val) return null
+  // Hapus karakter non-numerik kecuali minus dan titik
+  const c = val.toString().replace(/[^0-9\-.]/g, '')
+  if (isNaN(c) || c === '') return null
+  
+  let f = parseFloat(c)
+  if (f === 0) return null
+
+  let loop = 0
+  if (isLat) {
+    // Latitude Indonesia kira-kira -11 sampai 6
+    while ((f < -12 || f > 10) && loop < 15) { 
+      f /= 10
+      loop++ 
+    }
+  } else {
+    // Longitude Indonesia kira-kira 95 sampai 141
+    while (Math.abs(f) > 142 && loop < 15) { 
+      f /= 10
+      loop++ 
+    }
+  }
+  return f
+}
+
+// --- SCOPE DATA (RSO 2) ---
+const RSO2_WITELS = ['JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+
+
+const getBranchMap = async () => {
+  const branchesRaw = await prisma.hsiData.groupBy({
+    by: ['witel', 'witelOld'],
+    where: { witel: { in: RSO2_WITELS }, witelOld: { not: null } }
+  })
+  const branchMap = {}
+  branchesRaw.forEach(b => {
+    const witelKey = (b.witel || '').toUpperCase()
+    const branchVal = (b.witelOld || '').toUpperCase()
+    if (!branchMap[witelKey]) branchMap[witelKey] = []
+    if (branchVal && !branchMap[witelKey].includes(branchVal)) branchMap[witelKey].push(branchVal)
+  })
+  return branchMap
+}
+
+// =================================================================
+// BAGIAN 1: KODE LAMA ANDA (SOS, JT, REPORTS)
+// =================================================================
 
 // Get all SOS data for dashboard
 export const getDashboardData = async (req, res, next) => {
@@ -256,7 +306,7 @@ export const getCancelByFCC = async (req, res, next) => {
 export const getFilterOptions = async (req, res, next) => {
   try {
     // Hardcoded regions as per requirement
-    const regions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+    // const regions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
     const products = await prisma.sosData.findMany({
       distinct: ['liProductName'],
@@ -271,6 +321,11 @@ export const getFilterOptions = async (req, res, next) => {
     const statuses = await prisma.sosData.findMany({
       distinct: ['liStatus'],
       select: { liStatus: true }
+    })
+
+    const witels = await prisma.sosData.findMany({
+      distinct: ['billWitel'],
+      select: { billWitel: true }
     })
 
     successResponse(
@@ -826,5 +881,619 @@ export const exportJTReport = async (req, res, next) => {
     await getJTReport(req, res, next)
   } catch (error) {
     next(error)
+  }
+}
+
+
+// =================================================================
+// BAGIAN 2: KODE BARU HSI (MIGRASI DARI PHP)
+// =================================================================
+
+// 1. DASHBOARD HSI (Charts, Map, Table)
+export const getHSIDashboard = async (req, res, next) => {
+  try {
+    const { 
+      start_date, end_date, 
+      global_witel, global_branch, 
+      map_status, search,
+      page = 1, limit = 10 
+    } = req.query
+
+    // 1. FILTERING
+    const selectedWitels = global_witel ? global_witel.split(',') : []
+    const selectedBranches = global_branch ? global_branch.split(',') : []
+    const mapStatusArr = map_status ? map_status.split(',') : []
+
+    // Base Filter (Scope RSO2)
+    let whereClause = {
+      witel: { in: RSO2_WITELS }
+    }
+
+    if (selectedWitels.length > 0) {
+      whereClause.witel = { in: selectedWitels }
+    }
+    if (selectedBranches.length > 0) {
+      whereClause.witelOld = { in: selectedBranches }
+    }
+    if (start_date && end_date) {
+      whereClause.orderDate = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { orderId: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { nomor: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    // Determine Dimension (witel or witelOld)
+    let dimension = 'witel'
+    if (selectedBranches.length > 0 || selectedWitels.length > 0) {
+      dimension = 'witelOld'
+    }
+
+    // --- CHART 1: Total Order per Dimensi ---
+    const chart1Raw = await prisma.hsiData.groupBy({
+      by: [dimension],
+      where: whereClause,
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } }
+    })
+    const chart1 = chart1Raw.map(i => ({ 
+      product: i[dimension] || 'Unknown', 
+      value: i._count.id 
+    }))
+
+    // --- CHART 2: Komposisi Status (Mapping manual) ---
+    // Prisma tidak support Case When di GroupBy, jadi tarik dulu lalu grouping di JS
+    // Alternatif: Query Raw jika performa lambat, tapi untuk dashboard overview ini masih aman
+    const chart2Raw = await prisma.hsiData.groupBy({
+      by: ['kelompokStatus'],
+      where: whereClause,
+      _count: { id: true }
+    })
+    const statusGroups = { Completed: 0, Cancel: 0, Open: 0 }
+    chart2Raw.forEach(item => {
+      const status = item.kelompokStatus
+      if (status === 'PS') {
+        statusGroups.Completed += item._count.id
+      } else if (['CANCEL', 'REJECT_FCC'].includes(status)) {
+        statusGroups.Cancel += item._count.id
+      } else {
+        statusGroups.Open += item._count.id
+      }
+    })
+    const chart2 = Object.keys(statusGroups).map(key => ({ 
+      product: key, 
+      value: statusGroups[key] 
+    }))
+
+    // --- CHART 3: Tren Jenis Layanan ---
+    const chart3Raw = await prisma.hsiData.groupBy({
+      by: ['typeLayanan'],
+      where: whereClause,
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 10
+    })
+    const chart3 = chart3Raw.map(i => ({ 
+      sub_type: i.typeLayanan, 
+      product: 'Total', 
+      total_amount: i._count.id 
+    }))
+
+    // --- CHART 4: Sebaran PS per Dimensi ---
+    const chart4Raw = await prisma.hsiData.groupBy({
+      by: [dimension],
+      where: { ...whereClause, kelompokStatus: 'PS' },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } }
+    })
+    const chart4 = chart4Raw.map(i => ({ 
+      product: i[dimension] || 'Unknown', 
+      value: i._count.id 
+    }))
+
+    // --- CHART 5: Cancel FCC ---
+    const chart5Raw = await prisma.hsiData.groupBy({
+      by: [dimension, 'suberrorcode'],
+      where: { ...whereClause, kelompokStatus: 'REJECT_FCC' },
+      _count: { id: true }
+    })
+    const chart5Keys = [...new Set(chart5Raw.map(i => i.suberrorcode || 'Null'))]
+    const chart5Map = {}
+    chart5Raw.forEach(i => {
+      const dim = i[dimension] || 'Unknown'
+      const err = i.suberrorcode || 'Null'
+      if (!chart5Map[dim]) chart5Map[dim] = { name: dim }
+      chart5Map[dim][err] = (chart5Map[dim][err] || 0) + i._count.id
+    })
+    const chart5Data = Object.values(chart5Map)
+
+    // --- CHART 6: Cancel Non-FCC (Special Filter by TGL_PS) ---
+    // Logika khusus: Cancel Non-FCC biasanya difilter berdasarkan tgl_ps, bukan order_date
+    let cancelWhere = { ...whereClause }
+    delete cancelWhere.orderDate
+    
+    cancelWhere.kelompokStatus = 'CANCEL'
+    if (start_date && end_date) {
+      cancelWhere.tglPs = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    const chart6Raw = await prisma.hsiData.groupBy({
+      by: [dimension, 'suberrorcode'], 
+      where: cancelWhere,
+      _count: { id: true }
+    })
+    const chart6Keys = [...new Set(chart6Raw.map(i => i.suberrorcode || 'Null'))]
+    const chart6Map = {}
+    chart6Raw.forEach(i => {
+      const dim = i[dimension] || 'Unknown'
+      const err = i.suberrorcode || 'Null'
+      if (!chart6Map[dim]) chart6Map[dim] = { name: dim }
+      chart6Map[dim][err] = (chart6Map[dim][err] || 0) + i._count.id
+    })
+    const chart6Data = Object.values(chart6Map)
+
+    // --- MAP DATA ---
+    const mapWhere = { 
+      ...whereClause, 
+      gpsLatitude: { not: null }, 
+      gpsLongitude: { not: null } 
+    }
+    
+    if (mapStatusArr.length > 0) {
+      const statusConditions = []
+      if (mapStatusArr.includes('Completed')) {
+        statusConditions.push({ kelompokStatus: 'PS' })
+      }
+      if (mapStatusArr.includes('Cancel')) {
+        statusConditions.push({ kelompokStatus: { in: ['CANCEL', 'REJECT_FCC'] } })
+      }
+      if (mapStatusArr.includes('Open')) {
+        statusConditions.push({ NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } })
+      }
+      
+      const specificStatuses = mapStatusArr.filter(s => !['Completed', 'Cancel', 'Open'].includes(s))
+      if (specificStatuses.length > 0) {
+        statusConditions.push({ statusResume: { in: specificStatuses } })
+      }
+
+      if (statusConditions.length > 0) {
+        mapWhere.OR = statusConditions
+      }
+    }
+
+    // Ambil data peta (Limit 2000 agar tidak berat)
+    const mapRaw = await prisma.hsiData.findMany({
+      where: mapWhere,
+      select: { 
+        orderId: true, 
+        gpsLatitude: true, 
+        gpsLongitude: true, 
+        customerName: true, 
+        witel: true, 
+        kelompokStatus: true 
+      },
+      take: 2000
+    })
+
+    const mapData = mapRaw.map(item => {
+      const lat = fixCoordinate(item.gpsLatitude, true)
+      const lng = fixCoordinate(item.gpsLongitude, false)
+      if (!lat || !lng) return null
+
+      let statusGroup = 'Open'
+      if (item.kelompokStatus === 'PS') statusGroup = 'Completed'
+      else if (['CANCEL', 'REJECT_FCC'].includes(item.kelompokStatus)) statusGroup = 'Cancel'
+
+      return { 
+        id: item.orderId, 
+        lat, 
+        lng, 
+        status_group: statusGroup, 
+        name: item.customerName, 
+        witel: (item.witel || '').toUpperCase() 
+      }
+    }).filter(i => i !== null)
+
+    // --- TREND CHART ---
+    const trendRaw = await prisma.hsiData.findMany({ 
+      where: whereClause, 
+      select: { orderDate: true, kelompokStatus: true }, 
+      orderBy: { orderDate: 'asc' } 
+    })
+    
+    const trendMap = {}
+    trendRaw.forEach(item => {
+      if (!item.orderDate) return
+      const dateStr = item.orderDate.toISOString().split('T')[0]
+      if (!trendMap[dateStr]) {
+        trendMap[dateStr] = { date: dateStr, total: 0, ps: 0 }
+      }
+      trendMap[dateStr].total++
+      if (item.kelompokStatus === 'PS') trendMap[dateStr].ps++
+    })
+    const chartTrend = Object.values(trendMap)
+
+    // --- TABLE DATA ---
+    const skip = (Number(page) - 1) * Number(limit)
+    const tableDataRaw = await prisma.hsiData.findMany({
+      where: whereClause, 
+      take: Number(limit), 
+      skip: skip, 
+      orderBy: { orderDate: 'desc' },
+      select: { 
+        orderId: true, 
+        orderDate: true, 
+        customerName: true, 
+        witel: true, 
+        sto: true, 
+        typeLayanan: true, 
+        kelompokStatus: true, 
+        statusResume: true 
+      }
+    })
+
+    const tableData = tableDataRaw.map(r => ({
+      order_id: r.orderId, 
+      order_date: r.orderDate, 
+      customer_name: r.customerName, 
+      witel: r.witel, 
+      sto: r.sto, 
+      type_layanan: r.typeLayanan, 
+      kelompok_status: r.kelompokStatus, 
+      status_resume: r.statusResume
+    }))
+
+    // Stats Cards
+    const stats = {
+      total: await prisma.hsiData.count({ where: whereClause }),
+      completed: await prisma.hsiData.count({ where: { ...whereClause, kelompokStatus: 'PS' } }),
+      open: await prisma.hsiData.count({ where: { ...whereClause, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } } })
+    }
+
+    // Branch Mapping (Untuk Dropdown)
+    const branchesRaw = await prisma.hsiData.groupBy({ 
+      by: ['witel', 'witelOld'], 
+      where: { witel: { in: RSO2_WITELS }, witelOld: { not: null } } 
+    })
+    const branchMap = {}
+    branchesRaw.forEach(b => {
+      if (!branchMap[b.witel]) branchMap[b.witel] = []
+      if (b.witelOld && !branchMap[b.witel].includes(b.witelOld)) {
+        branchMap[b.witel].push(b.witelOld)
+      }
+    })
+
+    successResponse(res, {
+      stats, mapData,
+      chart1, chart2, chart3, chart4,
+      chart5Data, chart5Keys, chart6Data, chart6Keys, chartTrend,
+      branchMap, tableData,
+      pagination: { 
+        page: Number(page), 
+        total: stats.total, 
+        totalPages: Math.ceil(stats.total / Number(limit)) 
+      }
+    }, 'Dashboard data retrieved')
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// 2. FLOW PROCESS HSI (Raw Query) - FIXED PARAMS HANDLING
+export const getHSIFlowStats = async (req, res, next) => {
+  try {
+    const { startDate, endDate, witel, branch } = req.query
+
+    // FIX: Gunakan array RSO2 sebagai base filter, dan pastikan string escaping aman
+    let conditions = [`witel IN ('${RSO2_WITELS.join("','")}')`]
+    
+    // FIX: Cek apakah witel ada dan bukan string kosong
+    if (witel && witel.trim() !== '') {
+      const witelArr = witel.split(',').map(w => w.trim()).filter(w => w !== '')
+      if (witelArr.length > 0) {
+        conditions.push(`witel IN ('${witelArr.join("','")}')`)
+      }
+    }
+
+    if (branch && branch.trim() !== '') {
+      const branchArr = branch.split(',').map(b => b.trim()).filter(b => b !== '')
+      if (branchArr.length > 0) {
+        conditions.push(`witel_old IN ('${branchArr.join("','")}')`)
+      }
+    }
+
+    if (startDate && endDate) {
+      // Pastikan format tanggal aman untuk SQL
+      conditions.push(`order_date >= '${startDate}'::date AND order_date <= '${endDate}'::date`)
+    }
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT
+        COUNT(*) as re,
+        SUM(CASE WHEN data_proses = 'OGP VERIFIKASI DAN VALID' THEN 1 ELSE 0 END) as ogp_verif,
+        SUM(CASE WHEN data_proses = 'CANCEL QC1' THEN 1 ELSE 0 END) as cancel_qc1,
+        SUM(CASE WHEN data_proses = 'CANCEL FCC' THEN 1 ELSE 0 END) as cancel_fcc,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID') THEN 1 ELSE 0 END) as valid_re,
+        SUM(CASE WHEN data_proses = 'OGP SURVEY' AND status_resume = 'MIA - INVALID SURVEY' THEN 1 ELSE 0 END) as cancel_wo,
+        SUM(CASE WHEN data_proses = 'UNSC' THEN 1 ELSE 0 END) as unsc,
+        SUM(CASE WHEN data_proses = 'OGP SURVEY' AND status_message = 'MIE - SEND SURVEY' THEN 1 ELSE 0 END) as ogp_survey_count,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC') AND NOT (data_proses = 'OGP SURVEY' AND status_resume = 'MIA - INVALID SURVEY') AND NOT (data_proses = 'OGP SURVEY' AND status_message = 'MIE - SEND SURVEY') THEN 1 ELSE 0 END) as valid_wo,
+        SUM(CASE WHEN data_proses = 'CANCEL' THEN 1 ELSE 0 END) as cancel_instalasi,
+        SUM(CASE WHEN data_proses = 'FALLOUT' THEN 1 ELSE 0 END) as fallout,
+        SUM(CASE WHEN data_proses = 'REVOKE' THEN 1 ELSE 0 END) as revoke_count,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP SURVEY') AND status_resume != 'MIA - INVALID SURVEY' THEN 1 ELSE 0 END) as valid_pi,
+        SUM(CASE WHEN data_proses = 'OGP PROVI' THEN 1 ELSE 0 END) as ogp_provi,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP PROVI', 'OGP SURVEY') AND status_resume != 'MIA - INVALID SURVEY' THEN 1 ELSE 0 END) as ps_count,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL FCC', 'UNSC', 'REVOKE') AND (group_paket != 'WMS' OR group_paket IS NULL) THEN 1 ELSE 0 END) as ps_re_denominator,
+        SUM(CASE WHEN kelompok_status IN ('PI', 'FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM', 'ACT_COM', 'PS') THEN 1 ELSE 0 END) as ps_pi_denominator,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' THEN 1 ELSE 0 END) as followup_completed,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '100 | REVOKE COMPLETED' THEN 1 ELSE 0 END) as revoke_completed,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = 'REVOKE ORDER' THEN 1 ELSE 0 END) as revoke_order,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'PS' THEN 1 ELSE 0 END) as ps_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke = 'PI' OR data_ps_revoke = 'ACT_COM') THEN 1 ELSE 0 END) as ogp_provi_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke = 'FO_WFM' OR data_ps_revoke = 'FO_UIM' OR data_ps_revoke = 'FO_ASAP') THEN 1 ELSE 0 END) as fallout_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'CANCEL' THEN 1 ELSE 0 END) as cancel_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke IS NULL OR data_ps_revoke = '#N/A' OR data_ps_revoke = 'INPROGESS_SC' OR data_ps_revoke = 'REVOKE') THEN 1 ELSE 0 END) as lain_lain_revoke,
+        SUM(CASE WHEN UPPER(hasil) = 'COMPLY' THEN 1 ELSE 0 END) as comply_count
+      FROM hsi_data ${whereSql}
+    `
+    const result = await prisma.$queryRawUnsafe(query)
+    const stats = {}
+    if (result && result.length > 0) {
+      const row = result[0]
+      for (const [key, val] of Object.entries(row)) { stats[key] = Number(val || 0) }
+    }
+
+    const branchMap = await getBranchMap()
+    successResponse(res, { ...stats, branchMap }, 'HSI Flow stats retrieved')
+  } catch (error) {
+    console.error("FLOW STATS ERROR:", error)
+    next(error)
+  }
+}
+
+// 3. FLOW PROCESS DETAIL & EXPORT (LOGIC FIX)
+export const getHSIFlowDetail = async (req, res, next) => {
+  try {
+    const { startDate, endDate, witel, branch, detail_category, page = 1, limit = 10, export_detail } = req.query
+    
+    // 1. BASE FILTER (Witel & Tanggal)
+    const baseWhere = { witel: { in: RSO2_WITELS } }
+
+    if (witel && witel.trim()) baseWhere.witel = { in: witel.split(',') }
+    if (branch && branch.trim()) baseWhere.witelOld = { in: branch.split(',') }
+    if (startDate && endDate) baseWhere.orderDate = { gte: new Date(startDate), lte: new Date(endDate) }
+
+    // 2. DETAIL CATEGORY FILTER (Specific Logic)
+    // Kita gunakan AND array agar bisa menumpuk kondisi kompleks dengan aman
+    let finalWhere = {
+        AND: [baseWhere] 
+    };
+
+    if (detail_category) {
+      switch (detail_category) {
+        // --- RE & Validasi ---
+        case 'RE': 
+            // Tidak ada filter tambahan
+            break;
+        case 'Valid RE': 
+            finalWhere.AND.push({ 
+                dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID'] } 
+            });
+            break;
+        case 'OGP Verif & Valid': 
+            finalWhere.dataProses = 'OGP VERIFIKASI DAN VALID'; 
+            break;
+        case 'Cancel QC 1': 
+            finalWhere.dataProses = 'CANCEL QC1'; 
+            break;
+        case 'Cancel FCC': 
+            finalWhere.dataProses = 'CANCEL FCC'; 
+            break;
+
+        // --- WO & Survey ---
+        case 'Valid WO':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC'] } },
+                { NOT: { dataProses: 'OGP SURVEY', statusResume: 'MIA - INVALID SURVEY' } },
+                { NOT: { dataProses: 'OGP SURVEY', statusMessage: 'MIE - SEND SURVEY' } }
+            );
+            break;
+        case 'Cancel WO': 
+            finalWhere.dataProses = 'OGP SURVEY'; 
+            finalWhere.statusResume = 'MIA - INVALID SURVEY'; 
+            break;
+        case 'UNSC': 
+            finalWhere.dataProses = 'UNSC'; 
+            break;
+        case 'OGP SURVEY': 
+            finalWhere.dataProses = 'OGP SURVEY'; 
+            finalWhere.statusMessage = 'MIE - SEND SURVEY'; 
+            break;
+
+        // --- PI & Instalasi ---
+        case 'Valid PI':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP SURVEY'] } },
+                { statusResume: { not: 'MIA - INVALID SURVEY' } }
+            );
+            break;
+        case 'Cancel Instalasi': 
+            finalWhere.dataProses = 'CANCEL'; 
+            break;
+        case 'Fallout': 
+            finalWhere.dataProses = 'FALLOUT'; 
+            break;
+        case 'Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            break;
+
+        // --- PS / Completed ---
+        case 'PS (COMPLETED)': 
+        case 'PS':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP PROVI', 'OGP SURVEY'] } },
+                { statusResume: { not: 'MIA - INVALID SURVEY' } }
+            );
+            break;
+        case 'OGP Provisioning': 
+            finalWhere.dataProses = 'OGP PROVI'; 
+            break;
+        
+        // --- REVOKE SPECIFICS (Sesuai Gambar Diagram Tree) ---
+        case 'Total Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            break;
+        case 'Follow Up Completed': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED'; 
+            break;
+        case 'Revoke Completed': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '100 | REVOKE COMPLETED'; 
+            break;
+        case 'Revoke Order': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = 'REVOKE ORDER'; 
+            break;
+
+        // --- DETAIL DARI FOLLOW UP COMPLETED ---
+        case 'PS Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED'; 
+            finalWhere.dataPsRevoke = 'PS'; // Pastikan kolom di DB bernama dataPsRevoke (camelCase)
+            break;
+        case 'OGP Provi Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED'; 
+            finalWhere.dataPsRevoke = { in: ['PI', 'ACT_COM'] }; 
+            break;
+        case 'Fallout Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED'; 
+            finalWhere.dataPsRevoke = { in: ['FO_WFM', 'FO_UIM', 'FO_ASAP'] }; 
+            break;
+        case 'Cancel Revoke': 
+            finalWhere.dataProses = 'REVOKE'; 
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED'; 
+            finalWhere.dataPsRevoke = 'CANCEL'; 
+            break;
+        case 'Lain-Lain Revoke': 
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            // Logika NULL atau N/A atau spesifik string
+            finalWhere.OR = [
+                { dataPsRevoke: null },
+                { dataPsRevoke: '#N/A' },
+                { dataPsRevoke: 'INPROGESS_SC' },
+                { dataPsRevoke: 'REVOKE' }
+            ];
+            break;
+      }
+    }
+
+    // --- 3. EXPORT EXCEL LOGIC (Full Data & Valid Format) ---
+    if (export_detail === 'true') {
+        // FIX: Gunakan SELECT agar tidak error jika ada kolom schema yang tidak sync dengan DB
+        const data = await prisma.hsiData.findMany({
+            where: finalWhere,
+            orderBy: { orderDate: 'desc' },
+            select: {
+                orderId: true,
+                orderDate: true,
+                customerName: true,
+                witel: true,
+                sto: true,
+                typeLayanan: true,
+                kelompokStatus: true,
+                statusResume: true,
+                dataProses: true,
+                statusMessage: true,
+                witelOld: true, // Branch
+                // Tambahkan kolom lain yang PASTI ADA di database saja
+                // JANGAN masukkan 'noOrderRevoke' jika itu menyebabkan error
+            }
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Detail Data');
+
+        if (data.length > 0) {
+            // Generate Header Dinamis
+            const columns = Object.keys(data[0]).map(key => ({
+                header: key.toUpperCase().replace(/([A-Z])/g, ' $1').trim(),
+                key: key,
+                width: 25
+            }));
+            worksheet.columns = columns;
+
+            // Masukkan data
+            data.forEach(row => {
+                const formattedRow = { ...row };
+                Object.keys(formattedRow).forEach(k => {
+                    if (formattedRow[k] instanceof Date) {
+                        formattedRow[k] = formattedRow[k].toISOString().split('T')[0];
+                    }
+                    if (typeof formattedRow[k] === 'bigint') {
+                        formattedRow[k] = Number(formattedRow[k]);
+                    }
+                });
+                worksheet.addRow(formattedRow);
+            });
+        }
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const fileName = `Detail_HSI_${detail_category ? detail_category.replace(/[^a-zA-Z0-9-_]/g, '_') : 'ALL'}.xlsx`;
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        res.send(buffer);
+        return; 
+    }
+
+    // --- 4. PREVIEW TABLE LOGIC ---
+    const skip = (Number(page) - 1) * Number(limit)
+    const tableDataRaw = await prisma.hsiData.findMany({
+      where: finalWhere, 
+      take: Number(limit), 
+      skip: skip, 
+      orderBy: { orderDate: 'desc' },
+      select: { 
+        orderId: true, orderDate: true, customerName: true, 
+        witel: true, sto: true, typeLayanan: true, 
+        kelompokStatus: true, statusResume: true, dataProses: true 
+      }
+    })
+    
+    const tableData = tableDataRaw.map(r => ({ 
+      order_id: r.orderId, order_date: r.orderDate, customer_name: r.customerName, 
+      witel: r.witel, sto: r.sto, type_layanan: r.typeLayanan, 
+      kelompok_status: r.kelompokStatus, status_resume: r.statusResume, 
+      data_proses: r.dataProses 
+    }))
+    
+    const total = await prisma.hsiData.count({ where: finalWhere })
+    
+    successResponse(res, { 
+        table: tableData, 
+        pagination: { page: Number(page), total, totalPages: Math.ceil(total / Number(limit)) } 
+    }, 'Flow details retrieved')
+
+  } catch (error) { 
+    console.error("FLOW DETAIL ERROR:", error)
+    next(error) 
   }
 }
