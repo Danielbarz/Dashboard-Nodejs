@@ -22,7 +22,8 @@ import {
   exportReportHSI,
   exportJTReport,
   getHSIDashboard, 
-  getHSIFlowStats
+  getHSIFlowStats,
+  getHSIFlowDetail
 } from '../controllers/dashboardController.js'
 
 const router = express.Router()
@@ -49,5 +50,6 @@ router.get('/export/report-hsi', authenticate, exportReportHSI)
 router.get('/export/report-jt', authenticate, exportJTReport)
 router.get('/hsi/dashboard', authenticate, getHSIDashboard)
 router.get('/hsi/flow', authenticate, getHSIFlowStats)
+router.get('/hsi/flow/detail', authenticate, getHSIFlowDetail)
 
 export default router
