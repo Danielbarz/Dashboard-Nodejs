@@ -105,19 +105,12 @@ export class ProcessHSIImport {
   }
 
   async processChunk(records, batchId) {
-    let success = 0
-    let failed = 0
-    const errors = []
-
-    for (const record of records) {
-      const keyMap = buildKeyMap(record)
-      
-      try {
+    const dataToCreate = records.map(record => {
+        const keyMap = buildKeyMap(record)
         const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'no_order', 'noorder')
         const noorder = getValue(record, keyMap, 'no_order', 'noorder')
 
-        await prisma.hsiData.create({
-          data: {
+        return {
             orderId: orderId || noorder || `hsi_${Date.now()}_${Math.random()}`,
             nomor: getValue(record, keyMap, 'nomor', 'no'),
             witel: getValue(record, keyMap, 'witel'),
@@ -129,18 +122,20 @@ export class ProcessHSIImport {
             ncli: getValue(record, keyMap, 'ncli'),
             speedy: getValue(record, keyMap, 'speedy'),
             pots: getValue(record, keyMap, 'pots')
-          }
-        })
-        
-        success++
-      } catch (error) {
-        failed++
-        errors.push({ row: record, error: error.message })
-      }
-    }
+        };
+    });
 
-    return { success, failed, errors }
-  }
+    try {
+        const result = await prisma.hsiData.createMany({
+            data: dataToCreate,
+            skipDuplicates: true,
+        });
+        return { success: result.count, failed: records.length - result.count, errors: [] };
+    } catch (error) {
+        console.error(`[HSI Import] Failed to process chunk. Error: ${error.message}`);
+        return { success: 0, failed: records.length, errors: [{ error: error.message }] };
+    }
+}
 
   async updateProgress(percent, message) {
     const progress = { percent, message, updatedAt: new Date().toISOString() }

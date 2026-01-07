@@ -273,6 +273,11 @@ export const getFilterOptions = async (req, res, next) => {
       select: { liStatus: true }
     })
 
+    const witels = await prisma.sosData.findMany({
+      distinct: ['billWitel'],
+      select: { billWitel: true }
+    })
+
     successResponse(
       res,
       {
