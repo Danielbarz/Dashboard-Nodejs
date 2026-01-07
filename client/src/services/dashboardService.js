@@ -99,3 +99,16 @@ export const fileService = {
 }
 
 export default api
+
+
+// ... code existing
+
+export const fetchHSIDashboard = async (params) => {
+  const response = await api.get('/dashboard/hsi/dashboard', { params })
+  return response.data
+}
+
+export const fetchHSIFlowStats = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow', { params })
+  return response.data
+}

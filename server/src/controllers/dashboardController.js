@@ -833,3 +833,203 @@ export const exportJTReport = async (req, res, next) => {
     next(error)
   }
 }
+
+
+// ... (kode sebelumnya tetap sama)
+
+// --- FIX: Get HSI Dashboard Overview (Stats, Chart, Table) ---
+// ... imports
+
+// --- FIX: Get HSI Dashboard Overview (Stats, Chart, Table) ---
+export const getHSIDashboard = async (req, res, next) => {
+  try {
+    const { startDate, endDate, witel, branch, search, page = 1, limit = 10 } = req.query
+    const skip = (Number(page) - 1) * Number(limit)
+
+    // Build Filter
+    let whereClause = {}
+    
+    // Gunakan camelCase 'orderDate'
+    if (startDate && endDate) {
+      whereClause.orderDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      }
+    }
+
+    if (witel) whereClause.witel = { in: witel.split(',') }
+    if (branch) whereClause.sto = { in: branch.split(',') } // Asumsi branch filter ke STO
+
+    if (search) {
+      whereClause.OR = [
+        { orderId: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { nomor: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    // 1. Get Cards Stats (Total, Completed, Open)
+    const total = await prisma.hsiData.count({ where: whereClause })
+    const completed = await prisma.hsiData.count({ where: { ...whereClause, kelompokStatus: 'PS' } })
+    const open = await prisma.hsiData.count({ where: { ...whereClause, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT'] } } } })
+
+    // 2. Get Charts Data
+    // A. Total Order per Witel
+    const chartWitelRaw = await prisma.hsiData.groupBy({
+      by: ['witel'],
+      where: whereClause,
+      _count: { id: true }
+    })
+    const chartWitel = chartWitelRaw.map(item => ({ name: item.witel || 'Unknown', value: item._count.id }))
+
+    // B. PS (Completed) per Witel
+    const chartPSRaw = await prisma.hsiData.groupBy({
+      by: ['witel'],
+      where: { ...whereClause, kelompokStatus: 'PS' },
+      _count: { id: true }
+    })
+    const chartPS = chartPSRaw.map(item => ({ name: item.witel || 'Unknown', value: item._count.id }))
+
+    // C. Status Composition (Pie Chart)
+    const chartStatusRaw = await prisma.hsiData.groupBy({
+      by: ['kelompokStatus'],
+      where: whereClause,
+      _count: { id: true }
+    })
+    const chartStatus = chartStatusRaw.map(item => ({ name: item.kelompokStatus || 'Others', value: item._count.id }))
+
+    // D. Trend Layanan (Bar Chart)
+    const chartLayananRaw = await prisma.hsiData.groupBy({
+      by: ['typeLayanan'],
+      where: whereClause,
+      _count: { id: true }
+    })
+    const chartLayanan = chartLayananRaw.map(item => ({ name: item.typeLayanan || 'Unknown', value: item._count.id }))
+
+    // E. Trend Harian (Line Chart)
+    // Fetch orderDate only to aggregate in JS (Prisma doesn't support date truncation easily yet)
+    const trendRaw = await prisma.hsiData.findMany({
+      where: whereClause,
+      select: { orderDate: true },
+      orderBy: { orderDate: 'asc' }
+    })
+    
+    const trendMap = {}
+    trendRaw.forEach(item => {
+      if (item.orderDate) {
+        const dateStr = item.orderDate.toISOString().split('T')[0]
+        trendMap[dateStr] = (trendMap[dateStr] || 0) + 1
+      }
+    })
+    const chartTrend = Object.keys(trendMap).map(date => ({ date, count: trendMap[date] }))
+
+    // 3. Get Table Data
+    const tableData = await prisma.hsiData.findMany({
+      where: whereClause,
+      take: Number(limit),
+      skip: skip,
+      orderBy: { orderDate: 'desc' },
+      select: {
+        orderId: true,
+        orderDate: true,
+        customerName: true,
+        witel: true,
+        sto: true,
+        typeLayanan: true,
+        kelompokStatus: true,
+        statusResume: true
+      }
+    })
+
+    // Format table keys to snake_case for frontend consistency
+    const formattedTable = tableData.map(row => ({
+      order_id: row.orderId,
+      order_date: row.orderDate,
+      customer_name: row.customerName,
+      witel: row.witel,
+      sto: row.sto,
+      type_layanan: row.typeLayanan,
+      kelompok_status: row.kelompokStatus,
+      status_resume: row.statusResume
+    }))
+
+    successResponse(res, {
+      stats: { total, completed, open },
+      charts: {
+        orderByWitel: chartWitel,
+        psByWitel: chartPS,
+        statusComposition: chartStatus,
+        trendLayanan: chartLayanan,
+        trendDaily: chartTrend
+      },
+      table: formattedTable,
+      pagination: {
+        page: Number(page),
+        total: total,
+        totalPages: Math.ceil(total / Number(limit))
+      }
+    }, 'HSI Dashboard data retrieved')
+
+  } catch (error) {
+    console.error("HSI Dashboard Error:", error)
+    next(error)
+  }
+}
+
+// --- FIX: Get HSI Flow Process Stats (Funneling) ---
+export const getHSIFlowStats = async (req, res, next) => {
+  try {
+    const { startDate, endDate, witel } = req.query
+    
+    let whereClause = {}
+    if (startDate && endDate) {
+      whereClause.orderDate = { gte: new Date(startDate), lte: new Date(endDate) } // FIX: orderDate
+    }
+    if (witel) whereClause.witel = { in: witel.split(',') }
+
+    // Aggregate by kelompokStatus (camelCase)
+    const statusGroups = await prisma.hsiData.groupBy({
+      by: ['kelompokStatus'], 
+      where: whereClause,
+      _count: { id: true }
+    })
+
+    // Helper untuk mencari count berdasarkan group
+    const getCount = (key) => {
+      // FIX: Check against 'kelompokStatus'
+      const found = statusGroups.find(g => g.kelompokStatus === key)
+      return found ? found._count.id : 0
+    }
+
+    // Hitung total semua sebagai RE (Request Entry)
+    const totalRE = statusGroups.reduce((acc, curr) => acc + curr._count.id, 0)
+    
+    const psCount = getCount('PS')
+    
+    // FIX: Filter menggunakan 'kelompokStatus'
+    const cancelCount = statusGroups
+      .filter(g => g.kelompokStatus && g.kelompokStatus.includes('CANCEL'))
+      .reduce((acc, curr) => acc + curr._count.id, 0)
+    
+    const kendalaCount = getCount('KENDALA') + getCount('MANJA')
+
+    const stats = {
+      re: totalRE,
+      valid_re: totalRE,
+      valid_wo: totalRE > cancelCount ? totalRE - cancelCount : 0,
+      valid_pi: (totalRE - cancelCount - kendalaCount) > 0 ? (totalRE - cancelCount - kendalaCount) : 0,
+      ps_count: psCount,
+      
+      cancel_wo: cancelCount,
+      fallout: kendalaCount,
+      
+      ps_re_denominator: totalRE,
+      ps_pi_denominator: (totalRE - cancelCount - kendalaCount) > 0 ? (totalRE - cancelCount - kendalaCount) : 1
+    }
+
+    successResponse(res, stats, 'HSI Flow stats retrieved')
+  } catch (error) {
+    console.error("HSI Flow Stats Error:", error)
+    next(error)
+  }
+}
