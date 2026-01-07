@@ -92,11 +92,11 @@ const ReportsHSI = () => {
            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Live Data</span>
         </div>
         
-        <div className="relative overflow-auto max-h-[75vh] rounded-lg border border-gray-200 shadow-inner isolate">
+        <div className="relative overflow-auto  rounded-lg border border-gray-200 shadow-inner isolate">
           <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
-            <thead className="bg-gray-50 sticky top-0 z-[10] shadow-sm">
+            <thead className="bg-gray-50  shadow-sm">
               <tr className="bg-gradient-to-r from-blue-700 to-blue-600 border-b border-blue-800">
-                <th rowSpan="2" className="px-3 py-3 text-center font-bold text-white border-r border-blue-500 whitespace-nowrap sticky top-0 left-0 z-[15] bg-blue-700 shadow-xl">WITEL</th>
+                <th rowSpan="2" className="px-3 py-3 text-center font-bold text-white border-r border-blue-500 whitespace-nowrap sticky left-0 z-[5] bg-blue-700 shadow-xl">WITEL</th>
                 <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border-r border-blue-500 bg-opacity-90">PROGRESS</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-red-500 bg-red-600 whitespace-nowrap">RJCT FCC</th>
                 <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-gray-500 bg-gray-600">SURVEY</th>
@@ -110,42 +110,42 @@ const ReportsHSI = () => {
               </tr>
               <tr className="bg-gray-700">
                 {/* Progress */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">RED</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">INPRO<br/>SC</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">QC</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">FCC</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">RED</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">INPRO<br/>SC</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">QC</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">FCC</th>
                 
                 {/* Survey */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">SURVEY</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">UN-SC</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">SURVEY</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">UN-SC</th>
 
                 {/* OGP */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">&lt;1 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">1-3 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">&gt;3 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">TOTAL PI</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">&lt;1 HARI</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">1-3 HARI</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">&gt;3 HARI</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">TOTAL PI</th>
 
                 {/* Fallout */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">KNDL<br/>PLGN</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">KNDL<br/>TEKNIS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">KNDL<br/>SYSTEM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">KNDL<br/>OTHERS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">UIM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">ASP</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">OSM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors top-[45px] sticky z-[10] bg-gray-700">TOTAL<br/>FALLOUT</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>PLGN</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>TEKNIS</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>SYSTEM</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>OTHERS</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">UIM</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">ASP</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">OSM</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">TOTAL<br/>FALLOUT</th>
 
                 {/* Cancel */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors top-[45px] sticky z-[10]">KNDL<br/>PLGN</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors top-[45px] sticky z-[10]">KNDL<br/>TEKNIS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors top-[45px] sticky z-[10]">KNDL<br/>SYSTEM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors top-[45px] sticky z-[10]">KNDL<br/>OTHERS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors top-[45px] sticky z-[10]">TOTAL<br/>CANCEL</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>PLGN</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>TEKNIS</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>SYSTEM</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>OTHERS</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">TOTAL<br/>CANCEL</th>
 
                 {/* Performance */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors top-[45px] sticky z-[10]">PI/RE</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors top-[45px] sticky z-[10]">PS/RE</th>
-                <th className="px-2 py-2 text-center font-semibold text-white bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors top-[45px] sticky z-[10]">PS/PI</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PI/RE</th>
+                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PS/RE</th>
+                <th className="px-2 py-2 text-center font-semibold text-white bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PS/PI</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-[11px]">
