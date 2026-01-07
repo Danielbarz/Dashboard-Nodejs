@@ -209,7 +209,7 @@ export const uploadFile = async (req, res, next) => {
         kelompok_kendala TEXT, kelompok_status TEXT, hero TEXT, addon TEXT, tgl_ps TIMESTAMPTZ, status_message TEXT,
         package_name TEXT, group_paket TEXT, reason_cancel TEXT, keterangan_cancel TEXT, tgl_manja TIMESTAMPTZ,
         detail_manja TEXT, suberrorcode TEXT, engineermemo TEXT, tahun TEXT, bulan TEXT, tanggal TEXT, ps_1 TEXT,
-        cek TEXT, hasil TEXT, telda TEXT, data_proses TEXT, no_order_revol TEXT, data_ps_revoke TEXT,
+        cek TEXT, hasil TEXT, telda TEXT, data_proses TEXT, no_order_revoke TEXT, data_ps_revoke TEXT,
         untuk_ps_pi TEXT, untuk_ps_re TEXT,
         batch_id TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -225,7 +225,7 @@ export const uploadFile = async (req, res, next) => {
       'isi_comment', 'user_id_tl', 'kelompok_kendala', 'kelompok_status', 'hero', 'addon',
       'status_message', 'package_name', 'group_paket', 'reason_cancel', 'keterangan_cancel',
       'detail_manja', 'suberrorcode', 'engineermemo', 'tahun', 'bulan', 'tanggal', 'ps_1',
-      'cek', 'hasil', 'telda', 'data_proses', 'no_order_revol', 'data_ps_revoke', 'untuk_ps_pi',
+      'cek', 'hasil', 'telda', 'data_proses', 'no_order_revoke', 'data_ps_revoke', 'untuk_ps_pi',
       'untuk_ps_re', 'batch_id'
     ]
     const hsiTimeCols = ['order_date', 'last_updated_date', 'tgl_comment', 'tanggal_manja', 'tgl_ps', 'tgl_manja']
@@ -500,7 +500,7 @@ export const uploadFile = async (req, res, next) => {
             group_paket: ['group_paket'], reason_cancel: ['reason_cancel'], keterangan_cancel: ['keterangan_cancel'],
             tgl_manja: ['tgl_manja'], detail_manja: ['detail_manja'], suberrorcode: ['suberrorcode'], engineermemo: ['engineermemo'],
             tahun: ['tahun'], bulan: ['bulan'], tanggal: ['tanggal'], ps_1: ['ps 1', 'ps1'], cek: ['cek'], hasil: ['hasil'],
-            telda: ['telda'], data_proses: ['data_proses'], no_order_revol: ['no_order_revol'], data_ps_revoke: ['data_ps_revoke'],
+            telda: ['telda'], data_proses: ['data_proses'], no_order_revoke: ['no_order_revoke', 'no_order_revol'], data_ps_revoke: ['data_ps_revoke'],
             untuk_ps_pi: ['untuk_ps_pi'], untuk_ps_re: ['untuk_ps_re']
           }
 
