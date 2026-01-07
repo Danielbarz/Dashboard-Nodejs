@@ -173,7 +173,17 @@ export const getReportTambahan = async (req, res, next) => {
       }
     })
 
-    const formattedTableData = Object.values(witelMap).map(row => ({
+    const formattedTableData = Object.values(witelMap)
+      .sort((a, b) => {
+        if (a.parentWitel < b.parentWitel) return -1
+        if (a.parentWitel > b.parentWitel) return 1
+        if (a.isParent && !b.isParent) return -1
+        if (!a.isParent && b.isParent) return 1
+        if (a.witel < b.witel) return -1
+        if (a.witel > b.witel) return 1
+        return 0
+      })
+      .map(row => ({
       ...row,
       persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
     }))
@@ -274,7 +284,17 @@ export const getReportTambahan = async (req, res, next) => {
       projectMap[childKey].jumlah_lop_progress += 1
     })
 
-    const projectData = Object.values(projectMap).map(row => ({
+    const projectData = Object.values(projectMap)
+      .sort((a, b) => {
+        if (a.parentWitel < b.parentWitel) return -1
+        if (a.parentWitel > b.parentWitel) return 1
+        if (a.isParent && !b.isParent) return -1
+        if (!a.isParent && b.isParent) return 1
+        if (a.witel < b.witel) return -1
+        if (a.witel > b.witel) return 1
+        return 0
+      })
+      .map(row => ({
       ...row,
       persen_dalam_toc: row.jumlah_lop_progress > 0
         ? `${((row.dalam_toc / row.jumlah_lop_progress) * 100).toFixed(1)}%`
