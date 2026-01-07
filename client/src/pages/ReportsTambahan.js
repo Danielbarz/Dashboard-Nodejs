@@ -164,8 +164,8 @@ const ReportsTambahan = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-xs">
-              {filteredTableData.map((row) => (
-                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+              {filteredTableData.map((row, index) => (
+                <tr key={row.witel ? `${row.witel}-${row.parentWitel || 'parent'}-${index}` : `row-${index}`} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
                   <td className={`px-3 py-2 whitespace-nowrap border border-gray-300 text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
                     {row.isParent ? (row.witel.startsWith('WITEL ') ? row.witel : `WITEL ${row.witel}`) : row.witel}
                   </td>
@@ -205,8 +205,8 @@ const ReportsTambahan = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center text-xs">
-              {filteredProjectData.map((row) => (
-                <tr key={`${row.witel}-${row.parentWitel}`} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
+              {filteredProjectData.map((row, index) => (
+                <tr key={row.witel ? `${row.witel}-${row.parentWitel || 'parent'}-${index}` : `project-${index}`} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
                   <td className={`px-3 py-2 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
                     {row.isParent ? (row.witel.startsWith('WITEL ') ? row.witel : `WITEL ${row.witel}`) : row.witel}
                   </td>
