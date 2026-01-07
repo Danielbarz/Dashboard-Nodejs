@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma.js'
+﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import XLSX from 'xlsx'
 import csv from 'csv-parser'
@@ -22,7 +22,7 @@ function pickCaseInsensitive(obj, key) {
 }
 
 // Normalize header keys: lowercase and strip spaces/underscores/non-alnum
-const normalizeKey = (key) => key.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+const normalizeKey = (key) => key.toString().trim().toLowerCase().replace(/[\s\W_]+/g, '').normalize('NFKD')
 
 // Build a map of normalizedKey -> originalKey for fast lookup per record
 const buildKeyMap = (record) => {
@@ -82,6 +82,22 @@ export const uploadFile = async (req, res, next) => {
 
     console.log(`📂 Processing Upload - Original Type: ${req.query.type}, Resolved Type: ${type}`)
 
+    // ========================================
+    // IMPORTANT: Clear old data before upload
+    // ========================================
+    if (type === 'sos') {
+      console.log('🗑️  Deleting all previous DATIN/SOS data...')
+      const deleted = await prisma.sosData.deleteMany({})
+      console.log(`✅ Deleted ${deleted.count} old DATIN records`)
+    } else if (type === 'hsi') {
+      console.log('🗑️  Deleting all previous HSI data...')
+      const deleted = await prisma.hsiData.deleteMany({})
+      console.log(`✅ Deleted ${deleted.count} old HSI records`)
+    } else if (type === 'digital_product') {
+      console.log('🗑️  Deleting all previous Digital Product data...')
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "digital_products" RESTART IDENTITY CASCADE`)
+      console.log(`✅ Deleted all old Digital Product records`)
+    }
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -414,27 +430,66 @@ export const uploadFile = async (req, res, next) => {
             continue
           }
 
-          sosBuffer.push({
+          const sosData = {
             orderId: orderId.toString(),
             nipnas: getValue(record, keyMap, 'nipnas'),
-            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
+            standardName: getValue(record, keyMap, 'standard_name', 'standardname', 'standard name (po)', 'standard name'),
             orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
+            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'order description'),
             segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
-            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
+            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen', 'sub segmen'),
             custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
-            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'nama witel', 'namawitel'),
+            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'cust witel', 'nama witel', 'namawitel'),
+            servCity: getValue(record, keyMap, 'serv_city', 'servcity', 'service city', 'servicecity'),
+            serviceWitel: getValue(record, keyMap, 'service_witel', 'servicewitel', 'service witel'),
             billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel', 'nama witel'),
-            liProductName: getValue(record, keyMap, 'li_product_name', 'liproductname', 'nama produk', 'product name', 'product', 'productname'),
+            liProductName: getValue(record, keyMap, 'li_product_name', 'liproductname', 'nama produk', 'product name', 'product', 'productname', 'produk'),
+            liBilldate: cleanDate(getValue(record, keyMap, 'li_billdate', 'libildate', 'bill date', 'billdate')),
             liMilestone: getValue(record, keyMap, 'li_milestone', 'limilestone', 'milestone', 'order status', 'orderstatus'),
-            liStatus: getValue(record, keyMap, 'li_status', 'listatus', 'order_status_n', 'order status', 'orderstatus'),
-            kategori: getValue(record, keyMap, 'kategori'),
+            kategori: getValue(record, keyMap, 'kategori', 'category'),
+            liStatus: getValue(record, keyMap, 'li_status', 'listatus', 'order_status_n', 'order status', 'orderstatus', 'status'),
+            liStatusDate: cleanDate(getValue(record, keyMap, 'li_status_date', 'listatusdate', 'status date', 'statusdate')),
+            isTermin: getValue(record, keyMap, 'is_termin', 'istermin', 'termin'),
             revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice')),
-            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
-            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
+            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang', 'biaya pasang', 'installation fee', 'installationfee')),
+            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan', 'harga bulanan', 'hargabulanan', 'monthly fee', 'monthlyfee')),
             orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date')),
-            actionCd: getValue(record, keyMap, 'action_cd', 'actioncd', 'action cd', 'action', 'type order', 'typeorder', 'order type', 'ordertype'),
+            agreeType: getValue(record, keyMap, 'agree_type', 'agreetype', 'agreement type', 'agreementtype', 'tipe agreement', 'agreeitemnum', 'agree_item_num', 'payment term', 'paymentterm', 'lipaymentterm', 'li_payment_term'),
+            agreeStartDate: cleanDate(getValue(record, keyMap, 'agree_start_date', 'agreestartdate', 'agreement start date', 'agreementstartdate', 'libillingstartdate', 'li_billing_start_date', 'billing start date', 'billingstartdate')),
+            agreeEndDate: cleanDate(getValue(record, keyMap, 'agree_end_date', 'agreeenddate', 'agreement end date', 'agreementenddate')),
+            lamaKontrakHari: cleanNumber(getValue(record, keyMap, 'lama_kontrak_hari', 'lamakontrakhari', 'lama kontrak (hari)', 'lama kontrak', 'kontrak', 'contract duration', 'contractduration', 'duration')),
+            amortisasi: getValue(record, keyMap, 'amortisasi', 'amortization', 'scaling'),
+            actionCd: getValue(record, keyMap, 'action_cd', 'actioncd', 'action cd', 'action', 'prevorder', 'prev_order', 'prev order'),
+            billCity: getValue(record, keyMap, 'bill_city', 'billcity', 'bill city', 'billregion', 'bill_region', 'bill region'),
+            poName: getValue(record, keyMap, 'po_name', 'poname', 'po name', 'standard name (po)', 'standard_name', 'standardname'),
+            tipeOrder: getValue(record, keyMap, 'tipe_order', 'tipeorder', 'tipe order', 'order_subtype', 'ordersubtype', 'order subtype'),
+            segmenBaru: getValue(record, keyMap, 'segmen_baru', 'segmenbaru', 'segmen baru'),
+            scalling1: getValue(record, keyMap, 'scalling1', 'scalling 1'),
+            scalling2: getValue(record, keyMap, 'scalling2', 'scalling 2'),
+            tipeGrup: getValue(record, keyMap, 'tipe_grup', 'tipegrup', 'tipe grup'),
+            witelBaru: getValue(record, keyMap, 'witel_baru', 'witelbaru', 'witel baru'),
+            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'kategoribaru', 'kategori baru'),
             batchId: currentBatchId
-          })
+          }
+
+          // Debug log for first record only
+          if (sosBuffer.length === 0) {
+            console.log('🔍 DEBUG - Sample SOS data mapping:', {
+              biayaPasang: sosData.biayaPasang,
+              hrgBulanan: sosData.hrgBulanan,
+              lamaKontrakHari: sosData.lamaKontrakHari,
+              billCity: sosData.billCity,
+              tipeOrder: sosData.tipeOrder,
+              agreeType: sosData.agreeType
+            })
+            console.log('🔍 DEBUG - Raw values from file:', {
+              lamaKontrakRaw: getValue(record, keyMap, 'lama_kontrak_hari', 'lamakontrakhari'),
+              billCityRaw: getValue(record, keyMap, 'bill_city', 'billcity', 'billregion'),
+              availableKeys: Object.keys(record).filter(k => k.toLowerCase().includes('lama') || k.toLowerCase().includes('bill'))
+            })
+          }
+
+          sosBuffer.push(sosData)
 
           // Process batch when buffer reaches BATCH_SIZE
           if (sosBuffer.length >= BATCH_SIZE) {

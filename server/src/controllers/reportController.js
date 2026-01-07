@@ -843,16 +843,28 @@ export const getReportDatinSummary = async (req, res, next) => {
     const data = await prisma.sosData.findMany({
       where: whereClause,
       select: {
-        segmen: true,
-        custWitel: true,
-        custCity: true,
-        serviceWitel: true,
+        orderId: true,
         orderCreatedDate: true,
-        actionCd: true,
-        liStatus: true,
-        revenue: true,
+        nipnas: true,
         poName: true,
-        nipnas: true
+        standardName: true,
+        liProductName: true,
+        segmen: true,
+        revenue: true,
+        subSegmen: true,
+        kategoriUmur: true,
+        custWitel: true,
+        serviceWitel: true,
+        billWitel: true,
+        liStatus: true,
+        liMilestone: true,
+        biayaPasang: true,
+        hrgBulanan: true,
+        lamaKontrakHari: true,
+        billCity: true,
+        agreeType: true,
+        witelBaru: true,
+        actionCd: true
       }
     })
 
@@ -1184,10 +1196,57 @@ export const getReportDatinSummary = async (req, res, next) => {
       achievement: '0%' // Placeholder
     })).sort((a, b) => a.po.localeCompare(b.po))
 
+    // Get Detail Data for Report DATIN Details Table
+    const detailData = data.map(row => {
+      const orderDate = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
+      const diffTime = Math.abs(now - orderDate)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      // Determine category age (kategori_umur) based on order date
+      let kategoriUmur = row.kategoriUmur || '-'
+      if (!row.kategoriUmur) {
+        if (diffDays < 30) kategoriUmur = '<1 Bulan'
+        else if (diffDays < 90) kategoriUmur = '1-3 Bulan'
+        else if (diffDays < 180) kategoriUmur = '3-6 Bulan'
+        else if (diffDays < 365) kategoriUmur = '6-12 Bulan'
+        else kategoriUmur = '>12 Bulan'
+      }
+
+      // Use custWitel as fallback for serviceWitel if not available
+      const serviceWitel = row.serviceWitel || row.custWitel || '-'
+
+      return {
+        order_id: row.orderId || '-',
+        order_date: row.orderCreatedDate ? row.orderCreatedDate.toISOString().split('T')[0] : '-',
+        nipnas: row.nipnas || '-',
+        standard_name: row.poName || row.standardName || '-',
+        produk: row.liProductName || '-',
+        revenue: row.revenue ? parseFloat(row.revenue) : 0,
+        segmen: row.segmen || '-',
+        sub_segmen: row.subSegmen || '-',
+        kategori: getCategory(row.segmen),
+        kategori_umur: kategoriUmur,
+        umur_order: diffDays,
+        bill_witel: row.billWitel || '-',
+        cust_witel: row.custWitel || '-',
+        service_witel: serviceWitel,
+        status: row.liStatus || '-',
+        milestone: row.liMilestone || '-',
+        biaya_pasang: row.biayaPasang !== null && row.biayaPasang !== undefined ? parseFloat(row.biayaPasang) : 0,
+        harga_bulanan: row.hrgBulanan !== null && row.hrgBulanan !== undefined ? parseFloat(row.hrgBulanan) : 0,
+        lama_kontrak: row.lamaKontrakHari && row.lamaKontrakHari > 0 ? row.lamaKontrakHari : 0,
+        bill_city: row.billCity || '-',
+        tipe_order: row.actionCd || '-',
+        agree_type: row.agreeType || '-',
+        witel_baru: row.witelBaru || row.custWitel || '-'
+      }
+    })
+
     successResponse(res, {
       table1Data,
       table2Data,
-      galaksiData
+      galaksiData,
+      detailData
     }, 'Report Datin Summary retrieved successfully')
 
   } catch (error) {
