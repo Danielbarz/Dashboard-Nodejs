@@ -2,6 +2,7 @@
   "name": "telkom-dashboard-monorepo",
   "private": true,
   "scripts": {
-    "lint": "echo \"No lint configured; skipping.\""
+    "lint": "echo \"No lint configured; skipping.\"",
+    "test": "echo \"No tests configured; skipping.\""
   }
 }
