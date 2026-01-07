@@ -465,6 +465,8 @@ export const uploadFile = async (req, res, next) => {
           jtBuffer.push({
             noNdeSpmk: noNdeSpmk || `nd_${Date.now()}_${i}`,
             witelBaru: witelBaru || 'Unknown',
+            // Persist child witel from source when available
+            witelLama: getValue(record, keyMap, 'witel_lama', 'region', 'witel_lama_old') || null,
             statusProyek: 'JT',
             revenuePlan: revenuePlan || 0,
             batchId: currentBatchId,
@@ -479,6 +481,7 @@ export const uploadFile = async (req, res, next) => {
             tanggalMom: cleanDate(getValue(record, keyMap, 'tanggal_mom', 'tgl_mom', 'mom_date', 'tanggal')),
             usia: parseInt(getValue(record, keyMap, 'usia', 'age')) || null,
             rab: cleanNumber(getValue(record, keyMap, 'rab')) || null,
+            // Keep region as backup for child derivation
             region: getValue(record, keyMap, 'region', 'witel_lama') || null
           })
 

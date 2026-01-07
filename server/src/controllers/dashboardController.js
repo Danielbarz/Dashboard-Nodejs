@@ -380,7 +380,8 @@ export const getReportTambahan = async (req, res, next) => {
 
     rawData.forEach(row => {
       const parent = row.witelBaru || 'Unknown'
-      const child = row.witelLama || 'Unknown'
+      // Use region as fallback when witelLama missing; default to parent
+      const child = row.witelLama || row.region || parent
       const parentKey = parent
       const childKey = `${parent}|${child}`
 
@@ -511,7 +512,7 @@ export const getReportTambahan = async (req, res, next) => {
     const projectMap = {}
     projectRows.forEach(row => {
       const parent = row.witelBaru || 'Unknown'
-      const child = row.witelLama || 'Unknown'
+      const child = row.witelLama || row.region || parent
       const parentKey = parent
       const childKey = `${parent}|${child}`
       const usiaVal = typeof row.usia === 'number' ? row.usia : null
