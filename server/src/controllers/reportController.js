@@ -8,20 +8,36 @@ export const getReportTambahan = async (req, res, next) => {
     const { start_date, end_date } = req.query
 
     // Accept all spmk_mom rows (JT import includes all records)
-    // Filter out: SEMARANG JATENG UTARA, YOGYA JATENG SELATAN, SOLO JATENG TIMUR, BALI, WITEL BALI, WITEL YOGYA JATENG SELATAN, WITEL SEMARANG JATENG UTARA
-    const excludedParentWitels = [
-      'SEMARANG JATENG UTARA',
-      'YOGYA JATENG SELATAN',
-      'SOLO JATENG TIMUR',
-      'BALI',
-      'WITEL BALI',
-      'WITEL YOGYA JATENG SELATAN',
+    // Filter out: SEMARANG, SOLO, YOGYA, PURWOKERTO, MAGELANG, UNKNOWN (both Parent and Child)
+    const excludedWitels = [
       'WITEL SEMARANG JATENG UTARA',
-      'WITEL SOLO JATENG TIMUR'
+      'WITEL SOLO JATENG TIMUR',
+      'WITEL YOGYA JATENG SELATAN',
+      'SEMARANG JATENG UTARA',
+      'SOLO JATENG TIMUR',
+      'YOGYA JATENG SELATAN',
+      'WITEL SEMARANG',
+      'WITEL SOLO',
+      'WITEL YOGYA',
+      'WITEL PURWOKERTO',
+      'WITEL MAGELANG',
+      'SEMARANG',
+      'SOLO',
+      'YOGYA',
+      'PURWOKERTO',
+      'MAGELANG',
+      'Unknown',
+      ''
     ]
+
     const whereClause = {
       witelBaru: {
-        notIn: excludedParentWitels
+        notIn: excludedWitels,
+        not: null
+      },
+      witelLama: {
+        notIn: excludedWitels,
+        not: null
       }
     }
 
@@ -63,7 +79,8 @@ export const getReportTambahan = async (req, res, next) => {
         populasiNonDrop: true,
         baDrop: true,
         statusTompsLastActivity: true,
-        statusIHld: true
+        statusIHld: true,
+        statusTompsNew: true
       }
     })
 
@@ -78,7 +95,8 @@ export const getReportTambahan = async (req, res, next) => {
           populasiNonDrop: true,
           baDrop: true,
           statusTompsLastActivity: true,
-          statusIHld: true
+          statusIHld: true,
+          statusTompsNew: true
         }
       })
     }
@@ -134,42 +152,48 @@ export const getReportTambahan = async (req, res, next) => {
       }
 
       const revenue = parseFloat(row.revenuePlan || 0)
-      const isDrop = row.populasiNonDrop === 'N' || row.baDrop !== null
-      const isGoLive = row.goLive === 'Y'
 
-      // Count all rows in both parent and child
-      witelMap[parentKey].jumlahLop++
-      witelMap[parentKey].revAll += revenue
-      witelMap[childKey].jumlahLop++
-      witelMap[childKey].revAll += revenue
+      // Logic "Progress Deploy" (User Source: ReportJTController.php)
+      // 1. Drop: populasiNonDrop='N'
+      // 2. GoLive: goLive='Y' && populasiNonDrop='Y'
+      // 3. Progress: goLive='N' && populasiNonDrop='Y' -> Check status_tomps_new
+
+      const isDrop = row.populasiNonDrop === 'N'
+      // If not drop, assuming populasiNonDrop is 'Y'
+      const isGoLive = row.goLive === 'Y' && !isDrop
 
       if (isDrop) {
         witelMap[parentKey].drop++
         witelMap[childKey].drop++
-      }
+        // Drop excluded from jumlahLop and revAll
+      } else {
+        // Non-Drop (Includes GoLive and Progress)
+        witelMap[parentKey].jumlahLop++
+        witelMap[parentKey].revAll += revenue
+        witelMap[childKey].jumlahLop++
+        witelMap[childKey].revAll += revenue
 
-      if (isGoLive) {
-        witelMap[parentKey].golive_jml++
-        witelMap[parentKey].golive_rev += revenue
-        witelMap[childKey].golive_jml++
-        witelMap[childKey].golive_rev += revenue
-      } else if (!isDrop) {
-        // Map status to progress columns (only for non-drop, non-golive)
-        const status = (row.statusTompsLastActivity || '').toLowerCase()
-        let statusCode = 'initial'
+        if (isGoLive) {
+          witelMap[parentKey].golive_jml++
+          witelMap[parentKey].golive_rev += revenue
+          witelMap[childKey].golive_jml++
+          witelMap[childKey].golive_rev += revenue
+        } else {
+          // Progress Phase (goLive='N' && nonDrop)
+          // Map status using statusIHld (contains phase info like 'Instalasi')
+          // statusTompsNew usually only contains 'INPROGRESS - XX%'
+          const statusText = (row.statusIHld || row.statusTompsNew || '').toUpperCase()
+          let bucket = 'initial'
 
-        if (status.includes('survey') || status.includes('drm')) {
-          statusCode = 'survey'
-        } else if (status.includes('izin') || status.includes('mos')) {
-          statusCode = 'perizinan'
-        } else if (status.includes('instal') || status.includes('deploy')) {
-          statusCode = 'instalasi'
-        } else if (status.includes('ogp') || status.includes('live')) {
-          statusCode = 'piOgp'
+          if (statusText.includes('SURVEY') || statusText.includes('DRM')) bucket = 'survey' // Survey & DRM
+          else if (statusText.includes('PERIZINAN') || statusText.includes('MOS')) bucket = 'perizinan'
+          else if (statusText.includes('INSTALASI')) bucket = 'instalasi'
+          else if (statusText.includes('FI') || statusText.includes('OGP')) bucket = 'piOgp'
+          else bucket = 'initial' // Default to Initial (including actual 'INITIAL' or unknown)
+
+          witelMap[parentKey][bucket]++
+          witelMap[childKey][bucket]++
         }
-
-        witelMap[parentKey][statusCode]++
-        witelMap[childKey][statusCode]++
       }
     })
 
