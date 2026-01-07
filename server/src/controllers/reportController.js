@@ -58,6 +58,7 @@ export const getReportTambahan = async (req, res, next) => {
       select: {
         witelBaru: true,
         witelLama: true,
+        region: true,
         revenuePlan: true,
         goLive: true,
         populasiNonDrop: true,
@@ -73,6 +74,7 @@ export const getReportTambahan = async (req, res, next) => {
         select: {
           witelBaru: true,
           witelLama: true,
+          region: true,
           revenuePlan: true,
           goLive: true,
           populasiNonDrop: true,
@@ -90,8 +92,17 @@ export const getReportTambahan = async (req, res, next) => {
     const getParentWitel = (witelBaru) => witelBaru || 'OTHER'
 
     rawData.forEach(row => {
-      const parent = row.witelBaru || 'Unknown'
-      const child = row.witelLama || 'Unknown'
+      // Fallback strategies to reduce 'Unknown'
+      // Parent: use witelBaru -> region -> 'Unknown'
+      let parent = row.witelBaru
+      if (!parent && row.region) parent = row.region
+      if (!parent) parent = 'Unknown'
+
+      // Child: use witelLama -> region -> parent -> 'Unknown'
+      let child = row.witelLama
+      if (!child && row.region) child = row.region
+      if (!child) child = parent
+
       const parentKey = parent
       const childKey = `${parent}|${child}` // unique key for parent+child combo
 
