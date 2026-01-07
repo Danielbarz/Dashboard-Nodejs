@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload, FiChevronDown } from 'react-icons/fi'
+import React, { useState, useMemo } from 'react'
+import { FiDownload } from 'react-icons/fi'
 import FileUploadForm from '../components/FileUploadForm'
-import api from '../services/api'
 
 const ReportsDatin = () => {
   const now = new Date()
@@ -17,60 +16,61 @@ const ReportsDatin = () => {
 
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
-  const [selectedWitel, setSelectedWitel] = useState([])
-  const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [apiData, setApiData] = useState({ table1Data: [], table2Data: [], galaksiData: [] })
+  const [selectedWitel, setSelectedWitel] = useState('')
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  const toggleWitel = (option) => {
-    if (selectedWitel.includes(option)) {
-      setSelectedWitel(selectedWitel.filter(item => item !== option))
-    } else {
-      setSelectedWitel([...selectedWitel, option])
-    }
-  }
+  const table1Data = useMemo(() => [
+    { id: 1, category: 'SME', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 2, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 3, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 4, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 5, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 6, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 7, category: 'GOV', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 8, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 9, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 10, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 11, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 12, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 13, category: 'PRIVATE', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 14, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 15, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 16, category: '', witel: 'JATIM TIMUR', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 17, category: '', witel: 'NUSA TENGGARA', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 18, category: '', witel: 'SURAMADU', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 19, category: 'SOE', witel: '', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: true },
+    { id: 20, category: '', witel: 'BALI', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+    { id: 21, category: '', witel: 'JATIM BARAT', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: '0,00', total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: '0,00', total_3bln2: 0, grand_total: 0, isCategoryHeader: false },
+  ], [])
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const response = await api.get('/report/datin-summary', {
-        params: { 
-          start_date: startDate, 
-          end_date: endDate,
-          witel: selectedWitel.join(',') 
-        }
-      })
-      if (response.data?.data) {
-        setApiData(response.data.data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch report data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const table2Data = useMemo(() => [
+    { id: 1, witel: 'SME', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 2, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 3, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 4, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 5, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 6, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 7, witel: 'GOV', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 8, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 9, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 10, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 11, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 12, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 13, witel: 'PRIVATE', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 14, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 15, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 16, witel: 'JATIM TIMUR', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 17, witel: 'NUSA TENGGARA', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 18, witel: 'SURAMADU', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 19, witel: 'SOE', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 20, witel: 'BALI', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+    { id: 21, witel: 'JATIM BARAT', provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0, provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0, grand_total: 0 },
+  ], [])
 
-  useEffect(() => {
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, selectedWitel])
-
-  const table1Data = useMemo(() => {
-    if (!apiData.table1Data.length) return []
-    return apiData.table1Data
-  }, [apiData.table1Data])
-
-  const table2Data = useMemo(() => {
-    if (!apiData.table2Data.length) return []
-    return apiData.table2Data
-  }, [apiData.table2Data])
-
-  const galaksiData = useMemo(() => {
-    return apiData.galaksiData.length ? apiData.galaksiData : []
-  }, [apiData.galaksiData])
-
+  const galaksiData = useMemo(() => [
+    { id: 1, po: 'Grand Total', ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0, ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0, achievement: '100%' },
+  ], [])
 
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
@@ -82,6 +82,11 @@ const ReportsDatin = () => {
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
         <div className="flex flex-col lg:flex-row gap-4">
+          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
+            <option value="">Semua Witel</option>
+            {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
+          </select>
+
           <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
             <div className="flex flex-col justify-center px-1">
               <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
@@ -94,38 +99,6 @@ const ReportsDatin = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
-            <div className="flex flex-col justify-center px-2 h-full w-40">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
-              <div 
-                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
-                onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
-              >
-                <span className="truncate">{selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}</span>
-                <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </div>
-            {isWitelDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-                {witelList.map(option => (
-                  <div 
-                    key={option} 
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                    onClick={() => toggleWitel(option)}
-                  >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedWitel.includes(option)} 
-                      readOnly
-                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-700">{option}</span>
-                  </div>
-                ))} 
-              </div>
-            )}
-          </div>
-
           <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
             <FiDownload className="mr-2" size={16} />
             Ekspor Report
@@ -134,25 +107,25 @@ const ReportsDatin = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Report Jenis Order & Revenue</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report (Tampilan PSA & SO DO RO)</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
             <thead className="bg-blue-600">
               <tr>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
+                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&lt;3BLN<br/>TOTAL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">EST BC<br/>&lt;3BLN TOTAL<br/>(JT)</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
+                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&gt;3BLN<br/>TOTAL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">EST BC<br/>&gt;3BLN TOTAL<br/>(JT)</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
               </tr>
               <tr>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">EST BC<br/>(JT)</th>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
+                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">EST BC<br/>(JT)</th>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
                 <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
               </tr>
@@ -162,15 +135,15 @@ const ReportsDatin = () => {
                 <tr key={row.id} className={row.isCategoryHeader ? 'bg-blue-700 font-bold text-white' : 'hover:bg-gray-50'}>
                   <td className={`px-2 py-1 whitespace-nowrap border text-left ${row.isCategoryHeader ? 'font-bold text-white bg-blue-700' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln2}</td>
+                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln2}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln2}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln2}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln2}</td>
                   <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.grand_total}</td>
                 </tr>
               ))}
@@ -180,7 +153,7 @@ const ReportsDatin = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Report Status Progress Order</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report (Tampilan SO DO RO)</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
             <thead className="bg-red-900">
@@ -228,8 +201,8 @@ const ReportsDatin = () => {
             <thead className="bg-gray-700">
               <tr>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">PO</th>
-                <th colSpan="6" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&lt; 3 BLN</th>
-                <th colSpan="6" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&gt; 3 BLN</th>
+                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&lt; 3 BLN</th>
+                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border bg-blue-600 text-[9px]">&gt; 3 BLN</th>
                 <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">Achievement<br/>&gt;3bln</th>
               </tr>
               <tr>
@@ -248,21 +221,21 @@ const ReportsDatin = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {galaksiData.map((row, idx) => (
-                <tr key={row.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 text-gray-700`}>
-                  <td className="px-2 py-1 whitespace-nowrap border text-left font-medium">{row.po}</td>
+              {galaksiData.map((row) => (
+                <tr key={row.id} className="bg-gray-800 font-bold text-white">
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.po}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border font-bold bg-blue-50">{row.total_3bln}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ao_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.so_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.do_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.mo_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.ro_3bln2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border font-bold bg-blue-50">{row.total_3bln2}</td>
+                  <td className="px-2 py-1 whitespace-nowrap border">{row.total_3bln2}</td>
                   <td className="px-2 py-1 whitespace-nowrap border">{row.achievement}</td>
                 </tr>
               ))}
