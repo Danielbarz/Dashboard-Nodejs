@@ -150,6 +150,7 @@ export class ProcessSOSImport {
         await prisma.sosData.upsert({
           where: { orderId: orderId.toString() },
           update: {
+            poName: getValue(record, keyMap, 'po_name', 'poname', 'po'),
             nipnas: getValue(record, keyMap, 'nipnas'),
             standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
             orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
@@ -170,6 +171,7 @@ export class ProcessSOSImport {
           },
           create: {
             orderId: orderId.toString(),
+            poName: getValue(record, keyMap, 'po_name', 'poname', 'po'),
             nipnas: getValue(record, keyMap, 'nipnas'),
             standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
             orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
