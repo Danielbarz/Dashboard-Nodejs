@@ -415,18 +415,17 @@ const AppLayout = ({ children, pageTitle }) => {
                         >
                           Dashboard HSI
                         </Link>
+                        <Link
+                          to="/flow-process-hsi"
+                          className={`block px-4 py-2 text-sm rounded-md text-left ${
+                            isActive('/flow-process-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Flow Process HSI
+                        </Link>
                       </div>
                     )}
                   </div>
-
-                  <Link
-                    to="/flow-process-hsi"
-                    className={`block px-4 py-2 text-sm rounded-md text-left ${
-                      isActive('/flow-process-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Flow Process HSI
-                  </Link>
                 </div>
               )}
             </div>

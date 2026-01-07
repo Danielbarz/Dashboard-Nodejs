@@ -427,7 +427,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\01. Non-Academics\\MAGANG\\Telkom-Dashboard-Nodejs\\server\\src\\generated\\client",
+      "value": "C:\\NANDA\\TUGAS\\KP TELKOM\\DASHBOARD JS\\Dashboard-Nodejs\\server\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -441,11 +441,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\01. Non-Academics\\MAGANG\\Telkom-Dashboard-Nodejs\\server\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\NANDA\\TUGAS\\KP TELKOM\\DASHBOARD JS\\Dashboard-Nodejs\\server\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
@@ -455,7 +455,6 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

@@ -5,14 +5,14 @@ import { ProcessJTImport } from '../jobs/ProcessJTImport.js'
 import logger from '../config/logger.js'
 
 // Process SOS/Digital Product imports
-fileImportQueue.process('sos-import', 5, async (job) => {
+fileImportQueue.process('sos-import', 1, async (job) => {
   logger.info(`Processing SOS import job ${job.id}`)
   const processor = new ProcessSOSImport(job)
   return await processor.handle()
 })
 
 // Process HSI imports
-fileImportQueue.process('hsi-import', 5, async (job) => {
+fileImportQueue.process('hsi-import', 1, async (job) => {
   logger.info(`Processing HSI import job ${job.id}`)
   const processor = new ProcessHSIImport(job)
   return await processor.handle()

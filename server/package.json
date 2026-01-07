@@ -14,7 +14,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:pull": "prisma db pull"
+    "prisma:pull": "prisma db pull",
+    "check:user": "node ../check-user.js"
   },
   "keywords": ["telkom", "dashboard", "api", "express", "postgresql"],
   "author": "",
