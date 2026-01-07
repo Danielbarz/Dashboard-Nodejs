@@ -321,7 +321,7 @@ const ReportsTambahan = () => {
       {isAdminMode && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Tambahan</h2>
-          <FileUploadForm 
+          <FileUploadForm
             type="jt"
             onSuccess={() => {
               // Refresh data after successful upload

@@ -21,6 +21,7 @@ import ReportsTambahan from './pages/ReportsTambahan'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
 import MasterDataPO from './pages/MasterDataPO'
+import DashboardDigitalProduct from './pages/DashboardDigitalProduct'
 
 function App() {
   return (
@@ -59,6 +60,14 @@ function App() {
               <AdminModeRoute>
                 <Reports />
               </AdminModeRoute>
+            }
+          />
+          <Route
+            path="/dashboard-digital-product"
+            element={
+              <ProtectedRoute>
+                <DashboardDigitalProduct />
+              </ProtectedRoute>
             }
           />
           <Route

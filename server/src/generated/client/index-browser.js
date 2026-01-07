@@ -404,6 +404,32 @@ exports.Prisma.UserTableConfigurationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PoMasterScalarFieldEnum = {
+  id: 'id',
+  nipnas: 'nipnas',
+  namaPo: 'namaPo',
+  segment: 'segment',
+  billCity: 'billCity',
+  witel: 'witel',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UnmappedOrderScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  nipnas: 'nipnas',
+  customerName: 'customerName',
+  custCity: 'custCity',
+  servCity: 'servCity',
+  billWitel: 'billWitel',
+  billCity: 'billCity',
+  poName: 'poName',
+  segment: 'segment',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -441,7 +467,9 @@ exports.Prisma.ModelName = {
   OrderProduct: 'OrderProduct',
   Target: 'Target',
   CustomTarget: 'CustomTarget',
-  UserTableConfiguration: 'UserTableConfiguration'
+  UserTableConfiguration: 'UserTableConfiguration',
+  PoMaster: 'PoMaster',
+  UnmappedOrder: 'UnmappedOrder'
 };
 
 /**

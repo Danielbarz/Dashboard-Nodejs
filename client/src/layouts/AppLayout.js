@@ -408,6 +408,14 @@ const AppLayout = ({ children, pageTitle }) => {
                           Dashboard Datin
                         </Link>
                         <Link
+                          to="/dashboard-digital-product"
+                          className={`block px-4 py-2 text-sm rounded-md text-left ${
+                            isActive('/dashboard-digital-product') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Dashboard Digital Product
+                        </Link>
+                        <Link
                           to="/hsi"
                           className={`block px-4 py-2 text-sm rounded-md text-left ${
                             isActive('/hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'

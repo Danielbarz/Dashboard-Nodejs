@@ -18,9 +18,12 @@ import {
   exportReportTambahan,
   exportReportHSI
 } from '../controllers/dashboardController.js'
+import { getDigitalDashboardData, getDigitalFilterOptions } from '../controllers/digitalController.js'
 
 const router = express.Router()
 
+router.get('/digital-product', authenticate, getDigitalDashboardData)
+router.get('/digital-product/filters', authenticate, getDigitalFilterOptions)
 router.get('/revenue-by-witel', authenticate, getRevenueByWitel)
 router.get('/amount-by-witel', authenticate, getAmountByWitel)
 router.get('/kpi-data', authenticate, getKPIData)
