@@ -236,8 +236,15 @@ export const getReportTambahan = async (req, res, next) => {
 
     const projectMap = {}
     projectRows.forEach(row => {
-      const parent = row.witelBaru || 'Unknown'
-      const child = row.witelLama || 'Unknown'
+      // Fallback strategies
+      let parent = row.witelBaru
+      if (!parent && row.region) parent = row.region
+      if (!parent) parent = 'Unknown'
+
+      let child = row.witelLama
+      if (!child && row.region) child = row.region
+      if (!child) child = parent
+
       const parentKey = parent
       const childKey = `${parent}|${child}`
       const usiaVal = typeof row.usia === 'number' ? row.usia : null
@@ -295,7 +302,10 @@ export const getReportTambahan = async (req, res, next) => {
     // Top 3 usia per witel baru saja (tanpa witel lama)
     const topByWitel = {}
     projectRows.forEach(row => {
-      const witel = row.witelBaru || 'Unknown'
+      let witel = row.witelBaru
+      if (!witel && row.region) witel = row.region
+      if (!witel) witel = 'Unknown'
+
       const usiaVal = typeof row.usia === 'number' ? row.usia : null
       if (usiaVal === null) return
 
