@@ -5,7 +5,9 @@ import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsHSI = () => {
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Default to 1st Jan of previous year to catch older data if needed, or 3 months back
+  // User data seems to be 2025, while now is 2026.
+  const startOfRange = new Date(now.getFullYear() - 1, now.getMonth(), 1)
 
   const formatDateLocal = (date) => {
     const d = new Date(date)
@@ -15,7 +17,7 @@ const ReportsHSI = () => {
     return `${year}-${month}-${day}`
   }
 
-  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
+  const [startDate, setStartDate] = useState(formatDateLocal(startOfRange))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
   const [data, setData] = useState([])
@@ -148,13 +150,13 @@ const ReportsHSI = () => {
         <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wide mb-4">
             Performance Report HSI Per Witel
         </h3>
-        <div className="overflow-x-auto max-h-[80vh]">
+        <div className="overflow-auto max-h-[75vh] shadow-md border border-gray-200 rounded-lg">
           <table className="w-full text-[10px] border-collapse border border-slate-400 text-center font-sans">
             
             {/* TABLE HEAD */}
-            <thead className="text-white font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+            <thead className="text-white font-bold uppercase tracking-wider sticky top-0 z-[15] shadow-sm whitespace-nowrap">
                 <tr>
-                    <th className={`border border-slate-300 p-2 min-w-[150px] sticky left-0 z-30 ${colors.blue}`} rowSpan={4}>Witel</th>
+                    <th className={`border border-slate-300 p-2 min-w-[150px] sticky left-0 z-[16] ${colors.blue}`} rowSpan={4}>Witel</th>
                     <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={4}>PRE PI</th>
                     <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={4}>Registered (RE)</th>
                     <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>Inpro SC</th>
@@ -215,7 +217,7 @@ const ReportsHSI = () => {
                         key={index} 
                         className="bg-white hover:bg-blue-50 transition-colors"
                     >
-                        <td className="border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 bg-inherit font-semibold">
+                        <td className="border border-slate-300 p-1 text-left sticky left-0 z-[5] px-2 bg-inherit font-semibold">
                             {row.witel}
                         </td>
                         
@@ -264,9 +266,9 @@ const ReportsHSI = () => {
             </tbody>
 
             {/* TABLE FOOTER (TOTALS) */}
-            <tfoot className="sticky bottom-0 z-20">
+            <tfoot className="sticky bottom-0 z-[15]">
                 <tr className={totalRowStyle}>
-                    <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">TOTAL</td>
+                    <td className="border border-slate-400 p-2 sticky left-0 z-[16] bg-[#cccccc]">TOTAL</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.pre_pi)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.registered)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.inpro_sc)}</td>

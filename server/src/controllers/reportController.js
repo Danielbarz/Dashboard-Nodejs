@@ -721,34 +721,126 @@ export const getReportAnalysis = async (req, res, next) => {
 export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
+    
+    // Default range if not provided
+    const start = start_date ? new Date(start_date) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const end = end_date ? new Date(end_date) : new Date()
 
-    let whereClause = {}
+    // Query Aggregation Logic
+    // Menerjemahkan logic Excel ke SQL Case When
+    
+    const rawData = await prisma.$queryRaw`
+      SELECT 
+        COALESCE(witel, 'UNKNOWN') as witel,
+        COUNT(id) as total_rows,
+        
+        -- PRE PI: Belum masuk order, asumsi
+        SUM(CASE WHEN "status_resume" ILIKE '%PRE PI%' THEN 1 ELSE 0 END) as pre_pi,
 
-    if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
+        -- REGISTERED (RE): Total New Sales / Order Masuk
+        SUM(CASE WHEN "status_resume" IS NOT NULL THEN 1 ELSE 0 END) as registered,
 
-    const tableData = await prisma.hsiData.groupBy({
-      by: ['witel'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        upload: true
-      }
-    })
+        -- INPRO SC
+        SUM(CASE WHEN "status_resume" ILIKE '%SC%' AND "ps_1" != 'UNSC' THEN 1 ELSE 0 END) as inpro_sc,
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witel || 'Unknown',
-      totalHsi: row._count.id,
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-      avgRevenue: 0
+        -- QC1
+        SUM(CASE WHEN "status_resume" ILIKE '%QC%' THEN 1 ELSE 0 END) as qc1,
+
+        -- FCC
+        SUM(CASE WHEN "status_resume" ILIKE '%FCC%' AND "status_resume" NOT ILIKE '%REJECT%' THEN 1 ELSE 0 END) as fcc,
+
+        -- RJCT FCC
+        SUM(CASE WHEN "status_resume" ILIKE '%REJECT%' OR "status_resume" ILIKE '%DECLINE%' THEN 1 ELSE 0 END) as rjct_fcc,
+
+        -- SURVEY MANJA
+        SUM(CASE WHEN "status_resume" ILIKE '%SURVEY%' OR "status_resume" ILIKE '%MANJA%' THEN 1 ELSE 0 END) as survey_manja,
+
+        -- UN-SC
+        SUM(CASE WHEN "ps_1" = 'UNSC' OR "status_resume" ILIKE '%UNSC%' THEN 1 ELSE 0 END) as un_sc,
+
+        -- OGP AGING (PI)
+        -- Asumsi: PI based on date diff (now - order_date), for records that are still open/PI
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) < 24 THEN 1 ELSE 0 END) as pi_under_24,
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) BETWEEN 24 AND 72 THEN 1 ELSE 0 END) as pi_24_72,
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) > 72 THEN 1 ELSE 0 END) as pi_over_72,
+
+        -- FALLOUT WFM (Categorized)
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%PLGN%' THEN 1 ELSE 0 END) as fo_wfm_plgn,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%TEKNIS%' THEN 1 ELSE 0 END) as fo_wfm_teknis,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_system,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" NOT ILIKE '%PLGN%' AND "status_resume" NOT ILIKE '%TEKNIS%' AND "status_resume" NOT ILIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_others,
+
+        -- FALLOUT OTHERS
+        SUM(CASE WHEN "status_resume" ILIKE '%UIM%' THEN 1 ELSE 0 END) as fo_uim,
+        SUM(CASE WHEN "status_resume" ILIKE '%ASP%' THEN 1 ELSE 0 END) as fo_asp,
+        SUM(CASE WHEN "status_resume" ILIKE '%OSM%' THEN 1 ELSE 0 END) as fo_osm,
+
+        -- ACT COMP / QC2
+        SUM(CASE WHEN "status_resume" ILIKE '%QC2%' OR "status_resume" ILIKE '%ACT COMP%' THEN 1 ELSE 0 END) as act_comp,
+
+        -- PS (COMPLETE)
+        SUM(CASE WHEN "ps_1" = 'PS' OR "status_resume" ILIKE '%Completed (PS)%' THEN 1 ELSE 0 END) as ps,
+
+        -- CANCEL Breakdown
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%PLGN%' OR "reason_cancel" ILIKE '%PLGN%') THEN 1 ELSE 0 END) as cancel_plgn,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%TEKNIS%' OR "reason_cancel" ILIKE '%TEKNI%') THEN 1 ELSE 0 END) as cancel_teknis,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%SISTEM%' OR "reason_cancel" ILIKE '%SISTEM%') THEN 1 ELSE 0 END) as cancel_system,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND NOT ("status_resume" ILIKE '%PLGN%' OR "status_resume" ILIKE '%TEKNIS%' OR "status_resume" ILIKE '%SISTEM%') THEN 1 ELSE 0 END) as cancel_others,
+
+        -- REVOKE
+        SUM(CASE WHEN "ps_1" = 'REVOKE' OR "status_resume" ILIKE '%REVOKE%' OR "no_order_revoke" IS NOT NULL THEN 1 ELSE 0 END) as revoke
+
+      FROM "hsi_data"
+      WHERE "order_date" >= ${start} AND "order_date" <= ${end}
+      GROUP BY "witel"
+      ORDER BY "witel" ASC
+    `;
+
+    // Process BigInt to Number
+    const formattedTableData = rawData.map(row => ({
+      witel: row.witel,
+      pre_pi: Number(row.pre_pi),
+      registered: Number(row.registered),
+      inpro_sc: Number(row.inpro_sc),
+      qc1: Number(row.qc1),
+      fcc: Number(row.fcc),
+      rjct_fcc: Number(row.rjct_fcc),
+      survey_manja: Number(row.survey_manja),
+      un_sc: Number(row.un_sc),
+      
+      pi_under_24: Number(row.pi_under_24),
+      pi_24_72: Number(row.pi_24_72),
+      pi_over_72: Number(row.pi_over_72),
+      
+      fo_wfm_plgn: Number(row.fo_wfm_plgn),
+      fo_wfm_teknis: Number(row.fo_wfm_teknis),
+      fo_wfm_system: Number(row.fo_wfm_system),
+      fo_wfm_others: Number(row.fo_wfm_others),
+      
+      fo_uim: Number(row.fo_uim),
+      fo_asp: Number(row.fo_asp),
+      fo_osm: Number(row.fo_osm),
+      act_comp: Number(row.act_comp),
+      
+      ps: Number(row.ps),
+      
+      cancel_plgn: Number(row.cancel_plgn),
+      cancel_teknis: Number(row.cancel_teknis),
+      cancel_system: Number(row.cancel_system),
+      cancel_others: Number(row.cancel_others),
+      
+      revoke: Number(row.revoke),
+      
+      // Totals
+      total_pi: Number(row.pi_under_24) + Number(row.pi_24_72) + Number(row.pi_over_72),
+      total_fallout: Number(row.fo_wfm_plgn) + Number(row.fo_wfm_teknis) + Number(row.fo_wfm_system) + Number(row.fo_wfm_others) + Number(row.fo_uim) + Number(row.fo_asp) + Number(row.fo_osm),
+      total_cancel: Number(row.cancel_plgn) + Number(row.cancel_teknis) + Number(row.cancel_system) + Number(row.cancel_others)
+    })).map(row => ({
+      ...row,
+      // Calculate Percentages
+      perf_pi_re: row.registered ? ((row.total_pi / row.registered) * 100).toFixed(1) : 0,
+      perf_ps_re: row.registered ? ((row.ps / row.registered) * 100).toFixed(1) : 0,
+      perf_ps_pi: row.total_pi ? ((row.ps / row.total_pi) * 100).toFixed(1) : 0
     }))
 
     successResponse(
