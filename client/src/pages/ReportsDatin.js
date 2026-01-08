@@ -1,7 +1,59 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload, FiChevronDown } from 'react-icons/fi'
+import { FiDownload, FiChevronDown, FiSearch } from 'react-icons/fi'
 import FileUploadForm from '../components/FileUploadForm'
 import api from '../services/api'
+
+// Filter Report DATIN 
+const FilterHeaderDatin = ({ title, columnKey, bgClass, activeFilters, setActiveFilters, openFilter, setOpenFilter, filterOptions }) => (
+  <th className={`${bgClass} border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap relative`}>
+    <div 
+      className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/10 rounded px-1 -mx-1"
+      onClick={(e) => {
+        e.stopPropagation()
+        setOpenFilter(openFilter === columnKey ? null : columnKey)
+      }}
+    >
+      <div className="flex flex-col items-start">
+        <span>{title}</span>
+        {activeFilters[columnKey]?.length > 0 && (
+          <span className="text-[10px] font-normal text-yellow-300 max-w-[100px] truncate">
+            {activeFilters[columnKey][0]}
+          </span>
+        )}
+      </div>
+      <FiChevronDown className={`flex-shrink-0 transition-transform ${openFilter === columnKey ? 'rotate-180' : ''}`} />
+    </div>
+    
+    {openFilter === columnKey && (
+      <div 
+        className="absolute left-0 top-full mt-1 w-48 bg-white text-gray-800 rounded-md shadow-xl z-50 border border-gray-200 max-h-60 overflow-y-auto text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs border-b border-gray-100 ${!activeFilters[columnKey]?.length ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
+          onClick={() => {
+            setActiveFilters(prev => ({ ...prev, [columnKey]: [] }))
+            setOpenFilter(null)
+          }}
+        >
+          All
+        </div>
+        {filterOptions.map((option, idx) => (
+          <div 
+            key={idx} 
+            className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs ${activeFilters[columnKey]?.includes(option) ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
+            onClick={() => {
+              setActiveFilters(prev => ({ ...prev, [columnKey]: [option] }))
+              setOpenFilter(null)
+            }}
+          >
+            {option}
+          </div>
+        ))}
+      </div>
+    )}
+  </th>
+)
 
 const ReportsDatin = () => {
   const now = new Date()
@@ -20,9 +72,31 @@ const ReportsDatin = () => {
   const [selectedWitel, setSelectedWitel] = useState([])
   const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [apiData, setApiData] = useState({ table1Data: [], table2Data: [], galaksiData: [] })
+  const [apiData, setApiData] = useState({ table1Data: [], table2Data: [], galaksiData: [], detailData: [] })
+  const [detailData, setDetailData] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [sortConfig, setSortConfig] = useState({ key: 'order_date', direction: 'desc' })
+  const [activeFilters, setActiveFilters] = useState({
+    produk: [],
+    segmen: [],
+    sub_segmen: [],
+    kategori: [],
+    kategori_umur: [],
+    status: []
+  })
+  const [openFilter, setOpenFilter] = useState(null)
+  const [filterOptions, setFilterOptions] = useState({
+    produk: [],
+    segmen: [],
+    sub_segmen: [],
+    kategori: [],
+    kategori_umur: [],
+    status: []
+  })
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+  const itemsPerPage = 10
 
   const toggleWitel = (option) => {
     if (selectedWitel.includes(option)) {
@@ -43,7 +117,11 @@ const ReportsDatin = () => {
         }
       })
       if (response.data?.data) {
+        console.log('API RESPONSE:', response.data.data)
         setApiData(response.data.data)
+        if (response.data.data?.detailData) {
+          setDetailData(response.data.data.detailData)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch report data:', error)
@@ -56,6 +134,20 @@ const ReportsDatin = () => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, selectedWitel])
+
+  // Update filter options based on detailData
+  useEffect(() => {
+    if (detailData.length > 0) {
+      setFilterOptions({
+        produk: [...new Set(detailData.map(item => item.produk).filter(Boolean))].sort(),
+        segmen: [...new Set(detailData.map(item => item.segmen).filter(Boolean))].sort(),
+        sub_segmen: [...new Set(detailData.map(item => item.sub_segmen).filter(Boolean))].sort(),
+        kategori: [...new Set(detailData.map(item => item.kategori).filter(Boolean))].sort(),
+        kategori_umur: [...new Set(detailData.map(item => item.kategori_umur).filter(Boolean))].sort(),
+        status: [...new Set(detailData.map(item => item.status).filter(Boolean))].sort()
+      })
+    }
+  }, [detailData])
 
   const table1Data = useMemo(() => {
     if (!apiData.table1Data.length) return []
@@ -70,6 +162,59 @@ const ReportsDatin = () => {
   const galaksiData = useMemo(() => {
     return apiData.galaksiData.length ? apiData.galaksiData : []
   }, [apiData.galaksiData])
+
+  // Filter and sort detail data
+  const filteredDetailData = useMemo(() => {
+    let filtered = detailData
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(item =>
+        item.order_id?.toString().toLowerCase().includes(query) ||
+        item.nipnas?.toString().toLowerCase().includes(query) ||
+        item.standard_name?.toLowerCase().includes(query)
+      )
+    }
+
+    // Active filters
+    for (const [key, values] of Object.entries(activeFilters)) {
+      if (values && values.length > 0) {
+        filtered = filtered.filter(item => values.includes(item[key]))
+      }
+    }
+
+    // Sorting
+    filtered = [...filtered].sort((a, b) => {
+      const aValue = a[sortConfig.key]
+      const bValue = b[sortConfig.key]
+
+      if (aValue === null || aValue === undefined) return 1
+      if (bValue === null || bValue === undefined) return -1
+
+      if (typeof aValue === 'string') {
+        return sortConfig.direction === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
+      }
+
+      return sortConfig.direction === 'asc'
+        ? aValue - bValue
+        : bValue - aValue
+    })
+
+    return filtered
+  }, [detailData, searchQuery, activeFilters, sortConfig])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredDetailData.length / itemsPerPage)
+  const currentDetailData = useMemo(() => {
+    return filteredDetailData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  }, [filteredDetailData, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, activeFilters])
 
 
   const handleExport = () => {
@@ -269,6 +414,161 @@ const ReportsDatin = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Report DATIN Details Table */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+          <h3 className="text-lg font-bold text-gray-800">Report DATIN Details</h3>
+          <div className="relative w-64">
+            <input
+              type="text"
+              placeholder="Cari Order ID / NIPNAS / Standard Name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+            <FiSearch className="absolute left-3 top-2.5 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg shadow-sm pb-4">
+          <table className="min-w-full border-collapse border border-gray-300 text-xs">
+            <thead>
+              <tr className="text-white">
+                <th 
+                  className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap cursor-pointer hover:bg-blue-700"
+                  onClick={() => setSortConfig({ key: 'order_id', direction: sortConfig.key === 'order_id' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}
+                >
+                  Order ID
+                </th>
+                <th 
+                  className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap cursor-pointer hover:bg-blue-700"
+                  onClick={() => setSortConfig({ key: 'order_date', direction: sortConfig.key === 'order_date' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}
+                >
+                  Order Date {sortConfig.key === 'order_date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">NIPNAS</th>
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Standard Name (PO)</th>
+                
+                {/* Filterable columns */}
+                <FilterHeaderDatin title="Produk" columnKey="produk" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.produk} />
+                
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Revenue</th>
+                
+                <FilterHeaderDatin title="Segmen" columnKey="segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.segmen} />
+                <FilterHeaderDatin title="Sub Segmen" columnKey="sub_segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.sub_segmen} />
+                <FilterHeaderDatin title="Kategori" columnKey="kategori" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.kategori} />
+                <FilterHeaderDatin title="Kategori Umur" columnKey="kategori_umur" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.kategori_umur} />
+                
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Umur Order</th>
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Bill Witel</th>
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Cust Witel</th>
+                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Service Witel</th>
+                
+                <FilterHeaderDatin title="Status" columnKey="status" bgClass="bg-orange-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.status} />
+                
+                <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Milestone</th>
+                <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Biaya Pasang</th>
+                <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Harga Bulanan</th>
+                <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Lama Kontrak (Hari)</th>
+                <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Bill City</th>
+                <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Tipe Order</th>
+                <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Witel Baru</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentDetailData.length > 0 ? (
+                currentDetailData.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_id}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">
+                      {item.order_date ? new Date(item.order_date).toLocaleDateString('id-ID') : '-'}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.nipnas || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.standard_name || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.produk || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
+                      {item.revenue !== null && item.revenue !== undefined && item.revenue !== 0 ? item.revenue.toLocaleString('id-ID') : (item.revenue === 0 ? '0' : '-')}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.segmen || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.sub_segmen || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.kategori || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.kategori_umur || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.umur_order || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.bill_witel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.cust_witel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.service_witel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.status || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.milestone || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
+                      {item.biaya_pasang !== null && item.biaya_pasang !== undefined && item.biaya_pasang !== 0 ? item.biaya_pasang.toLocaleString('id-ID') : (item.biaya_pasang === 0 ? '0' : '-')}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
+                      {item.harga_bulanan !== null && item.harga_bulanan !== undefined && item.harga_bulanan !== 0 ? item.harga_bulanan.toLocaleString('id-ID') : (item.harga_bulanan === 0 ? '0' : '-')}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
+                      {item.lama_kontrak !== null && item.lama_kontrak !== undefined && item.lama_kontrak !== 0 
+                        ? item.lama_kontrak.toLocaleString('id-ID') 
+                        : (item.lama_kontrak === 0 ? '0' : '-')}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.bill_city || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.tipe_order || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.witel_baru || '-'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="22" className="border border-gray-300 px-3 py-4 text-center text-gray-500">
+                    Tidak ada data
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-600">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredDetailData.length)} of {filteredDetailData.length} entries
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let p = i + 1
+                if (totalPages > 5) {
+                  if (currentPage > 3) p = currentPage - 2 + i
+                  if (p > totalPages) p = totalPages - (4 - i)
+                  if (p < 1) p = i + 1
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={`px-3 py-1 border rounded ${currentPage === p ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
+                  >
+                    {p}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
