@@ -223,11 +223,11 @@ export const getReportTambahan = async (req, res, next) => {
       persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
-    // Project data (belum GO LIVE, non-drop)
+    // Project data (All Non-Drop projects, including Go Live)
+    // Modified to show history of longest projects regardless of status
     let projectRows = await prisma.spmkMom.findMany({
       where: {
         ...applyDateFilter(whereClause),
-        goLive: 'N',
         populasiNonDrop: { not: 'N' }
       },
       select: {
@@ -241,7 +241,9 @@ export const getReportTambahan = async (req, res, next) => {
         uraianKegiatan: true,
         statusTompsLastActivity: true,
         tanggalMom: true,
-        poName: true
+        poName: true,
+        goLive: true, // Need this to check status
+        statusProyek: true
       }
     })
 
@@ -249,7 +251,6 @@ export const getReportTambahan = async (req, res, next) => {
       projectRows = await prisma.spmkMom.findMany({
         where: {
           ...whereClause,
-          goLive: 'N',
           populasiNonDrop: { not: 'N' }
         },
         select: {
@@ -263,7 +264,9 @@ export const getReportTambahan = async (req, res, next) => {
           uraianKegiatan: true,
           statusTompsLastActivity: true,
           tanggalMom: true,
-          poName: true
+          poName: true,
+          goLive: true,
+          statusProyek: true
         }
       })
     }
@@ -416,7 +419,7 @@ export const getReportTambahan = async (req, res, next) => {
     
     const trendMap = {}
     
-    // Explicitly fetch data for trend within the date range
+    // RE-FETCHING raw data with dates included (Optimization: could be merged with initial query but let's keep safe)
     const trendRows = await prisma.spmkMom.findMany({
       where: {
         AND: [
@@ -432,18 +435,29 @@ export const getReportTambahan = async (req, res, next) => {
       },
       select: {
         tanggalMom: true, // Input
-        tanggalGolive: true // Output
+        tanggalGolive: true, // Output
+        goLive: true // Status needed for proxy logic
       }
     })
 
     trendRows.forEach(row => {
+      // Input Trend (Based on MOM Date)
       if (row.tanggalMom && row.tanggalMom >= trendStartDate && row.tanggalMom <= trendEndDate) {
         const monthKey = row.tanggalMom.toISOString().slice(0, 7) // YYYY-MM
         if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
         trendMap[monthKey].input++
       }
-      if (row.tanggalGolive && row.tanggalGolive >= trendStartDate && row.tanggalGolive <= trendEndDate) {
-        const monthKey = row.tanggalGolive.toISOString().slice(0, 7) // YYYY-MM
+
+      // Output Trend (Based on GoLive Date OR Proxy)
+      let outputDate = row.tanggalGolive
+      
+      // Fallback: If Done but no date, use MOM date as proxy
+      if (!outputDate && row.goLive === 'Y' && row.tanggalMom) {
+        outputDate = row.tanggalMom
+      }
+
+      if (outputDate && outputDate >= trendStartDate && outputDate <= trendEndDate) {
+        const monthKey = outputDate.toISOString().slice(0, 7) // YYYY-MM
         if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
         trendMap[monthKey].output++
       }
@@ -480,6 +494,7 @@ export const getReportTambahan = async (req, res, next) => {
       {
         tableData: formattedTableData,
         projectData,
+        rawProjectRows: projectRows, // Send raw rows for Preview Table
         topUsiaByWitel,
         topUsiaByPo,
         topMitraRevenue,

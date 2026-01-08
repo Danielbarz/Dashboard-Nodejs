@@ -274,7 +274,30 @@ const ReportsTambahan = () => {
 
       {isAdminMode && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data Tambahan</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900">Unggah Data Tambahan</h2>
+            <button
+               onClick={async () => {
+                 if (window.confirm('Apakah Anda yakin ingin menghapus SEMUA data JT? Tindakan ini tidak dapat dibatalkan.')) {
+                   try {
+                     const token = localStorage.getItem('accessToken')
+                     await axios.post(
+                       `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/jt`,
+                       {},
+                       { headers: { Authorization: `Bearer ${token}` } }
+                     )
+                     alert('Data JT berhasil dihapus')
+                     setRefreshKey(prev => prev + 1)
+                   } catch (err) {
+                     alert('Gagal menghapus dataset: ' + (err.response?.data?.message || err.message))
+                   }
+                 }
+               }}
+               className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition duration-200 text-sm font-semibold"
+            >
+              Hapus Data JT
+            </button>
+          </div>
           <FileUploadForm 
             type="jt"
             onSuccess={() => {

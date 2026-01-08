@@ -33,6 +33,10 @@ const Tambahan = () => {
   const [topPo, setTopPo] = useState([])
   const [previewData, setPreviewData] = useState([])
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  
   // New Charts State
   const [topMitraRevenue, setTopMitraRevenue] = useState([])
   const [trendGolive, setTrendGolive] = useState([])
@@ -56,7 +60,12 @@ const Tambahan = () => {
       setProjectData(data.projectData || [])
       setTopWitel(data.topUsiaByWitel || [])
       setTopPo(data.topUsiaByPo || [])
-      setPreviewData(data.previewData || [])
+      
+      // Fix: Populate previewData from rawProjectRows (Detailed) sorted by Usia (Desc)
+      const allProjects = data.rawProjectRows || []
+      const sortedProjects = [...allProjects].sort((a, b) => (b.usia || 0) - (a.usia || 0)) // Show all
+      setPreviewData(sortedProjects)
+      setCurrentPage(1) // Reset pagination
       
       // Set New Charts Data
       setTopMitraRevenue(data.topMitraRevenue || [])
@@ -108,6 +117,19 @@ const Tambahan = () => {
       }
     })
   }, [parentRows])
+
+  // Pagination Logic
+  const totalPages = Math.ceil(previewData.length / itemsPerPage)
+  const paginatedPreviewData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return previewData.slice(start, start + itemsPerPage)
+  }, [previewData, currentPage])
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
 
   const formatNumber = (n) => (n || 0).toLocaleString('id-ID')
 
@@ -190,50 +212,43 @@ const Tambahan = () => {
 
         {/* Charts Row 2: Status & Progress Witel */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 h-[420px]">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Status LOP per Witel</h3>
-            <div className="h-full">
+          <div className="bg-white rounded-lg shadow p-4 h-[350px]">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Status LOP per Witel</h3>
+            <div className="h-[calc(100%-2rem)]">
               <StackedBarStatusWitelJT data={statusPerWitel} />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6 h-[420px]">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Progress Deploy per Witel</h3>
-            <div className="h-full">
+          <div className="bg-white rounded-lg shadow p-4 h-[350px]">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Progress Deploy per Witel</h3>
+            <div className="h-[calc(100%-2rem)]">
               <GroupedBarProgressWitelJT data={progressByWitel} />
             </div>
           </div>
         </div>
 
-        {/* Charts Row 3: Trend Go-Live & Top Mitra Revenue */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 h-[320px] xl:col-span-2">
+        {/* Charts Row 3: Trend Go-Live */}
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white rounded-lg shadow p-4 h-[350px]">
             <h3 className="text-base font-semibold text-gray-800 mb-2">Trend Order Masuk vs Go-Live</h3>
             <div className="h-[calc(100%-2rem)]">
               <LineChartTrendGolive data={trendGolive} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 h-[320px]">
-            <h3 className="text-base font-semibold text-gray-800 mb-2">Top 10 Mitra by Revenue</h3>
-            <div className="h-[calc(100%-2rem)]">
-              <BarChartTopMitraRevenue data={topMitraRevenue} />
             </div>
           </div>
         </div>
 
         {/* Charts Row 4: Top Usia (Witel & PO) */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 h-[420px]">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 3 Usia Order per Witel</h3>
-            <div className="h-full">
+          <div className="bg-white rounded-lg shadow p-4 h-[350px]">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Top 3 Usia Order per Witel</h3>
+            <div className="h-[calc(100%-2rem)]">
               <BarChartUsiaWitelJT data={topWitel} />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6 h-[420px]">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 3 Usia Order per PO</h3>
-            <div className="h-full">
+          <div className="bg-white rounded-lg shadow p-4 h-[350px]">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Top 3 Usia Order per PO</h3>
+            <div className="h-[calc(100%-2rem)]">
               <BarChartUsiaPoJT data={topPo} />
             </div>
           </div>
@@ -385,7 +400,7 @@ const Tambahan = () => {
                 </tr>
               </thead>
               <tbody>
-                {previewData.map((row, idx) => (
+                {paginatedPreviewData.map((row, idx) => (
                   <tr key={`${row.id || row.idIHld || idx}`} className="odd:bg-white even:bg-gray-50">
                     <td className="px-2 py-2 border">{row.idIHld || '-'}</td>
                     <td className="px-2 py-2 border">{row.poName || '-'}</td>
@@ -399,12 +414,40 @@ const Tambahan = () => {
                     <td className="px-2 py-2 border">{row.tanggalMom ? new Date(row.tanggalMom).toISOString().slice(0,10) : '-'}</td>
                   </tr>
                 ))}
-                {previewData.length === 0 && (
+                {paginatedPreviewData.length === 0 && (
                   <tr><td className="px-3 py-3 text-center text-gray-500" colSpan={10}>Tidak ada data</td></tr>
                 )}
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {previewData.length > 0 && (
+            <div className="flex items-center justify-between mt-4 border-t pt-4">
+              <div className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, previewData.length)} of {previewData.length} entries
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded text-sm ${currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white border hover:bg-gray-50'}`}
+                >
+                  Previous
+                </button>
+                <div className="flex items-center px-2">
+                  <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
+                </div>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded text-sm ${currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-white border hover:bg-gray-50'}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
   )
