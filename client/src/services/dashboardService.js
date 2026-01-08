@@ -112,3 +112,11 @@ export const fetchHSIFlowStats = async (params) => {
   const response = await api.get('/dashboard/hsi/flow', { params })
   return response.data
 }
+
+
+// ... existing code
+
+export const fetchHSIFlowDetail = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow/detail', { params })
+  return response.data
+}
