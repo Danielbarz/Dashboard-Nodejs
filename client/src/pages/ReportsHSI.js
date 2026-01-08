@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { FiDownload } from 'react-icons/fi'
+import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsHSI = () => {
@@ -17,39 +18,93 @@ const ReportsHSI = () => {
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  const tableData = useMemo(() => [
-    { id: 1, category: 'SME', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 2, category: '', witel: 'BALI', red: 45, inpro_sc: 5, qc: 8, fcc: 7, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 2, h3: 1, h3plus: 0, total_pi: 3, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 1, asp: 1, osm: 0, total_fallout: 4, act_comp: 35, jml_comp: 35, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '94%', ps_re: '92%', ps_pi: '95%', isCategoryHeader: false },
-    { id: 3, category: '', witel: 'JATIM BARAT', red: 38, inpro_sc: 4, qc: 6, fcc: 5, rjct_fcc: 1, survey: 2, un_sc: 2, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 1, osm: 0, total_fallout: 2, act_comp: 31, jml_comp: 31, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '92%', ps_re: '90%', ps_pi: '93%', isCategoryHeader: false },
-    { id: 4, category: '', witel: 'JATIM TIMUR', red: 52, inpro_sc: 6, qc: 9, fcc: 8, rjct_fcc: 3, survey: 4, un_sc: 2, h1: 3, h3: 2, h3plus: 0, total_pi: 5, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 1, asp: 1, osm: 0, total_fallout: 4, act_comp: 40, jml_comp: 40, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '96%', ps_re: '94%', ps_pi: '97%', isCategoryHeader: false },
-    { id: 5, category: '', witel: 'NUSA TENGGARA', red: 30, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 25, jml_comp: 25, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '90%', ps_re: '88%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 6, category: '', witel: 'SURAMADU', red: 42, inpro_sc: 5, qc: 7, fcc: 6, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 2, h3: 1, h3plus: 0, total_pi: 3, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 0, asp: 1, osm: 0, total_fallout: 3, act_comp: 34, jml_comp: 34, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '94%', ps_re: '91%', ps_pi: '94%', isCategoryHeader: false },
-    { id: 7, category: 'GOV', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 8, category: '', witel: 'BALI', red: 25, inpro_sc: 2, qc: 4, fcc: 3, rjct_fcc: 1, survey: 1, un_sc: 1, h1: 1, h3: 0, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 20, jml_comp: 20, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '88%', ps_re: '85%', ps_pi: '88%', isCategoryHeader: false },
-    { id: 9, category: '', witel: 'JATIM BARAT', red: 28, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 22, jml_comp: 22, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '89%', ps_re: '87%', ps_pi: '91%', isCategoryHeader: false },
-    { id: 10, category: '', witel: 'JATIM TIMUR', red: 35, inpro_sc: 4, qc: 6, fcc: 5, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 28, jml_comp: 28, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '91%', ps_re: '89%', ps_pi: '92%', isCategoryHeader: false },
-    { id: 11, category: '', witel: 'NUSA TENGGARA', red: 20, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 15, jml_comp: 15, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '87%', ps_re: '82%', ps_pi: '87%', isCategoryHeader: false },
-    { id: 12, category: '', witel: 'SURAMADU', red: 30, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 24, jml_comp: 24, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '90%', ps_re: '87%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 13, category: 'PRIVATE', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 14, category: '', witel: 'BALI', red: 15, inpro_sc: 1, qc: 2, fcc: 2, rjct_fcc: 0, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 12, jml_comp: 12, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '85%', ps_re: '81%', ps_pi: '85%', isCategoryHeader: false },
-    { id: 15, category: '', witel: 'JATIM BARAT', red: 18, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 14, jml_comp: 14, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '87%', ps_re: '83%', ps_pi: '88%', isCategoryHeader: false },
-    { id: 16, category: '', witel: 'JATIM TIMUR', red: 22, inpro_sc: 2, qc: 4, fcc: 3, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 18, jml_comp: 18, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '89%', ps_re: '85%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 17, category: '', witel: 'NUSA TENGGARA', red: 12, inpro_sc: 1, qc: 2, fcc: 1, rjct_fcc: 0, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 10, jml_comp: 10, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '83%', ps_re: '78%', ps_pi: '83%', isCategoryHeader: false },
-    { id: 18, category: '', witel: 'SURAMADU', red: 20, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 16, jml_comp: 16, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '86%', ps_re: '82%', ps_pi: '86%', isCategoryHeader: false },
-    { id: 19, category: 'SOE', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 20, category: '', witel: 'BALI', red: 8, inpro_sc: 0, qc: 1, fcc: 1, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 6, jml_comp: 6, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '80%', ps_re: '75%', ps_pi: '80%', isCategoryHeader: false },
-  ], [])
+  // --- Helpers from PHP Version ---
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('id-ID').format(num || 0);
+  };
+
+  const getPsReColor = (value) => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return '';
+    return num >= 80 ? 'bg-[#24c55f] text-white font-bold' : 'bg-[#e65253] text-white font-bold';
+  };
+
+  const colors = {
+    blue: 'bg-[#3e81f4]',
+    red: 'bg-[#e65253]',
+    green: 'bg-[#24c55f]',
+    gray: 'bg-[#6b717f]',
+  };
+
+  const totalRowStyle = "bg-[#cccccc] text-[#464647] font-bold border-slate-400";
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
+        {
+          params: { start_date: startDate, end_date: endDate },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      if (response.data?.data?.tableData) {
+        setData(response.data.data.tableData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch HSI report:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate])
 
   const filteredData = useMemo(() => {
-    let result = tableData
-    if (selectedWitel) result = result.filter(row => row.witel === selectedWitel || row.isCategoryHeader)
-    return result
-  }, [tableData, selectedWitel])
+    if (!selectedWitel) return data
+    return data.filter(row => row.witel === selectedWitel)
+  }, [data, selectedWitel])
 
-  const visibleRows = filteredData
+  // Calculate Totals
+  const totals = useMemo(() => {
+    const initial = {
+      registered: 0, pre_pi: 0, inpro_sc: 0, qc1: 0, fcc: 0, rjct_fcc: 0, survey_manja: 0, un_sc: 0,
+      pi_under_24: 0, pi_24_72: 0, pi_over_72: 0, total_pi: 0,
+      fo_wfm_plgn: 0, fo_wfm_teknis: 0, fo_wfm_system: 0, fo_wfm_others: 0,
+      fo_uim: 0, fo_asp: 0, fo_osm: 0, total_fallout: 0,
+      act_comp: 0, ps: 0,
+      cancel_plgn: 0, cancel_teknis: 0, cancel_system: 0, cancel_others: 0, total_cancel: 0,
+      revoke: 0
+    }
+
+    const sum = filteredData.reduce((acc, row) => {
+      Object.keys(initial).forEach(key => {
+        acc[key] += (row[key] || 0)
+      })
+      return acc
+    }, initial)
+
+    // Calculate Percentage Totals
+    const numeratorPiRe = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps + sum.total_cancel
+    sum.pi_re_percent = sum.registered > 0 ? ((numeratorPiRe / sum.registered) * 100).toFixed(2) : 0
+
+    const denominatorPsRe = sum.registered - sum.rjct_fcc - sum.un_sc - sum.revoke
+    sum.ps_re_percent = denominatorPsRe > 0 ? ((sum.ps / denominatorPsRe) * 100).toFixed(2) : 0
+
+    const denominatorPsPi = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps
+    sum.ps_pi_percent = denominatorPsPi > 0 ? ((sum.ps / denominatorPsPi) * 100).toFixed(2) : 0
+
+    return sum
+  }, [filteredData])
 
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
@@ -78,6 +133,10 @@ const ReportsHSI = () => {
             </div>
           </div>
 
+          <button onClick={fetchData} className="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 whitespace-nowrap h-10">
+            Refresh
+          </button>
+
           <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
             <FiDownload className="mr-2" size={16} />
             Ekspor Report
@@ -86,96 +145,177 @@ const ReportsHSI = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report HSI</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[7px]">
-            <thead>
-              <tr className="bg-blue-600">
-                <th rowSpan="2" className="px-1 py-2 text-center font-bold text-white border bg-blue-600">WITEL</th>
-                <th colSpan="4" className="px-1 py-1 text-center font-bold text-white border bg-gray-600">PROGRESS</th>
-                <th rowSpan="2" className="px-1 py-1 text-center font-bold text-white border bg-red-600">RJCT FCC</th>
-                <th colSpan="2" className="px-1 py-1 text-center font-bold text-white border bg-gray-600">SURVEY</th>
-                <th colSpan="4" className="px-1 py-1 text-center font-bold text-white border bg-gray-600">OGP</th>
-                <th colSpan="8" className="px-1 py-1 text-center font-bold text-white border bg-gray-600">PI FALLOUT</th>
-                <th rowSpan="2" className="px-1 py-1 text-center font-bold text-white border bg-green-600">ACT COMP<br/>(QC2)</th>
-                <th rowSpan="2" className="px-1 py-1 text-center font-bold text-white border bg-green-600">JML COMP<br/>(PS)</th>
-                <th colSpan="5" className="px-1 py-1 text-center font-bold text-black border bg-red-600">CANCEL</th>
-                <th rowSpan="2" className="px-1 py-1 text-center font-bold text-white border bg-red-600">REVOKE</th>
-                <th colSpan="3" className="px-1 py-1 text-center font-bold text-white border bg-blue-600">PERFORMANCE</th>
-              </tr>
-              <tr className="bg-gray-700">
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">RED</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">INPRO<br/>SC</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">QC</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">FCC</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">SURVEY</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">UN-SC</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">&lt;1 HARI</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">1-3 HARI</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">&gt;3 HARI</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">TOTAL PI</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">KNDL<br/>PLGN</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">KNDL<br/>TEKNIS</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">KNDL<br/>SYSTEM</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">KNDL<br/>OTHERS</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">UIM</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">ASP</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">OSM</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-gray-600 text-[6px]">TOTAL<br/>FALLOUT</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-red-600 text-[6px]">KNDL<br/>PLGN</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-red-600 text-[6px]">KNDL<br/>TEKNIS</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-red-600 text-[6px]">KNDL<br/>SYSTEM</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-red-600 text-[6px]">KNDL<br/>OTHERS</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-red-600 text-[6px]">TOTAL<br/>CANCEL</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-blue-600 text-[6px]">PI/RE</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-blue-600 text-[6px]">PS/RE</th>
-                <th className="px-1 py-1 text-center font-bold text-white border bg-blue-600 text-[6px]">PS/PI</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center text-[7px]">
-              {visibleRows.map((row) => (
-                <tr key={row.id} className={row.isCategoryHeader ? 'bg-gray-800 font-bold text-white' : 'hover:bg-gray-50'}>
-                  <td className={`px-1 py-1 whitespace-nowrap border text-left font-semibold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.red}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.inpro_sc}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.qc}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.fcc}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.rjct_fcc}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.survey}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.un_sc}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h1}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h3}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h3plus}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.total_pi}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_plgn_f}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_teknis_f}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_system_f}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_others_f}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.uim}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.asp}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.osm}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.total_fallout}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-green-100'}`}>{row.act_comp}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-green-100'}`}>{row.jml_comp}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.kndl_plgn_c}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.kndl_teknis_c}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.kndl_system_c}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.kndl_others_c}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.total_cancel}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.revoke}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-blue-100'}`}>{row.pi_re}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100'}`}>{row.ps_re}</td>
-                  <td className={`px-1 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-blue-100'}`}>{row.ps_pi}</td>
+        <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wide mb-4">
+            Performance Report HSI Per Witel
+        </h3>
+        <div className="overflow-x-auto max-h-[80vh]">
+          <table className="w-full text-[10px] border-collapse border border-slate-400 text-center font-sans">
+            
+            {/* TABLE HEAD */}
+            <thead className="text-white font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+                <tr>
+                    <th className={`border border-slate-300 p-2 min-w-[150px] sticky left-0 z-30 ${colors.blue}`} rowSpan={4}>Witel</th>
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={4}>PRE PI</th>
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={4}>Registered (RE)</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>Inpro SC</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>QC 1</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>FCC</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={4}>RJCT FCC</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>Survey Manja</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={4}>UN-SC</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} colSpan={13}>OGP</th>
+                    <th className={`border border-slate-300 p-1 ${colors.green}`} rowSpan={4}>JML COMP (PS)</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} colSpan={5}>CANCEL</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={4}>REVOKE</th>
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} colSpan={3}>PERFORMANCE</th>
                 </tr>
-              ))}
+                <tr>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} colSpan={3}>PI</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={3}>TOTAL PI</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} colSpan={7}>FALLOUT</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={3}>TOTAL FALLOUT</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={3}>ACT COMP (QC2)</th>
+                    
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL Plgn</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL Teknis</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL System</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL Others</th>
+                    <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>TOTAL CANCEL</th>
+
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={3}>PI/RE</th>
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={3}>PS/RE</th>
+                    <th className={`border border-slate-300 p-1 ${colors.blue}`} rowSpan={3}>PS/PI</th>
+                </tr>
+                <tr>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>&lt; 1 Hari</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>1-3 Hari</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>&gt; 3 Hari</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} colSpan={4}>WFM</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>UIM</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>ASP</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={2}>OSM</th>
+                </tr>
+                <tr>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`}>KNDL Plgn</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`}>KNDL Teknis</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`}>KNDL System</th>
+                    <th className={`border border-slate-300 p-1 ${colors.gray}`}>KNDL Others</th>
+                </tr>
+            </thead>
+
+            {/* TABLE BODY */}
+            <tbody className="bg-white text-gray-700">
+                {loading ? (
+                    <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Loading data...</td></tr>
+                ) : filteredData.length === 0 ? (
+                    <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Tidak ada data untuk periode ini.</td></tr>
+                ) : (
+                    filteredData.map((row, index) => (
+                    <tr 
+                        key={index} 
+                        className="bg-white hover:bg-blue-50 transition-colors"
+                    >
+                        <td className="border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 bg-inherit font-semibold">
+                            {row.witel}
+                        </td>
+                        
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.registered)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.inpro_sc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.qc1)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fcc)}</td>
+                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.rjct_fcc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_manja)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.un_sc)}</td>
+
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_24)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_24_72)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_72)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_pi)}</td>
+                        
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_others)}</td>
+                        
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_uim)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_asp)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_osm)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_fallout)}</td>
+                        
+                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{formatNumber(row.act_comp)}</td>
+                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.ps)}</td>
+
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_others)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_cancel)}</td>
+
+                        <td className="border border-slate-300 p-1 bg-red-50 font-bold">{formatNumber(row.revoke)}</td>
+
+                        <td className="border border-slate-300 p-1 bg-blue-50 font-bold">{row.perf_pi_re}%</td>
+                        <td className={`border border-slate-300 p-1 ${getPsReColor(row.perf_ps_re)}`}>
+                            {row.perf_ps_re}%
+                        </td>
+                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{row.perf_ps_pi}%</td>
+                    </tr>
+                )))}
             </tbody>
+
+            {/* TABLE FOOTER (TOTALS) */}
+            <tfoot className="sticky bottom-0 z-20">
+                <tr className={totalRowStyle}>
+                    <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">TOTAL</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pre_pi)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.registered)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.inpro_sc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.qc1)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fcc)}</td>
+                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.rjct_fcc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.survey_manja)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.un_sc)}</td>
+
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_24)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_24_72)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_72)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.total_pi)}</td>
+
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_others)}</td>
+
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_uim)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_asp)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_osm)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.total_fallout)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.act_comp)}</td>
+
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.ps)}</td>
+
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_others)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.total_cancel)}</td>
+
+                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.revoke)}</td>
+
+                    <td className="border border-slate-400 p-1">{totals.pi_re_percent}%</td>
+                    <td className={`border border-slate-400 p-1 ${getPsReColor(totals.ps_re_percent)}`}>
+                        {totals.ps_re_percent}%
+                    </td>
+                    <td className="border border-slate-400 p-1">{totals.ps_pi_percent}%</td>
+                </tr>
+            </tfoot>
           </table>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data HSI</h2>
-        <FileUploadForm type="hsi" />
+        <FileUploadForm type="hsi" onSuccess={() => fetchData()} />
       </div>
     </>
   )

@@ -323,7 +323,7 @@ export const uploadFile = async (req, res, next) => {
     // Increased batch size for local development (5x faster)
     // Note: Max Postgres params is ~65535. HSI has ~65 cols. 65 * 1000 = 65000 (Risk). 
     // So 500 is the safe sweet spot (32,500 params).
-    const BATCH_SIZE = 500
+    const BATCH_SIZE = 100
     const sosBuffer = []
     const hsiBuffer = []
     const jtBuffer = []
@@ -337,7 +337,7 @@ export const uploadFile = async (req, res, next) => {
     
     // Helper function to flush a buffer
     const flushBuffer = async (buffer, model, label, mode = 'createMany') => {
-      if (buffer.length === 0) return 0
+      if (buffer.length === 0) return { inserted: 0, failed: 0 }
       
       try {
         batchCounter++
@@ -413,7 +413,7 @@ export const uploadFile = async (req, res, next) => {
             'tindak_lanjut', 'isi_comment', 'user_id_tl', 'tgl_comment', 'tanggal_manja', 'kelompok_kendala', 
             'kelompok_status', 'hero', 'addon', 'tgl_ps', 'status_message', 'package_name', 'group_paket', 
             'reason_cancel', 'keterangan_cancel', 'tgl_manja', 'detail_manja', 'suberrorcode', 'engineermemo', 
-            'tahun', 'bulan', 'tanggal', 'ps_1', 'cek', 'hasil', 'telda', 'data_proses', 'no_order_revol', 
+            'tahun', 'bulan', 'tanggal', 'ps_1', 'cek', 'hasil', 'telda', 'data_proses', 'no_order_revoke', 
             'data_ps_revoke', 'untuk_ps_pi', 'untuk_ps_re',
             'batch_id', 'created_at', 'updated_at'
           ]
@@ -479,15 +479,16 @@ export const uploadFile = async (req, res, next) => {
         console.log(`✅ Batch ${batchCounter}: Inserted ${insertedCount} ${label} rows`)
         progressLogs.push({ batch: batchCounter, type: label, inserted: insertedCount, status: 'success', timestamp: new Date() })
         buffer.length = 0
-        return insertedCount
+        return { inserted: insertedCount, failed: 0 }
       } catch (err) {
         batchCounter++
         const errorMsg = `❌ Batch ${batchCounter}: Error inserting ${label} - ${err.message}`
         console.error(errorMsg)
         console.error(`Detail: ${JSON.stringify(err)}`)
         progressLogs.push({ batch: batchCounter, type: label, error: err.message, status: 'failed', timestamp: new Date() })
+        const failedCount = buffer.length
         buffer.length = 0
-        return 0
+        return { inserted: 0, failed: failedCount }
       }
     }
 
@@ -497,7 +498,7 @@ export const uploadFile = async (req, res, next) => {
       const keyMap = buildKeyMap(record)
       
       try {
-        if (['digital_product', 'hsi'].includes(type)) {
+        if (['digital_product'].includes(type)) {
           const now = new Date()
           const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
           const productName = type === 'digital_product'
@@ -523,7 +524,9 @@ export const uploadFile = async (req, res, next) => {
           })
 
           if (digitalBuffer.length >= BATCH_SIZE) {
-            successCount += await flushBuffer(digitalBuffer, null, 'DIGITAL', 'digital')
+            const flushResult = await flushBuffer(digitalBuffer, null, 'DIGITAL', 'digital')
+            successCount += flushResult.inserted
+            failedCount += flushResult.failed
           }
         }
 
@@ -554,7 +557,9 @@ export const uploadFile = async (req, res, next) => {
           })
 
           if (sosBuffer.length >= BATCH_SIZE) {
-            successCount += await flushBuffer(sosBuffer, prisma.sosData, 'SOS', 'upsert')
+            const flushResult = await flushBuffer(sosBuffer, prisma.sosData, 'SOS', 'upsert')
+            successCount += flushResult.inserted
+            failedCount += flushResult.failed
           }
         } else if (type === 'hsi') {
           const hsiMapping = {
@@ -590,13 +595,35 @@ export const uploadFile = async (req, res, next) => {
              }
              hsiRow[dbCol] = val
           }
+
+          // --- GENERATOR LOGIC (AUTO-FILL) ---
+          // Mengisi kolom ps_1, no_order_revoke, dll berdasarkan status_resume jika kosong
+          const status = (hsiRow.status_resume || '').toString().toUpperCase()
+          
+          if (!hsiRow.ps_1) {
+             if (status.includes('PS')) hsiRow.ps_1 = 'PS'
+             else if (status.includes('FALLOUT')) hsiRow.ps_1 = 'FALLOUT'
+             else if (status.includes('CANCEL')) hsiRow.ps_1 = 'CANCEL'
+             else if (status.includes('UNSC')) hsiRow.ps_1 = 'UNSC'
+             else if (status.includes('PROVISIONING') || status.includes('OGP')) hsiRow.ps_1 = 'OGP PROVI'
+             else if (status.includes('REVOKE')) hsiRow.ps_1 = 'REVOKE' // Fallback
+          }
+
+          if (!hsiRow.no_order_revoke) {
+             if (status.includes('REVOKE')) hsiRow.no_order_revoke = 'REVOKE'
+             else if (status.includes('FALLOUT')) hsiRow.no_order_revoke = 'FALLOUT'
+             else if (status.includes('CANCEL')) hsiRow.no_order_revoke = 'CANCEL'
+          }
+          // -----------------------------------
           
           hsiRow.batch_id = currentBatchId
           if (!hsiRow.order_id) hsiRow.order_id = `order_${Date.now()}_${i}`
 
           hsiBuffer.push(hsiRow)
           if (hsiBuffer.length >= BATCH_SIZE) {
-            successCount += await flushBuffer(hsiBuffer, null, 'HSI', 'hsi')
+            const flushResult = await flushBuffer(hsiBuffer, null, 'HSI', 'hsi')
+            successCount += flushResult.inserted
+            failedCount += flushResult.failed
           }
         } else if (type === 'jt' || type === 'tambahan' || type === 'datin') {
           // JT/Datin Logic
@@ -698,7 +725,9 @@ export const uploadFile = async (req, res, next) => {
           })
 
           if (buffer.length >= BATCH_SIZE) {
-            successCount += await flushBuffer(buffer, prisma.spmkMom, label)
+            const flushResult = await flushBuffer(buffer, prisma.spmkMom, label)
+            successCount += flushResult.inserted
+            failedCount += flushResult.failed
           }
         }
       } catch (err) {
@@ -709,11 +738,11 @@ export const uploadFile = async (req, res, next) => {
 
     // Flush remaining
     console.log('📤 Flushing remaining buffers...')
-    successCount += await flushBuffer(sosBuffer, prisma.sosData, 'SOS (final)', 'upsert')
-    successCount += await flushBuffer(hsiBuffer, null, 'HSI (final)', 'hsi')
-    successCount += await flushBuffer(jtBuffer, prisma.spmkMom, 'JT (final)')
-    successCount += await flushBuffer(datinBuffer, prisma.spmkMom, 'DATIN (final)')
-    successCount += await flushBuffer(digitalBuffer, null, 'DIGITAL (final)', 'digital')
+    let flushResult = await flushBuffer(sosBuffer, prisma.sosData, 'SOS (final)', 'upsert'); successCount += flushResult.inserted || 0; failedCount += flushResult.failed || 0
+    flushResult = await flushBuffer(hsiBuffer, null, 'HSI (final)', 'hsi'); successCount += flushResult.inserted || 0; failedCount += flushResult.failed || 0
+    flushResult = await flushBuffer(jtBuffer, prisma.spmkMom, 'JT (final)'); successCount += flushResult.inserted || 0; failedCount += flushResult.failed || 0
+    flushResult = await flushBuffer(datinBuffer, prisma.spmkMom, 'DATIN (final)'); successCount += flushResult.inserted || 0; failedCount += flushResult.failed || 0
+    flushResult = await flushBuffer(digitalBuffer, null, 'DIGITAL (final)', 'digital'); successCount += flushResult.inserted || 0; failedCount += flushResult.failed || 0
 
     console.log(`✅ Import complete: ${successCount} success, ${failedCount} failed`)
 
