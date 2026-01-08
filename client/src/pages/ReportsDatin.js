@@ -109,20 +109,38 @@ const ReportsDatin = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await api.get('/report/datin-summary', {
-        params: { 
-          start_date: startDate, 
-          end_date: endDate,
-          witel: selectedWitel.join(',') 
-        }
-      })
-      if (response.data?.data) {
-        console.log('API RESPONSE:', response.data.data)
-        setApiData(response.data.data)
-        if (response.data.data?.detailData) {
-          setDetailData(response.data.data.detailData)
-        }
+      const summaryParams = {
+        start_date: startDate,
+        end_date: endDate,
+        witel: selectedWitel.join(',')
       }
+
+      const detailsParams = {
+        start_date: startDate,
+        end_date: endDate,
+        witel: selectedWitel.join(','),
+        search: searchQuery,
+        page: currentPage,
+        limit: 100 // Fetch more initially or use pagination state
+      }
+
+      const [summaryRes, detailsRes] = await Promise.all([
+        api.get('/report/datin-summary', { params: summaryParams }),
+        api.get('/report/datin-details', { params: detailsParams })
+      ])
+
+      if (summaryRes.data?.data) {
+        setApiData(prev => ({ ...prev, ...summaryRes.data.data }))
+      }
+
+      if (detailsRes.data?.data?.data) {
+        console.log('DETAILS DATA:', detailsRes.data.data.data)
+        setDetailData(detailsRes.data.data.data)
+        // Update pagination info if needed, e.g. setTotalPages(detailsRes.data.data.pagination.totalPages)
+      } else {
+        setDetailData([])
+      }
+
     } catch (error) {
       console.error('Failed to fetch report data:', error)
     } finally {
@@ -217,6 +235,8 @@ const ReportsDatin = () => {
   }, [searchQuery, activeFilters])
 
 
+  const [activeTab, setActiveTab] = useState('revenue') // 'revenue' or 'status'
+
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
     window.location.href = `/api/export/report-datin?${params.toString()}`
@@ -278,93 +298,144 @@ const ReportsDatin = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Report Jenis Order & Revenue</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
-            <thead className="bg-blue-600">
-              <tr>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&lt;3BLN<br/>TOTAL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">EST BC<br/>&lt;3BLN TOTAL<br/>(JT)</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">ORDER<br/>&gt;3BLN<br/>TOTAL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">EST BC<br/>&gt;3BLN TOTAL<br/>(JT)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
-              </tr>
-              <tr>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">PROVIDE<br/>ORDER</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">IN<br/>PROCESS</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-blue-700 border text-[9px]">READY<br/>TO BILL</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {table1Data.map((row) => (
-                <tr key={row.id} className={row.isCategoryHeader ? 'bg-blue-700 font-bold text-white' : 'hover:bg-gray-50'}>
-                  <td className={`px-2 py-1 whitespace-nowrap border text-left ${row.isCategoryHeader ? 'font-bold text-white bg-blue-700' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln2}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.grand_total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={() => setActiveTab('revenue')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'revenue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Report Jenis Order & Revenue
+        </button>
+        <button
+          onClick={() => setActiveTab('status')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'status' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Report Status Progress Order
+        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Report Status Progress Order</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
-            <thead className="bg-red-900">
-              <tr>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN<br/>TOTAL</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN<br/>TOTAL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
-              </tr>
-              <tr>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
-                <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {table2Data.map((row) => (
-                <tr key={row.id} className={`hover:bg-gray-50 ${['SME', 'GOV', 'PRIVATE', 'SOE'].includes(row.witel) ? 'bg-red-900 font-bold text-white' : ''}`}>
-                  <td className="px-2 py-1 whitespace-nowrap border text-left">{row.witel}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.in_process}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.in_process2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln2}</td>
-                  <td className="px-2 py-1 whitespace-nowrap border font-bold">{row.grand_total}</td>
+      {activeTab === 'revenue' && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Report Jenis Order & Revenue</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
+              <thead className="bg-blue-600">
+                <tr>
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
+                  
+                  {/* < 3 Bulan */}
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">AO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">DO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">MO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-800">ORDER &lt;3BLN TOTAL</th>
+                  
+                  {/* > 3 Bulan */}
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">AO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">DO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">MO</th>
+                  <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-800">ORDER &gt;3BLN TOTAL</th>
+
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                <tr>
+                  {/* < 3 Bulan Subheaders */}
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+
+                   {/* > 3 Bulan Subheaders */}
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">JML</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-blue-600 border text-[9px]">EST (JT)</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200 text-center">
+                {table1Data.map((row) => (
+                  <tr key={row.id} className={row.isCategoryHeader ? 'bg-blue-700 font-bold text-white' : 'hover:bg-gray-50'}>
+                    <td className={`px-2 py-1 whitespace-nowrap border text-left ${row.isCategoryHeader ? 'font-bold text-white bg-blue-700' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
+                    
+                    {/* < 3 Bulan */}
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_ao_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_do_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_mo_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln}</td>
+
+                    {/* > 3 Bulan */}
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_ao_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.do_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_do_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.mo_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_mo_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.total_3bln2}</td>
+                    <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_3bln2}</td>
+
+                    <td className={`px-2 py-1 whitespace-nowrap border font-bold ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.grand_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'status' && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Report Status Progress Order</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 border text-[10px]">
+              <thead className="bg-red-900">
+                <tr>
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
+                  <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN</th>
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&lt;3BLN<br/>TOTAL</th>
+                  <th colSpan="3" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN</th>
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px]">&gt;3BLN<br/>TOTAL</th>
+                  <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">GRAND<br/>TOTAL<br/>ORDER</th>
+                </tr>
+                <tr>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">PROVIDE<br/>ORDER</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">IN<br/>PROCESS</th>
+                  <th className="px-2 py-1 text-center font-bold text-white bg-red-800 border text-[9px]">READY<br/>TO BILL</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200 text-center">
+                {table2Data.map((row) => (
+                  <tr key={row.id} className={`hover:bg-gray-50 ${['SME', 'GOV', 'PRIVATE', 'SOE'].includes(row.witel) ? 'bg-red-900 font-bold text-white' : ''}`}>
+                    <td className="px-2 py-1 whitespace-nowrap border text-left">{row.witel}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.in_process}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.provide_order2}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.in_process2}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border">{row.ready_bill2}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border font-semibold">{row.total_3bln2}</td>
+                    <td className="px-2 py-1 whitespace-nowrap border font-bold">{row.grand_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Posisi Galaksi (Order In Progress)</h2>
@@ -481,40 +552,40 @@ const ReportsDatin = () => {
               {currentDetailData.length > 0 ? (
                 currentDetailData.map((item, idx) => (
                   <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_id}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.orderId}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">
-                      {item.order_date ? new Date(item.order_date).toLocaleDateString('id-ID') : '-'}
+                      {item.orderDate ? new Date(item.orderDate).toLocaleDateString('id-ID') : '-'}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.nipnas || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.standard_name || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.name || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.produk || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
                       {item.revenue !== null && item.revenue !== undefined && item.revenue !== 0 ? item.revenue.toLocaleString('id-ID') : (item.revenue === 0 ? '0' : '-')}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.segmen || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.sub_segmen || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.subSegmen || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.kategori || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.kategori_umur || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.umur_order || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.bill_witel || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.cust_witel || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.service_witel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.kategoriUmur || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.umurOrder || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.billWitel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.custWitel || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.serviceWitel || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.status || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.milestone || '-'}</td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
-                      {item.biaya_pasang !== null && item.biaya_pasang !== undefined && item.biaya_pasang !== 0 ? item.biaya_pasang.toLocaleString('id-ID') : (item.biaya_pasang === 0 ? '0' : '-')}
+                      {item.biayaPasang !== null && item.biayaPasang !== undefined && item.biayaPasang !== 0 ? item.biayaPasang.toLocaleString('id-ID') : (item.biayaPasang === 0 ? '0' : '-')}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
-                      {item.harga_bulanan !== null && item.harga_bulanan !== undefined && item.harga_bulanan !== 0 ? item.harga_bulanan.toLocaleString('id-ID') : (item.harga_bulanan === 0 ? '0' : '-')}
+                      {item.hargaBulanan !== null && item.hargaBulanan !== undefined && item.hargaBulanan !== 0 ? item.hargaBulanan.toLocaleString('id-ID') : (item.hargaBulanan === 0 ? '0' : '-')}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
-                      {item.lama_kontrak !== null && item.lama_kontrak !== undefined && item.lama_kontrak !== 0 
-                        ? item.lama_kontrak.toLocaleString('id-ID') 
-                        : (item.lama_kontrak === 0 ? '0' : '-')}
+                      {item.lamaKontrak !== null && item.lamaKontrak !== undefined && item.lamaKontrak !== 0 
+                        ? item.lamaKontrak.toLocaleString('id-ID') 
+                        : (item.lamaKontrak === 0 ? '0' : '-')}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.bill_city || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.tipe_order || '-'}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.witel_baru || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.billCity || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.tipeOrder || '-'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.witelBaru || '-'}</td>
                   </tr>
                 ))
               ) : (

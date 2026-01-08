@@ -334,36 +334,3 @@ model UserTableConfiguration {
 
   @@map("user_table_configurations")
 }
-
-model PoMaster {
-  id        BigInt   @id @default(autoincrement())
-  nipnas    String
-  namaPo    String   @map("nama_po")
-  segment   String?
-  billCity  String?  @map("bill_city")
-  witel     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([nipnas])
-  @@index([witel])
-  @@map("po_master")
-}
-
-model UnmappedOrder {
-  id           BigInt   @id @default(autoincrement())
-  orderId      String   @unique @map("order_id")
-  nipnas       String?
-  customerName String?  @map("customer_name")
-  custCity     String?  @map("cust_city")
-  servCity     String?  @map("serv_city")
-  billWitel    String?  @map("bill_witel")
-  billCity     String?  @map("bill_city")
-  poName       String?  @map("po_name")
-  segment      String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@index([nipnas])
-  @@map("unmapped_orders")
-}
