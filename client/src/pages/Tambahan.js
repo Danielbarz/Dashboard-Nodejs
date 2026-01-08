@@ -56,7 +56,11 @@ const Tambahan = () => {
       setProjectData(data.projectData || [])
       setTopWitel(data.topUsiaByWitel || [])
       setTopPo(data.topUsiaByPo || [])
-      setPreviewData(data.previewData || [])
+      
+      // Fix: Populate previewData from rawProjectRows (Detailed) sorted by Usia (Desc)
+      const allProjects = data.rawProjectRows || []
+      const sortedProjects = [...allProjects].sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 100)
+      setPreviewData(sortedProjects)
       
       // Set New Charts Data
       setTopMitraRevenue(data.topMitraRevenue || [])
@@ -110,6 +114,8 @@ const Tambahan = () => {
   }, [parentRows])
 
   const formatNumber = (n) => (n || 0).toLocaleString('id-ID')
+
+  console.log('DEBUG PREVIEW DATA:', previewData)
 
   return (
     <div className="space-y-6">
@@ -205,19 +211,12 @@ const Tambahan = () => {
           </div>
         </div>
 
-        {/* Charts Row 3: Trend Go-Live & Top Mitra Revenue */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 h-[320px] xl:col-span-2">
+        {/* Charts Row 3: Trend Go-Live */}
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white rounded-lg shadow p-4 h-[320px]">
             <h3 className="text-base font-semibold text-gray-800 mb-2">Trend Order Masuk vs Go-Live</h3>
             <div className="h-[calc(100%-2rem)]">
               <LineChartTrendGolive data={trendGolive} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 h-[320px]">
-            <h3 className="text-base font-semibold text-gray-800 mb-2">Top 10 Mitra by Revenue</h3>
-            <div className="h-[calc(100%-2rem)]">
-              <BarChartTopMitraRevenue data={topMitraRevenue} />
             </div>
           </div>
         </div>
