@@ -1137,19 +1137,42 @@ export const getReportDatinDetails = async (req, res, next) => {
       segmen: row.segmen,
       subSegmen: row.subSegmen,
       kategori: row.kategori,
+      
+      // Detailed Fields
       kategoriUmur: row.kategoriUmur,
-      umurOrder: row.lamaKontrakHari, 
+      umurOrder: row.umurOrder,
+      lamaKontrak: row.lamaKontrakHari,
+      amortisasi: row.amortisasi,
+      
       billWitel: row.billWitel,
       custWitel: row.custWitel,
       serviceWitel: row.serviceWitel,
+      witelBaru: row.witelBaru || row.custWitel, // Fallback if witelBaru empty
+      
+      billCity: row.billCity,
+      custCity: row.custCity,
+      servCity: row.servCity,
+      
       status: row.liStatus,
       milestone: row.liMilestone,
+      statusDate: row.liStatusDate ? row.liStatusDate.toISOString().split('T')[0] : '-',
+      billDate: row.liBilldate ? row.liBilldate.toISOString().split('T')[0] : '-',
+      
       biayaPasang: parseFloat(row.biayaPasang || 0),
       hargaBulanan: parseFloat(row.hrgBulanan || 0),
-      lamaKontrak: row.lamaKontrakHari,
-      billCity: row.custCity,
-      tipeOrder: row.agreeType,
-      witelBaru: row.custWitel
+      
+      tipeOrder: row.actionCd || row.tipeOrder || row.agreeType, // Prioritize Action CD
+      agreeType: row.agreeType,
+      agreeStartDate: row.agreeStartDate ? row.agreeStartDate.toISOString().split('T')[0] : '-',
+      agreeEndDate: row.agreeEndDate ? row.agreeEndDate.toISOString().split('T')[0] : '-',
+      isTermin: row.isTermin,
+      
+      poName: row.poName,
+      segmenBaru: row.segmenBaru,
+      kategoriBaru: row.kategoriBaru,
+      tipeGrup: row.tipeGrup,
+      scalling1: row.scalling1,
+      scalling2: row.scalling2
     }))
 
     successResponse(res, {
@@ -1266,21 +1289,29 @@ export const getReportDatinSummary = async (req, res, next) => {
         return match || 'OTHER'
       }
 
-      // Default: Map to Major Witel
-      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'].some(k => w.includes(k))) return 'BALI'
+      // Default: Map to Major Witel (Frontend witelList: BALI, JATIM BARAT, JATIM TIMUR, NUSA TENGGARA, SURAMADU)
+      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'].some(k => w.includes(k))) return 'BALI'
       if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].some(k => w.includes(k))) return 'JATIM BARAT'
       if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].some(k => w.includes(k))) return 'JATIM TIMUR'
-      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'].some(k => w.includes(k))) return 'NUSA TENGGARA'
+      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'].some(k => w.includes(k))) return 'NUSA TENGGARA'
       if (['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].some(k => w.includes(k))) return 'SURAMADU'
+      
+      // Fallback: Check if the string itself contains the major region names
+      if (w.includes('BALI')) return 'BALI'
+      if (w.includes('BARAT')) return 'JATIM BARAT'
+      if (w.includes('TIMUR')) return 'JATIM TIMUR'
+      if (w.includes('NUSA') || w.includes('NTB') || w.includes('NTT')) return 'NUSA TENGGARA'
+      if (w.includes('SURAMADU') || w.includes('MADURA') || w.includes('SURABAYA')) return 'SURAMADU'
+
       return 'OTHER'
     }
 
     const getOrderType = (actionCd) => {
       const a = (actionCd || '').toUpperCase()
-      if (a.startsWith('A')) return 'AO' // Add -> AO
+      if (a.startsWith('A') || a.startsWith('NEW') || a.startsWith('INST')) return 'AO' // Add -> AO
       if (a.startsWith('S')) return 'SO' // Suspend -> SO
-      if (a.startsWith('D')) return 'DO' // Delete -> DO
-      if (a.startsWith('M')) return 'MO' // Modify/Move -> MO
+      if (a.startsWith('D') || a.startsWith('TERM')) return 'DO' // Delete -> DO
+      if (a.startsWith('M') || a.startsWith('U') || a.startsWith('CH')) return 'MO' // Modify/Move/Update/Change -> MO
       if (a.startsWith('R')) return 'RO' // Resume -> RO
       return 'OTHER'
     }
@@ -1311,8 +1342,20 @@ export const getReportDatinSummary = async (req, res, next) => {
       }
       targetWitels.forEach(w => {
         table1Map[cat].witels[w] = {
-          ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-          ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+          ao_3bln: 0, est_ao_3bln: 0,
+          so_3bln: 0, est_so_3bln: 0,
+          do_3bln: 0, est_do_3bln: 0,
+          mo_3bln: 0, est_mo_3bln: 0,
+          ro_3bln: 0, est_ro_3bln: 0,
+          total_3bln: 0, est_3bln: 0,
+
+          ao_3bln2: 0, est_ao_3bln2: 0,
+          so_3bln2: 0, est_so_3bln2: 0,
+          do_3bln2: 0, est_do_3bln2: 0,
+          mo_3bln2: 0, est_mo_3bln2: 0,
+          ro_3bln2: 0, est_ro_3bln2: 0,
+          total_3bln2: 0, est_3bln2: 0,
+
           grand_total: 0
         }
       })
@@ -1435,25 +1478,45 @@ export const getReportDatinSummary = async (req, res, next) => {
       const t1 = table1Map[category].witels[witel]
       if (t1) {
         if (isLessThan3Months2) {
-          if (orderType2 === 'AO') t1.ao_3bln++
-          else if (orderType2 === 'SO') t1.so_3bln++
-          else if (orderType2 === 'DO') t1.do_3bln++
-          else if (orderType2 === 'MO') t1.mo_3bln++
-          else if (orderType2 === 'RO') t1.ro_3bln++
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln++; t1.est_ao_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln++; t1.est_do_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln++; t1.est_mo_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln++; t1.est_so_3bln += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln++; t1.est_ro_3bln += revenue; }
           
-          t1.est_3bln += revenue
-          t1.total_3bln++
+          // Grand Total should match visible total for consistency
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         } else {
-          if (orderType2 === 'AO') t1.ao_3bln2++
-          else if (orderType2 === 'SO') t1.so_3bln2++
-          else if (orderType2 === 'DO') t1.do_3bln2++
-          else if (orderType2 === 'MO') t1.mo_3bln2++
-          else if (orderType2 === 'RO') t1.ro_3bln2++
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln2++; t1.est_ao_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln2++; t1.est_do_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln2++; t1.est_mo_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln2++; t1.est_so_3bln2 += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln2++; t1.est_ro_3bln2 += revenue; }
           
-          t1.est_3bln2 += revenue
-          t1.total_3bln2++
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         }
-        t1.grand_total++
       }
 
       // Update Table 2
@@ -1487,8 +1550,8 @@ export const getReportDatinSummary = async (req, res, next) => {
         id: idCounter++,
         category: cat,
         witel: '',
-        ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-        ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+        ao_3bln: 0, est_ao_3bln: 0, so_3bln: 0, est_so_3bln: 0, do_3bln: 0, est_do_3bln: 0, mo_3bln: 0, est_mo_3bln: 0, ro_3bln: 0, est_ro_3bln: 0, est_3bln: 0, total_3bln: 0,
+        ao_3bln2: 0, est_ao_3bln2: 0, so_3bln2: 0, est_so_3bln2: 0, do_3bln2: 0, est_do_3bln2: 0, mo_3bln2: 0, est_mo_3bln2: 0, ro_3bln2: 0, est_ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
         grand_total: 0,
         isCategoryHeader: true
       }
@@ -1510,8 +1573,20 @@ export const getReportDatinSummary = async (req, res, next) => {
         const d2 = table2Map[cat].witels[w]
 
         // Add to Category Header Totals
-        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.so_3bln += d1.so_3bln; catHeader1.do_3bln += d1.do_3bln; catHeader1.mo_3bln += d1.mo_3bln; catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
-        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.est_ao_3bln += d1.est_ao_3bln;
+        catHeader1.so_3bln += d1.so_3bln; catHeader1.est_so_3bln += d1.est_so_3bln;
+        catHeader1.do_3bln += d1.do_3bln; catHeader1.est_do_3bln += d1.est_do_3bln;
+        catHeader1.mo_3bln += d1.mo_3bln; catHeader1.est_mo_3bln += d1.est_mo_3bln;
+        catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_ro_3bln += d1.est_ro_3bln;
+        catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
+
+        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.est_ao_3bln2 += d1.est_ao_3bln2;
+        catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.est_so_3bln2 += d1.est_so_3bln2;
+        catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.est_do_3bln2 += d1.est_do_3bln2;
+        catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.est_mo_3bln2 += d1.est_mo_3bln2;
+        catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_ro_3bln2 += d1.est_ro_3bln2;
+        catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        
         catHeader1.grand_total += d1.grand_total;
 
         catHeader2.provide_order += d2.provide_order; catHeader2.in_process += d2.in_process; catHeader2.ready_bill += d2.ready_bill; catHeader2.total_3bln += d2.total_3bln;
@@ -1523,7 +1598,14 @@ export const getReportDatinSummary = async (req, res, next) => {
           category: '',
           witel: w,
           ...d1,
-          est_3bln: (d1.est_3bln / 1000000).toFixed(2), // Convert to Juta
+          est_ao_3bln: (d1.est_ao_3bln / 1000000).toFixed(2),
+          est_do_3bln: (d1.est_do_3bln / 1000000).toFixed(2),
+          est_mo_3bln: (d1.est_mo_3bln / 1000000).toFixed(2),
+          est_3bln: (d1.est_3bln / 1000000).toFixed(2),
+          
+          est_ao_3bln2: (d1.est_ao_3bln2 / 1000000).toFixed(2),
+          est_do_3bln2: (d1.est_do_3bln2 / 1000000).toFixed(2),
+          est_mo_3bln2: (d1.est_mo_3bln2 / 1000000).toFixed(2),
           est_3bln2: (d1.est_3bln2 / 1000000).toFixed(2),
           isCategoryHeader: false
         })
@@ -1536,7 +1618,14 @@ export const getReportDatinSummary = async (req, res, next) => {
       })
 
       // Format Header Money
+      catHeader1.est_ao_3bln = (catHeader1.est_ao_3bln / 1000000).toFixed(2)
+      catHeader1.est_do_3bln = (catHeader1.est_do_3bln / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln = (catHeader1.est_mo_3bln / 1000000).toFixed(2)
       catHeader1.est_3bln = (catHeader1.est_3bln / 1000000).toFixed(2)
+
+      catHeader1.est_ao_3bln2 = (catHeader1.est_ao_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_do_3bln2 = (catHeader1.est_do_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln2 = (catHeader1.est_mo_3bln2 / 1000000).toFixed(2)
       catHeader1.est_3bln2 = (catHeader1.est_3bln2 / 1000000).toFixed(2)
 
       table1Data.push(catHeader1, ...witelRows1)
