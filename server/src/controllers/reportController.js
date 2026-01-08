@@ -1,6 +1,7 @@
 ﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import PO_MAPPING from '../utils/poMapping.js'
+import CITY_MAPPING from '../utils/cityMapping.js'
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
@@ -1137,7 +1138,47 @@ export const getReportDatinDetails = async (req, res, next) => {
         where: whereClause,
         skip,
         take,
-        orderBy: { orderCreatedDate: 'desc' }
+        orderBy: { orderCreatedDate: 'desc' },
+        select: {
+          orderId: true,
+          orderCreatedDate: true,
+          nipnas: true,
+          standardName: true,
+          liProductName: true,
+          revenue: true,
+          segmen: true,
+          subSegmen: true,
+          kategori: true,
+          kategoriUmur: true,
+          umurOrder: true,
+          lamaKontrakHari: true,
+          amortisasi: true,
+          billWitel: true,
+          custWitel: true,
+          serviceWitel: true,
+          witelBaru: true,
+          billCity: true,
+          custCity: true,
+          servCity: true,
+          liStatus: true,
+          liMilestone: true,
+          liStatusDate: true,
+          liBilldate: true,
+          biayaPasang: true,
+          hrgBulanan: true,
+          actionCd: true,
+          tipeOrder: true,
+          agreeType: true,
+          agreeStartDate: true,
+          agreeEndDate: true,
+          isTermin: true,
+          poName: true,
+          segmenBaru: true,
+          kategoriBaru: true,
+          tipeGrup: true,
+          scalling1: true,
+          scalling2: true
+        }
       }),
       prisma.sosData.count({ where: whereClause })
     ])
@@ -1255,7 +1296,8 @@ export const getReportDatinSummary = async (req, res, next) => {
         liStatus: true,
         revenue: true,
         poName: true,
-        nipnas: true
+        nipnas: true,
+        billCity: true
       }
     })
 
@@ -1409,9 +1451,23 @@ export const getReportDatinSummary = async (req, res, next) => {
       const orderType = getOrderType(row.actionCd)
       
       // Update Galaksi - process this BEFORE witel validation
-      let poKey = row.poName
+      let poKey = null
 
-      // If poName is not available, try to map from NIPNAS
+      // 1. Try City Mapping
+      if (row.billCity) {
+         const cityUpper = row.billCity.toUpperCase()
+         const matchedCityKey = Object.keys(CITY_MAPPING).find(key => cityUpper.includes(key))
+         if (matchedCityKey) {
+            poKey = CITY_MAPPING[matchedCityKey]
+         }
+      }
+
+      // 2. Fallback to existing PO Name
+      if (!poKey) {
+         poKey = row.poName
+      }
+
+      // 3. Fallback to NIPNAS Mapping
       if (!poKey && row.nipnas) {
          const mappedName = PO_MAPPING[row.nipnas]
          if (mappedName) {
