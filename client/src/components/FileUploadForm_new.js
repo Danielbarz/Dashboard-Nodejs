@@ -11,10 +11,12 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [uploadProgress, setUploadProgress] = useState(null)
   const [logLines, setLogLines] = useState([])
   const [fileUploaded, setFileUploaded] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
+
 
   // Restore upload state from localStorage on mount
   useEffect(() => {
@@ -166,6 +168,32 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     }
   }
 
+  const handleDeleteData = async () => {
+    if (!window.confirm(`⚠️ PERINGATAN KERAS!\n\nApakah Anda yakin ingin MENGHAPUS SEMUA DATA untuk modul "${type}"?\n\nTindakan ini tidak dapat dibatalkan. Data database akan dikosongkan.`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    setError(null)
+    setLogLines((prev) => [...prev, 'Menghapus data database...'])
+
+    try {
+      await fileService.truncateData(type)
+      setLogLines((prev) => [...prev, '✅ Data berhasil dihapus (Truncated).'])
+      setSuccess(true)
+      // Clear file selection too as context is reset
+      handleRemoveFile()
+      if (onSuccess) onSuccess({ reset: true })
+    } catch (err) {
+      console.error('Delete error:', err)
+      const msg = err.response?.data?.message || 'Gagal menghapus data'
+      setError(msg)
+      setLogLines((prev) => [...prev, `❌ Gagal hapus: ${msg}`])
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // If not in admin mode, show access denied message
   if (!isAdminMode) {
     return (
@@ -280,15 +308,26 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
         <button
           type="submit"
-          disabled={!file || loading}
+          disabled={!file || loading || isDeleting}
           className={`w-full py-2 px-4 rounded-lg font-medium transition ${
-            file && !loading
+            file && !loading && !isDeleting
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
           {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
         </button>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <button
+            type="button"
+            onClick={handleDeleteData}
+            disabled={loading || isDeleting}
+            className="w-full py-2 px-4 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition flex justify-center items-center"
+          >
+            {isDeleting ? 'Menghapus...' : '🗑️ Hapus Semua Data Database (Reset)'}
+          </button>
+        </div>
       </form>
     </div>
   )

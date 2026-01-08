@@ -95,6 +95,10 @@ export const fileService = {
 
   getImportLogs: () => {
     return api.get('/files/import-logs')
+  },
+
+  truncateData: (type) => {
+    return api.delete('/files/data', { params: { type } })
   }
 }
 

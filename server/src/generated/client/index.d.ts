@@ -68,6 +68,19 @@ export type CustomTarget = $Result.DefaultSelection<Prisma.$CustomTargetPayload>
  * 
  */
 export type UserTableConfiguration = $Result.DefaultSelection<Prisma.$UserTableConfigurationPayload>
+<<<<<<< Updated upstream
+=======
+/**
+ * Model PoMaster
+ * 
+ */
+export type PoMaster = $Result.DefaultSelection<Prisma.$PoMasterPayload>
+/**
+ * Model UnmappedOrder
+ * 
+ */
+export type UnmappedOrder = $Result.DefaultSelection<Prisma.$UnmappedOrderPayload>
+>>>>>>> Stashed changes
 
 /**
  * ##  Prisma Client ʲˢ
@@ -15989,6 +16002,2197 @@ export namespace Prisma {
 
 
   /**
+<<<<<<< Updated upstream
+=======
+   * Model PoMaster
+   */
+
+  export type AggregatePoMaster = {
+    _count: PoMasterCountAggregateOutputType | null
+    _avg: PoMasterAvgAggregateOutputType | null
+    _sum: PoMasterSumAggregateOutputType | null
+    _min: PoMasterMinAggregateOutputType | null
+    _max: PoMasterMaxAggregateOutputType | null
+  }
+
+  export type PoMasterAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type PoMasterSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type PoMasterMinAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    namaPo: string | null
+    segment: string | null
+    billCity: string | null
+    witel: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PoMasterMaxAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    namaPo: string | null
+    segment: string | null
+    billCity: string | null
+    witel: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PoMasterCountAggregateOutputType = {
+    id: number
+    nipnas: number
+    namaPo: number
+    segment: number
+    billCity: number
+    witel: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PoMasterAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type PoMasterSumAggregateInputType = {
+    id?: true
+  }
+
+  export type PoMasterMinAggregateInputType = {
+    id?: true
+    nipnas?: true
+    namaPo?: true
+    segment?: true
+    billCity?: true
+    witel?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PoMasterMaxAggregateInputType = {
+    id?: true
+    nipnas?: true
+    namaPo?: true
+    segment?: true
+    billCity?: true
+    witel?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PoMasterCountAggregateInputType = {
+    id?: true
+    nipnas?: true
+    namaPo?: true
+    segment?: true
+    billCity?: true
+    witel?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PoMasterAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PoMaster to aggregate.
+     */
+    where?: PoMasterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PoMasters to fetch.
+     */
+    orderBy?: PoMasterOrderByWithRelationInput | PoMasterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PoMasterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PoMasters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PoMasters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PoMasters
+    **/
+    _count?: true | PoMasterCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PoMasterAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PoMasterSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PoMasterMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PoMasterMaxAggregateInputType
+  }
+
+  export type GetPoMasterAggregateType<T extends PoMasterAggregateArgs> = {
+        [P in keyof T & keyof AggregatePoMaster]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePoMaster[P]>
+      : GetScalarType<T[P], AggregatePoMaster[P]>
+  }
+
+
+
+
+  export type PoMasterGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PoMasterWhereInput
+    orderBy?: PoMasterOrderByWithAggregationInput | PoMasterOrderByWithAggregationInput[]
+    by: PoMasterScalarFieldEnum[] | PoMasterScalarFieldEnum
+    having?: PoMasterScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PoMasterCountAggregateInputType | true
+    _avg?: PoMasterAvgAggregateInputType
+    _sum?: PoMasterSumAggregateInputType
+    _min?: PoMasterMinAggregateInputType
+    _max?: PoMasterMaxAggregateInputType
+  }
+
+  export type PoMasterGroupByOutputType = {
+    id: bigint
+    nipnas: string
+    namaPo: string
+    segment: string | null
+    billCity: string | null
+    witel: string
+    createdAt: Date
+    updatedAt: Date
+    _count: PoMasterCountAggregateOutputType | null
+    _avg: PoMasterAvgAggregateOutputType | null
+    _sum: PoMasterSumAggregateOutputType | null
+    _min: PoMasterMinAggregateOutputType | null
+    _max: PoMasterMaxAggregateOutputType | null
+  }
+
+  type GetPoMasterGroupByPayload<T extends PoMasterGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PoMasterGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PoMasterGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PoMasterGroupByOutputType[P]>
+            : GetScalarType<T[P], PoMasterGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PoMasterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    namaPo?: boolean
+    segment?: boolean
+    billCity?: boolean
+    witel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["poMaster"]>
+
+  export type PoMasterSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    namaPo?: boolean
+    segment?: boolean
+    billCity?: boolean
+    witel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["poMaster"]>
+
+  export type PoMasterSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    namaPo?: boolean
+    segment?: boolean
+    billCity?: boolean
+    witel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["poMaster"]>
+
+  export type PoMasterSelectScalar = {
+    id?: boolean
+    nipnas?: boolean
+    namaPo?: boolean
+    segment?: boolean
+    billCity?: boolean
+    witel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PoMasterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "namaPo" | "segment" | "billCity" | "witel" | "createdAt" | "updatedAt", ExtArgs["result"]["poMaster"]>
+
+  export type $PoMasterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PoMaster"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      nipnas: string
+      namaPo: string
+      segment: string | null
+      billCity: string | null
+      witel: string
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["poMaster"]>
+    composites: {}
+  }
+
+  type PoMasterGetPayload<S extends boolean | null | undefined | PoMasterDefaultArgs> = $Result.GetResult<Prisma.$PoMasterPayload, S>
+
+  type PoMasterCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PoMasterFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PoMasterCountAggregateInputType | true
+    }
+
+  export interface PoMasterDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PoMaster'], meta: { name: 'PoMaster' } }
+    /**
+     * Find zero or one PoMaster that matches the filter.
+     * @param {PoMasterFindUniqueArgs} args - Arguments to find a PoMaster
+     * @example
+     * // Get one PoMaster
+     * const poMaster = await prisma.poMaster.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PoMasterFindUniqueArgs>(args: SelectSubset<T, PoMasterFindUniqueArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PoMaster that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PoMasterFindUniqueOrThrowArgs} args - Arguments to find a PoMaster
+     * @example
+     * // Get one PoMaster
+     * const poMaster = await prisma.poMaster.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PoMasterFindUniqueOrThrowArgs>(args: SelectSubset<T, PoMasterFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PoMaster that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterFindFirstArgs} args - Arguments to find a PoMaster
+     * @example
+     * // Get one PoMaster
+     * const poMaster = await prisma.poMaster.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PoMasterFindFirstArgs>(args?: SelectSubset<T, PoMasterFindFirstArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PoMaster that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterFindFirstOrThrowArgs} args - Arguments to find a PoMaster
+     * @example
+     * // Get one PoMaster
+     * const poMaster = await prisma.poMaster.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PoMasterFindFirstOrThrowArgs>(args?: SelectSubset<T, PoMasterFindFirstOrThrowArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PoMasters that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PoMasters
+     * const poMasters = await prisma.poMaster.findMany()
+     * 
+     * // Get first 10 PoMasters
+     * const poMasters = await prisma.poMaster.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const poMasterWithIdOnly = await prisma.poMaster.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PoMasterFindManyArgs>(args?: SelectSubset<T, PoMasterFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PoMaster.
+     * @param {PoMasterCreateArgs} args - Arguments to create a PoMaster.
+     * @example
+     * // Create one PoMaster
+     * const PoMaster = await prisma.poMaster.create({
+     *   data: {
+     *     // ... data to create a PoMaster
+     *   }
+     * })
+     * 
+     */
+    create<T extends PoMasterCreateArgs>(args: SelectSubset<T, PoMasterCreateArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PoMasters.
+     * @param {PoMasterCreateManyArgs} args - Arguments to create many PoMasters.
+     * @example
+     * // Create many PoMasters
+     * const poMaster = await prisma.poMaster.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PoMasterCreateManyArgs>(args?: SelectSubset<T, PoMasterCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PoMasters and returns the data saved in the database.
+     * @param {PoMasterCreateManyAndReturnArgs} args - Arguments to create many PoMasters.
+     * @example
+     * // Create many PoMasters
+     * const poMaster = await prisma.poMaster.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PoMasters and only return the `id`
+     * const poMasterWithIdOnly = await prisma.poMaster.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PoMasterCreateManyAndReturnArgs>(args?: SelectSubset<T, PoMasterCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PoMaster.
+     * @param {PoMasterDeleteArgs} args - Arguments to delete one PoMaster.
+     * @example
+     * // Delete one PoMaster
+     * const PoMaster = await prisma.poMaster.delete({
+     *   where: {
+     *     // ... filter to delete one PoMaster
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PoMasterDeleteArgs>(args: SelectSubset<T, PoMasterDeleteArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PoMaster.
+     * @param {PoMasterUpdateArgs} args - Arguments to update one PoMaster.
+     * @example
+     * // Update one PoMaster
+     * const poMaster = await prisma.poMaster.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PoMasterUpdateArgs>(args: SelectSubset<T, PoMasterUpdateArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PoMasters.
+     * @param {PoMasterDeleteManyArgs} args - Arguments to filter PoMasters to delete.
+     * @example
+     * // Delete a few PoMasters
+     * const { count } = await prisma.poMaster.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PoMasterDeleteManyArgs>(args?: SelectSubset<T, PoMasterDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PoMasters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PoMasters
+     * const poMaster = await prisma.poMaster.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PoMasterUpdateManyArgs>(args: SelectSubset<T, PoMasterUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PoMasters and returns the data updated in the database.
+     * @param {PoMasterUpdateManyAndReturnArgs} args - Arguments to update many PoMasters.
+     * @example
+     * // Update many PoMasters
+     * const poMaster = await prisma.poMaster.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PoMasters and only return the `id`
+     * const poMasterWithIdOnly = await prisma.poMaster.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PoMasterUpdateManyAndReturnArgs>(args: SelectSubset<T, PoMasterUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PoMaster.
+     * @param {PoMasterUpsertArgs} args - Arguments to update or create a PoMaster.
+     * @example
+     * // Update or create a PoMaster
+     * const poMaster = await prisma.poMaster.upsert({
+     *   create: {
+     *     // ... data to create a PoMaster
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PoMaster we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PoMasterUpsertArgs>(args: SelectSubset<T, PoMasterUpsertArgs<ExtArgs>>): Prisma__PoMasterClient<$Result.GetResult<Prisma.$PoMasterPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PoMasters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterCountArgs} args - Arguments to filter PoMasters to count.
+     * @example
+     * // Count the number of PoMasters
+     * const count = await prisma.poMaster.count({
+     *   where: {
+     *     // ... the filter for the PoMasters we want to count
+     *   }
+     * })
+    **/
+    count<T extends PoMasterCountArgs>(
+      args?: Subset<T, PoMasterCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PoMasterCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PoMaster.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PoMasterAggregateArgs>(args: Subset<T, PoMasterAggregateArgs>): Prisma.PrismaPromise<GetPoMasterAggregateType<T>>
+
+    /**
+     * Group by PoMaster.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PoMasterGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PoMasterGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PoMasterGroupByArgs['orderBy'] }
+        : { orderBy?: PoMasterGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PoMasterGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPoMasterGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PoMaster model
+   */
+  readonly fields: PoMasterFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PoMaster.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PoMasterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PoMaster model
+   */
+  interface PoMasterFieldRefs {
+    readonly id: FieldRef<"PoMaster", 'BigInt'>
+    readonly nipnas: FieldRef<"PoMaster", 'String'>
+    readonly namaPo: FieldRef<"PoMaster", 'String'>
+    readonly segment: FieldRef<"PoMaster", 'String'>
+    readonly billCity: FieldRef<"PoMaster", 'String'>
+    readonly witel: FieldRef<"PoMaster", 'String'>
+    readonly createdAt: FieldRef<"PoMaster", 'DateTime'>
+    readonly updatedAt: FieldRef<"PoMaster", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PoMaster findUnique
+   */
+  export type PoMasterFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter, which PoMaster to fetch.
+     */
+    where: PoMasterWhereUniqueInput
+  }
+
+  /**
+   * PoMaster findUniqueOrThrow
+   */
+  export type PoMasterFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter, which PoMaster to fetch.
+     */
+    where: PoMasterWhereUniqueInput
+  }
+
+  /**
+   * PoMaster findFirst
+   */
+  export type PoMasterFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter, which PoMaster to fetch.
+     */
+    where?: PoMasterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PoMasters to fetch.
+     */
+    orderBy?: PoMasterOrderByWithRelationInput | PoMasterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PoMasters.
+     */
+    cursor?: PoMasterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PoMasters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PoMasters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PoMasters.
+     */
+    distinct?: PoMasterScalarFieldEnum | PoMasterScalarFieldEnum[]
+  }
+
+  /**
+   * PoMaster findFirstOrThrow
+   */
+  export type PoMasterFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter, which PoMaster to fetch.
+     */
+    where?: PoMasterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PoMasters to fetch.
+     */
+    orderBy?: PoMasterOrderByWithRelationInput | PoMasterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PoMasters.
+     */
+    cursor?: PoMasterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PoMasters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PoMasters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PoMasters.
+     */
+    distinct?: PoMasterScalarFieldEnum | PoMasterScalarFieldEnum[]
+  }
+
+  /**
+   * PoMaster findMany
+   */
+  export type PoMasterFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter, which PoMasters to fetch.
+     */
+    where?: PoMasterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PoMasters to fetch.
+     */
+    orderBy?: PoMasterOrderByWithRelationInput | PoMasterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PoMasters.
+     */
+    cursor?: PoMasterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PoMasters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PoMasters.
+     */
+    skip?: number
+    distinct?: PoMasterScalarFieldEnum | PoMasterScalarFieldEnum[]
+  }
+
+  /**
+   * PoMaster create
+   */
+  export type PoMasterCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * The data needed to create a PoMaster.
+     */
+    data: XOR<PoMasterCreateInput, PoMasterUncheckedCreateInput>
+  }
+
+  /**
+   * PoMaster createMany
+   */
+  export type PoMasterCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PoMasters.
+     */
+    data: PoMasterCreateManyInput | PoMasterCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PoMaster createManyAndReturn
+   */
+  export type PoMasterCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * The data used to create many PoMasters.
+     */
+    data: PoMasterCreateManyInput | PoMasterCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PoMaster update
+   */
+  export type PoMasterUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * The data needed to update a PoMaster.
+     */
+    data: XOR<PoMasterUpdateInput, PoMasterUncheckedUpdateInput>
+    /**
+     * Choose, which PoMaster to update.
+     */
+    where: PoMasterWhereUniqueInput
+  }
+
+  /**
+   * PoMaster updateMany
+   */
+  export type PoMasterUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PoMasters.
+     */
+    data: XOR<PoMasterUpdateManyMutationInput, PoMasterUncheckedUpdateManyInput>
+    /**
+     * Filter which PoMasters to update
+     */
+    where?: PoMasterWhereInput
+    /**
+     * Limit how many PoMasters to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PoMaster updateManyAndReturn
+   */
+  export type PoMasterUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * The data used to update PoMasters.
+     */
+    data: XOR<PoMasterUpdateManyMutationInput, PoMasterUncheckedUpdateManyInput>
+    /**
+     * Filter which PoMasters to update
+     */
+    where?: PoMasterWhereInput
+    /**
+     * Limit how many PoMasters to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PoMaster upsert
+   */
+  export type PoMasterUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * The filter to search for the PoMaster to update in case it exists.
+     */
+    where: PoMasterWhereUniqueInput
+    /**
+     * In case the PoMaster found by the `where` argument doesn't exist, create a new PoMaster with this data.
+     */
+    create: XOR<PoMasterCreateInput, PoMasterUncheckedCreateInput>
+    /**
+     * In case the PoMaster was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PoMasterUpdateInput, PoMasterUncheckedUpdateInput>
+  }
+
+  /**
+   * PoMaster delete
+   */
+  export type PoMasterDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+    /**
+     * Filter which PoMaster to delete.
+     */
+    where: PoMasterWhereUniqueInput
+  }
+
+  /**
+   * PoMaster deleteMany
+   */
+  export type PoMasterDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PoMasters to delete
+     */
+    where?: PoMasterWhereInput
+    /**
+     * Limit how many PoMasters to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PoMaster without action
+   */
+  export type PoMasterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PoMaster
+     */
+    select?: PoMasterSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PoMaster
+     */
+    omit?: PoMasterOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UnmappedOrder
+   */
+
+  export type AggregateUnmappedOrder = {
+    _count: UnmappedOrderCountAggregateOutputType | null
+    _avg: UnmappedOrderAvgAggregateOutputType | null
+    _sum: UnmappedOrderSumAggregateOutputType | null
+    _min: UnmappedOrderMinAggregateOutputType | null
+    _max: UnmappedOrderMaxAggregateOutputType | null
+  }
+
+  export type UnmappedOrderAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type UnmappedOrderSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type UnmappedOrderMinAggregateOutputType = {
+    id: bigint | null
+    orderId: string | null
+    nipnas: string | null
+    customerName: string | null
+    custCity: string | null
+    servCity: string | null
+    billWitel: string | null
+    billCity: string | null
+    poName: string | null
+    segment: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type UnmappedOrderMaxAggregateOutputType = {
+    id: bigint | null
+    orderId: string | null
+    nipnas: string | null
+    customerName: string | null
+    custCity: string | null
+    servCity: string | null
+    billWitel: string | null
+    billCity: string | null
+    poName: string | null
+    segment: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type UnmappedOrderCountAggregateOutputType = {
+    id: number
+    orderId: number
+    nipnas: number
+    customerName: number
+    custCity: number
+    servCity: number
+    billWitel: number
+    billCity: number
+    poName: number
+    segment: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type UnmappedOrderAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type UnmappedOrderSumAggregateInputType = {
+    id?: true
+  }
+
+  export type UnmappedOrderMinAggregateInputType = {
+    id?: true
+    orderId?: true
+    nipnas?: true
+    customerName?: true
+    custCity?: true
+    servCity?: true
+    billWitel?: true
+    billCity?: true
+    poName?: true
+    segment?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type UnmappedOrderMaxAggregateInputType = {
+    id?: true
+    orderId?: true
+    nipnas?: true
+    customerName?: true
+    custCity?: true
+    servCity?: true
+    billWitel?: true
+    billCity?: true
+    poName?: true
+    segment?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type UnmappedOrderCountAggregateInputType = {
+    id?: true
+    orderId?: true
+    nipnas?: true
+    customerName?: true
+    custCity?: true
+    servCity?: true
+    billWitel?: true
+    billCity?: true
+    poName?: true
+    segment?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type UnmappedOrderAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UnmappedOrder to aggregate.
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UnmappedOrders to fetch.
+     */
+    orderBy?: UnmappedOrderOrderByWithRelationInput | UnmappedOrderOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UnmappedOrderWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UnmappedOrders from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UnmappedOrders.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UnmappedOrders
+    **/
+    _count?: true | UnmappedOrderCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: UnmappedOrderAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: UnmappedOrderSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UnmappedOrderMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UnmappedOrderMaxAggregateInputType
+  }
+
+  export type GetUnmappedOrderAggregateType<T extends UnmappedOrderAggregateArgs> = {
+        [P in keyof T & keyof AggregateUnmappedOrder]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUnmappedOrder[P]>
+      : GetScalarType<T[P], AggregateUnmappedOrder[P]>
+  }
+
+
+
+
+  export type UnmappedOrderGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UnmappedOrderWhereInput
+    orderBy?: UnmappedOrderOrderByWithAggregationInput | UnmappedOrderOrderByWithAggregationInput[]
+    by: UnmappedOrderScalarFieldEnum[] | UnmappedOrderScalarFieldEnum
+    having?: UnmappedOrderScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UnmappedOrderCountAggregateInputType | true
+    _avg?: UnmappedOrderAvgAggregateInputType
+    _sum?: UnmappedOrderSumAggregateInputType
+    _min?: UnmappedOrderMinAggregateInputType
+    _max?: UnmappedOrderMaxAggregateInputType
+  }
+
+  export type UnmappedOrderGroupByOutputType = {
+    id: bigint
+    orderId: string
+    nipnas: string | null
+    customerName: string | null
+    custCity: string | null
+    servCity: string | null
+    billWitel: string | null
+    billCity: string | null
+    poName: string | null
+    segment: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: UnmappedOrderCountAggregateOutputType | null
+    _avg: UnmappedOrderAvgAggregateOutputType | null
+    _sum: UnmappedOrderSumAggregateOutputType | null
+    _min: UnmappedOrderMinAggregateOutputType | null
+    _max: UnmappedOrderMaxAggregateOutputType | null
+  }
+
+  type GetUnmappedOrderGroupByPayload<T extends UnmappedOrderGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UnmappedOrderGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UnmappedOrderGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UnmappedOrderGroupByOutputType[P]>
+            : GetScalarType<T[P], UnmappedOrderGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UnmappedOrderSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    orderId?: boolean
+    nipnas?: boolean
+    customerName?: boolean
+    custCity?: boolean
+    servCity?: boolean
+    billWitel?: boolean
+    billCity?: boolean
+    poName?: boolean
+    segment?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["unmappedOrder"]>
+
+  export type UnmappedOrderSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    orderId?: boolean
+    nipnas?: boolean
+    customerName?: boolean
+    custCity?: boolean
+    servCity?: boolean
+    billWitel?: boolean
+    billCity?: boolean
+    poName?: boolean
+    segment?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["unmappedOrder"]>
+
+  export type UnmappedOrderSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    orderId?: boolean
+    nipnas?: boolean
+    customerName?: boolean
+    custCity?: boolean
+    servCity?: boolean
+    billWitel?: boolean
+    billCity?: boolean
+    poName?: boolean
+    segment?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["unmappedOrder"]>
+
+  export type UnmappedOrderSelectScalar = {
+    id?: boolean
+    orderId?: boolean
+    nipnas?: boolean
+    customerName?: boolean
+    custCity?: boolean
+    servCity?: boolean
+    billWitel?: boolean
+    billCity?: boolean
+    poName?: boolean
+    segment?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type UnmappedOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderId" | "nipnas" | "customerName" | "custCity" | "servCity" | "billWitel" | "billCity" | "poName" | "segment" | "createdAt" | "updatedAt", ExtArgs["result"]["unmappedOrder"]>
+
+  export type $UnmappedOrderPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UnmappedOrder"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      orderId: string
+      nipnas: string | null
+      customerName: string | null
+      custCity: string | null
+      servCity: string | null
+      billWitel: string | null
+      billCity: string | null
+      poName: string | null
+      segment: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["unmappedOrder"]>
+    composites: {}
+  }
+
+  type UnmappedOrderGetPayload<S extends boolean | null | undefined | UnmappedOrderDefaultArgs> = $Result.GetResult<Prisma.$UnmappedOrderPayload, S>
+
+  type UnmappedOrderCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UnmappedOrderFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UnmappedOrderCountAggregateInputType | true
+    }
+
+  export interface UnmappedOrderDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UnmappedOrder'], meta: { name: 'UnmappedOrder' } }
+    /**
+     * Find zero or one UnmappedOrder that matches the filter.
+     * @param {UnmappedOrderFindUniqueArgs} args - Arguments to find a UnmappedOrder
+     * @example
+     * // Get one UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UnmappedOrderFindUniqueArgs>(args: SelectSubset<T, UnmappedOrderFindUniqueArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UnmappedOrder that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UnmappedOrderFindUniqueOrThrowArgs} args - Arguments to find a UnmappedOrder
+     * @example
+     * // Get one UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UnmappedOrderFindUniqueOrThrowArgs>(args: SelectSubset<T, UnmappedOrderFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UnmappedOrder that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderFindFirstArgs} args - Arguments to find a UnmappedOrder
+     * @example
+     * // Get one UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UnmappedOrderFindFirstArgs>(args?: SelectSubset<T, UnmappedOrderFindFirstArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UnmappedOrder that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderFindFirstOrThrowArgs} args - Arguments to find a UnmappedOrder
+     * @example
+     * // Get one UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UnmappedOrderFindFirstOrThrowArgs>(args?: SelectSubset<T, UnmappedOrderFindFirstOrThrowArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UnmappedOrders that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UnmappedOrders
+     * const unmappedOrders = await prisma.unmappedOrder.findMany()
+     * 
+     * // Get first 10 UnmappedOrders
+     * const unmappedOrders = await prisma.unmappedOrder.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const unmappedOrderWithIdOnly = await prisma.unmappedOrder.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends UnmappedOrderFindManyArgs>(args?: SelectSubset<T, UnmappedOrderFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UnmappedOrder.
+     * @param {UnmappedOrderCreateArgs} args - Arguments to create a UnmappedOrder.
+     * @example
+     * // Create one UnmappedOrder
+     * const UnmappedOrder = await prisma.unmappedOrder.create({
+     *   data: {
+     *     // ... data to create a UnmappedOrder
+     *   }
+     * })
+     * 
+     */
+    create<T extends UnmappedOrderCreateArgs>(args: SelectSubset<T, UnmappedOrderCreateArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UnmappedOrders.
+     * @param {UnmappedOrderCreateManyArgs} args - Arguments to create many UnmappedOrders.
+     * @example
+     * // Create many UnmappedOrders
+     * const unmappedOrder = await prisma.unmappedOrder.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UnmappedOrderCreateManyArgs>(args?: SelectSubset<T, UnmappedOrderCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many UnmappedOrders and returns the data saved in the database.
+     * @param {UnmappedOrderCreateManyAndReturnArgs} args - Arguments to create many UnmappedOrders.
+     * @example
+     * // Create many UnmappedOrders
+     * const unmappedOrder = await prisma.unmappedOrder.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many UnmappedOrders and only return the `id`
+     * const unmappedOrderWithIdOnly = await prisma.unmappedOrder.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends UnmappedOrderCreateManyAndReturnArgs>(args?: SelectSubset<T, UnmappedOrderCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a UnmappedOrder.
+     * @param {UnmappedOrderDeleteArgs} args - Arguments to delete one UnmappedOrder.
+     * @example
+     * // Delete one UnmappedOrder
+     * const UnmappedOrder = await prisma.unmappedOrder.delete({
+     *   where: {
+     *     // ... filter to delete one UnmappedOrder
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UnmappedOrderDeleteArgs>(args: SelectSubset<T, UnmappedOrderDeleteArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UnmappedOrder.
+     * @param {UnmappedOrderUpdateArgs} args - Arguments to update one UnmappedOrder.
+     * @example
+     * // Update one UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UnmappedOrderUpdateArgs>(args: SelectSubset<T, UnmappedOrderUpdateArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UnmappedOrders.
+     * @param {UnmappedOrderDeleteManyArgs} args - Arguments to filter UnmappedOrders to delete.
+     * @example
+     * // Delete a few UnmappedOrders
+     * const { count } = await prisma.unmappedOrder.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UnmappedOrderDeleteManyArgs>(args?: SelectSubset<T, UnmappedOrderDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UnmappedOrders.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UnmappedOrders
+     * const unmappedOrder = await prisma.unmappedOrder.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UnmappedOrderUpdateManyArgs>(args: SelectSubset<T, UnmappedOrderUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UnmappedOrders and returns the data updated in the database.
+     * @param {UnmappedOrderUpdateManyAndReturnArgs} args - Arguments to update many UnmappedOrders.
+     * @example
+     * // Update many UnmappedOrders
+     * const unmappedOrder = await prisma.unmappedOrder.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more UnmappedOrders and only return the `id`
+     * const unmappedOrderWithIdOnly = await prisma.unmappedOrder.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends UnmappedOrderUpdateManyAndReturnArgs>(args: SelectSubset<T, UnmappedOrderUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one UnmappedOrder.
+     * @param {UnmappedOrderUpsertArgs} args - Arguments to update or create a UnmappedOrder.
+     * @example
+     * // Update or create a UnmappedOrder
+     * const unmappedOrder = await prisma.unmappedOrder.upsert({
+     *   create: {
+     *     // ... data to create a UnmappedOrder
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UnmappedOrder we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UnmappedOrderUpsertArgs>(args: SelectSubset<T, UnmappedOrderUpsertArgs<ExtArgs>>): Prisma__UnmappedOrderClient<$Result.GetResult<Prisma.$UnmappedOrderPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UnmappedOrders.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderCountArgs} args - Arguments to filter UnmappedOrders to count.
+     * @example
+     * // Count the number of UnmappedOrders
+     * const count = await prisma.unmappedOrder.count({
+     *   where: {
+     *     // ... the filter for the UnmappedOrders we want to count
+     *   }
+     * })
+    **/
+    count<T extends UnmappedOrderCountArgs>(
+      args?: Subset<T, UnmappedOrderCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UnmappedOrderCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UnmappedOrder.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UnmappedOrderAggregateArgs>(args: Subset<T, UnmappedOrderAggregateArgs>): Prisma.PrismaPromise<GetUnmappedOrderAggregateType<T>>
+
+    /**
+     * Group by UnmappedOrder.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UnmappedOrderGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UnmappedOrderGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UnmappedOrderGroupByArgs['orderBy'] }
+        : { orderBy?: UnmappedOrderGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UnmappedOrderGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUnmappedOrderGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UnmappedOrder model
+   */
+  readonly fields: UnmappedOrderFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UnmappedOrder.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UnmappedOrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UnmappedOrder model
+   */
+  interface UnmappedOrderFieldRefs {
+    readonly id: FieldRef<"UnmappedOrder", 'BigInt'>
+    readonly orderId: FieldRef<"UnmappedOrder", 'String'>
+    readonly nipnas: FieldRef<"UnmappedOrder", 'String'>
+    readonly customerName: FieldRef<"UnmappedOrder", 'String'>
+    readonly custCity: FieldRef<"UnmappedOrder", 'String'>
+    readonly servCity: FieldRef<"UnmappedOrder", 'String'>
+    readonly billWitel: FieldRef<"UnmappedOrder", 'String'>
+    readonly billCity: FieldRef<"UnmappedOrder", 'String'>
+    readonly poName: FieldRef<"UnmappedOrder", 'String'>
+    readonly segment: FieldRef<"UnmappedOrder", 'String'>
+    readonly createdAt: FieldRef<"UnmappedOrder", 'DateTime'>
+    readonly updatedAt: FieldRef<"UnmappedOrder", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UnmappedOrder findUnique
+   */
+  export type UnmappedOrderFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter, which UnmappedOrder to fetch.
+     */
+    where: UnmappedOrderWhereUniqueInput
+  }
+
+  /**
+   * UnmappedOrder findUniqueOrThrow
+   */
+  export type UnmappedOrderFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter, which UnmappedOrder to fetch.
+     */
+    where: UnmappedOrderWhereUniqueInput
+  }
+
+  /**
+   * UnmappedOrder findFirst
+   */
+  export type UnmappedOrderFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter, which UnmappedOrder to fetch.
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UnmappedOrders to fetch.
+     */
+    orderBy?: UnmappedOrderOrderByWithRelationInput | UnmappedOrderOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UnmappedOrders.
+     */
+    cursor?: UnmappedOrderWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UnmappedOrders from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UnmappedOrders.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UnmappedOrders.
+     */
+    distinct?: UnmappedOrderScalarFieldEnum | UnmappedOrderScalarFieldEnum[]
+  }
+
+  /**
+   * UnmappedOrder findFirstOrThrow
+   */
+  export type UnmappedOrderFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter, which UnmappedOrder to fetch.
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UnmappedOrders to fetch.
+     */
+    orderBy?: UnmappedOrderOrderByWithRelationInput | UnmappedOrderOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UnmappedOrders.
+     */
+    cursor?: UnmappedOrderWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UnmappedOrders from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UnmappedOrders.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UnmappedOrders.
+     */
+    distinct?: UnmappedOrderScalarFieldEnum | UnmappedOrderScalarFieldEnum[]
+  }
+
+  /**
+   * UnmappedOrder findMany
+   */
+  export type UnmappedOrderFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter, which UnmappedOrders to fetch.
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UnmappedOrders to fetch.
+     */
+    orderBy?: UnmappedOrderOrderByWithRelationInput | UnmappedOrderOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UnmappedOrders.
+     */
+    cursor?: UnmappedOrderWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UnmappedOrders from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UnmappedOrders.
+     */
+    skip?: number
+    distinct?: UnmappedOrderScalarFieldEnum | UnmappedOrderScalarFieldEnum[]
+  }
+
+  /**
+   * UnmappedOrder create
+   */
+  export type UnmappedOrderCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * The data needed to create a UnmappedOrder.
+     */
+    data: XOR<UnmappedOrderCreateInput, UnmappedOrderUncheckedCreateInput>
+  }
+
+  /**
+   * UnmappedOrder createMany
+   */
+  export type UnmappedOrderCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UnmappedOrders.
+     */
+    data: UnmappedOrderCreateManyInput | UnmappedOrderCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UnmappedOrder createManyAndReturn
+   */
+  export type UnmappedOrderCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * The data used to create many UnmappedOrders.
+     */
+    data: UnmappedOrderCreateManyInput | UnmappedOrderCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UnmappedOrder update
+   */
+  export type UnmappedOrderUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * The data needed to update a UnmappedOrder.
+     */
+    data: XOR<UnmappedOrderUpdateInput, UnmappedOrderUncheckedUpdateInput>
+    /**
+     * Choose, which UnmappedOrder to update.
+     */
+    where: UnmappedOrderWhereUniqueInput
+  }
+
+  /**
+   * UnmappedOrder updateMany
+   */
+  export type UnmappedOrderUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UnmappedOrders.
+     */
+    data: XOR<UnmappedOrderUpdateManyMutationInput, UnmappedOrderUncheckedUpdateManyInput>
+    /**
+     * Filter which UnmappedOrders to update
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * Limit how many UnmappedOrders to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UnmappedOrder updateManyAndReturn
+   */
+  export type UnmappedOrderUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * The data used to update UnmappedOrders.
+     */
+    data: XOR<UnmappedOrderUpdateManyMutationInput, UnmappedOrderUncheckedUpdateManyInput>
+    /**
+     * Filter which UnmappedOrders to update
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * Limit how many UnmappedOrders to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UnmappedOrder upsert
+   */
+  export type UnmappedOrderUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * The filter to search for the UnmappedOrder to update in case it exists.
+     */
+    where: UnmappedOrderWhereUniqueInput
+    /**
+     * In case the UnmappedOrder found by the `where` argument doesn't exist, create a new UnmappedOrder with this data.
+     */
+    create: XOR<UnmappedOrderCreateInput, UnmappedOrderUncheckedCreateInput>
+    /**
+     * In case the UnmappedOrder was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UnmappedOrderUpdateInput, UnmappedOrderUncheckedUpdateInput>
+  }
+
+  /**
+   * UnmappedOrder delete
+   */
+  export type UnmappedOrderDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+    /**
+     * Filter which UnmappedOrder to delete.
+     */
+    where: UnmappedOrderWhereUniqueInput
+  }
+
+  /**
+   * UnmappedOrder deleteMany
+   */
+  export type UnmappedOrderDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UnmappedOrders to delete
+     */
+    where?: UnmappedOrderWhereInput
+    /**
+     * Limit how many UnmappedOrders to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UnmappedOrder without action
+   */
+  export type UnmappedOrderDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UnmappedOrder
+     */
+    select?: UnmappedOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UnmappedOrder
+     */
+    omit?: UnmappedOrderOmit<ExtArgs> | null
+  }
+
+
+  /**
+>>>>>>> Stashed changes
    * Enums
    */
 

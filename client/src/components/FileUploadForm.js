@@ -11,6 +11,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [uploadProgress, setUploadProgress] = useState(null)
   const [logLines, setLogLines] = useState([])
   const [fileUploaded, setFileUploaded] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
@@ -67,10 +68,34 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     if (fileInput) fileInput.value = ''
   }
 
-  // Poll job status until completion
-  const pollJobStatus = async (jobId, batchId) => {
-    // Polling removed - just show success immediately
-    return { totalRows: 0, successRows: 0, failedRows: 0 }
+  // Check job status - polls a few times to get final result
+  const checkJobStatus = async (jobId, batchId) => {
+    let attempts = 0
+    const maxAttempts = 30 // 30 seconds
+    
+    while (attempts < maxAttempts) {
+      attempts++
+      try {
+        const statusResponse = await fileService.getJobStatus(jobId)
+        const jobData = statusResponse?.data?.data
+        
+        if (jobData?.state === 'completed' && jobData?.result) {
+          console.log('✅ Job completed:', jobData.result)
+          return jobData.result
+        } else if (jobData?.state === 'failed') {
+          throw new Error('Job processing failed')
+        }
+      } catch (err) {
+        console.error(`Check attempt ${attempts} error:`, err.message)
+      }
+      
+      // Wait 1 second before next attempt
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    
+    // Timeout - return default result
+    console.log('Job status check timeout after 30 seconds')
+    return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
   }
 
   const handleSubmit = async (e) => {
@@ -107,7 +132,24 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       const uploadData = response?.data?.data
       if (!uploadData) throw new Error('No response data from upload')
 
-      const { batchId } = uploadData
+      const { jobId, batchId, totalRows, successRows, failedRows } = uploadData
+      
+      let finalResult = { totalRows: 0, successRows: 0, failedRows: 0, batchId }
+
+      if (jobId) {
+        // Queue Mode (Old/Async)
+        setLogLines((prev) => [...prev, `⏳ Menunggu hasil pemrosesan... (Job ID: ${jobId})`])
+        finalResult = await checkJobStatus(jobId, batchId)
+      } else {
+        // Direct Mode (Sync/Local)
+        setLogLines((prev) => [...prev, '✅ Pemrosesan langsung selesai.'])
+        finalResult = { 
+          totalRows: totalRows || 0, 
+          successRows: successRows || 0, 
+          failedRows: failedRows || 0, 
+          batchId 
+        }
+      }
       
       setSuccess(true)
       setFileUploaded(true)
@@ -115,25 +157,55 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
       setLogLines((prev) => [
         ...prev,
-        `✅ Selesai diproses. Batch: ${batchId}`,
-        `⏳ Data sedang diproses di server...`
+        `✅ Selesai diproses. Batch: ${finalResult.batchId}`,
+        `📊 Total: ${finalResult.successRows}/${finalResult.totalRows} berhasil, ${finalResult.failedRows} gagal`
       ])
 
       if (onSuccess) {
-        onSuccess(uploadData)
+        onSuccess(finalResult)
       }
 
       setTimeout(() => {
         setSuccess(false)
       }, 3000)
     } catch (err) {
-      console.error('❌ Upload/Poll error:', err.message, err)
+      console.error('Upload error:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
       setError(errorMessage)
       setUploadProgress(null)
       setLogLines((prev) => [...prev, `Gagal: ${errorMessage}`])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteData = async () => {
+    if (!window.confirm(`⚠️ PERINGATAN KERAS!
+
+Apakah Anda yakin ingin MENGHAPUS SEMUA DATA untuk modul "${type}"?
+
+Tindakan ini tidak dapat dibatalkan. Data database akan dikosongkan.`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    setError(null)
+    setLogLines((prev) => [...prev, 'Menghapus data database...'])
+
+    try {
+      await fileService.truncateData(type)
+      setLogLines((prev) => [...prev, '✅ Data berhasil dihapus (Truncated).'])
+      setSuccess(true)
+      // Clear file selection too as context is reset
+      handleRemoveFile()
+      if (onSuccess) onSuccess({ reset: true })
+    } catch (err) {
+      console.error('Delete error:', err)
+      const msg = err.response?.data?.message || 'Gagal menghapus data'
+      setError(msg)
+      setLogLines((prev) => [...prev, `❌ Gagal hapus: ${msg}`])
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -251,15 +323,25 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
         <button
           type="submit"
-          disabled={!file || loading}
-          className={`w-full py-2 px-4 rounded-lg font-medium transition ${
-            file && !loading
+          disabled={!file || loading || isDeleting}
+          className={`w-full py-2 px-4 rounded-lg font-medium transition ${file && !loading && !isDeleting
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
           {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
         </button>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <button
+            type="button"
+            onClick={handleDeleteData}
+            disabled={loading || isDeleting}
+            className="w-full py-2 px-4 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition flex justify-center items-center"
+          >
+            {isDeleting ? 'Menghapus...' : '🗑️ Hapus Semua Data Database (Reset)'}
+          </button>
+        </div>
       </form>
     </div>
   )

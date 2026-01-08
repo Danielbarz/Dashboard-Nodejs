@@ -7,8 +7,10 @@ console.log('Testing Supabase connection...')
 console.log('DATABASE_URL:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@'))
 
 try {
+  const isLocal = process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1');
+  
   const sql = postgres(process.env.DATABASE_URL, {
-    ssl: 'require',
+    ssl: isLocal ? false : 'require',
     connect_timeout: 10,
     idle_timeout: 20
   })

@@ -1,4 +1,4 @@
-﻿import prisma from '../lib/prisma.js'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import XLSX from 'xlsx'
 import csv from 'csv-parser'
@@ -12,7 +12,7 @@ function pickCaseInsensitive(obj, key) {
 }
 
 // Normalize header keys: lowercase and strip spaces/underscores/non-alnum
-const normalizeKey = (key) => key.toString().trim().toLowerCase().replace(/[\s\W_]+/g, '').normalize('NFKD')
+const normalizeKey = (key) => key.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, '')
 
 // Build a map of normalizedKey -> originalKey for fast lookup per record
 const buildKeyMap = (record) => {
@@ -34,34 +34,72 @@ const getValue = (record, keyMap, ...candidates) => {
   return undefined
 }
 
-// FIX: Clean numeric-like values (handle empty strings and comma decimals)
+// FIX: Clean numeric-like values (handle empty strings and comma/dot confusion)
 const cleanNumber = (value) => {
   if (value === null || value === undefined || value === '') return 0
   if (typeof value === 'number') return value
   
-  // Replace koma dengan titik (format Indo 10,5 -> 10.5)
-  const strVal = value.toString().replace(',', '.')
-  // Hapus karakter non-angka kecuali titik dan minus
+  let strVal = value.toString().trim()
+  
+  // Remove Rp, IDR, spaces
+  strVal = strVal.replace(/Rp|IDR|\s/gi, '')
+
+  // Check format
+  const hasComma = strVal.includes(',')
+  const hasDot = strVal.includes('.')
+
+  if (hasComma && hasDot) {
+    // Both present. The last one is decimal.
+    const lastComma = strVal.lastIndexOf(',')
+    const lastDot = strVal.lastIndexOf('.')
+    
+    if (lastComma > lastDot) {
+      // Format: 1.000.000,00 (Indo standard) -> remove dots, replace comma with dot
+      strVal = strVal.replace(/\./g, '').replace(',', '.')
+    } else {
+      // Format: 1,000,000.00 (US standard) -> remove commas
+      strVal = strVal.replace(/,/g, '')
+    }
+  } else if (hasComma) {
+    // Only commas. Could be 100,50 (decimal) or 9,000 (thousand) or 9,000,000
+    // Heuristic: Split by comma. If any part except the last one has !== 3 digits, it's weird.
+    // Simpler: If comma is followed by exactly 2 digits at the end (e.g. ,00), likely decimal.
+    // If followed by 3 digits (e.g. ,000), likely thousand.
+    
+    if (/,\d{2}$/.test(strVal)) {
+       // Ends in ,XX -> decimal
+       strVal = strVal.replace(',', '.')
+    } else {
+       // Likely thousand separator -> remove
+       strVal = strVal.replace(/,/g, '')
+    }
+  } else if (hasDot) {
+    // Only dots. Could be 100.50 (decimal) or 9.000 (thousand)
+    // Same heuristic.
+    if (/\.\d{2}$/.test(strVal)) {
+       // Ends in .XX -> keep/standardize
+    } else {
+       // Likely thousand separator (Indo) -> remove
+       strVal = strVal.replace(/\./g, '')
+    }
+  }
+
+  // Cleanup any remaining non-numeric chars (except dot and minus)
   const cleaned = strVal.replace(/[^0-9.\-]/g, '')
   return cleaned ? parseFloat(cleaned) : 0
 }
 
-// FIX: Clean date values (Robust Version)
+// FIX: Clean date values (Robust Version with Month Name Support)
 const cleanDate = (value) => {
   if (!value) return null
 
   const dateStr = value.toString().trim()
-  if (dateStr === '' || dateStr === '-') return null
+  if (dateStr === '' || dateStr === '-' || dateStr === '#N/A') return null
 
-  // 1. Handle Excel Serial Dates (Angka atau String Angka)
-  // Contoh: 45236 atau "45236" (Excel date untuk ~2023)
-  // Regex ini cek apakah isinya angka saja
+  // 1. Handle Excel Serial Dates
   if (/^\d+(\.\d+)?$/.test(dateStr)) {
     const num = parseFloat(dateStr)
-    // Sanity check: Serial date Excel untuk era modern (1950 - 2070) adalah sekitar 18000 - 65000
-    // Jika angka > 70000, kemungkinan itu bukan tanggal Excel, tapi ID atau NIK
     if (num > 18000 && num < 70000) {
-      // Excel base date is Dec 30, 1899
       const date = new Date((num - 25569) * 86400 * 1000)
       return isNaN(date.getTime()) ? null : date
     }
@@ -72,20 +110,44 @@ const cleanDate = (value) => {
     return isNaN(value.getTime()) ? null : value
   }
 
-  // 3. Try standard Date parse (ISO Format YYYY-MM-DD)
+  // 3. Handle 'DD-Mon-YY' or 'DD-Mon-YYYY' (e.g. 17-Dec-24)
+  const monthMap = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    januari: 0, februari: 1, maret: 2, april: 3, mei: 4, juni: 5, juli: 6, agustus: 7, september: 8, oktober: 9, november: 10, desember: 11,
+    agt: 7, sep: 8, okt: 9, nop: 10, des: 11
+  }
+
+  const parts = dateStr.match(/^(\d{1,2})[\s\-]([a-zA-Z]+)[\s\-](\d{2,4})$/)
+  if (parts) {
+    const day = parseInt(parts[1], 10)
+    const monthStr = parts[2].toLowerCase()
+    let year = parseInt(parts[3], 10)
+    if (year < 100) year += 2000 // Assume 20xx for 2-digit years
+
+    const month = monthMap[monthStr]
+    if (month !== undefined) {
+      const date = new Date(year, month, day)
+      // Adjust timezone offset if needed (but Date() creates local time which is usually fine)
+      // To be safe, force set hours to avoid date shifting
+      date.setHours(12, 0, 0, 0)
+      if (!isNaN(date.getTime())) return date
+    }
+  }
+
+  // 4. Try standard Date parse
   let date = new Date(dateStr)
-  // Pastikan tahun masuk akal (antara 1900 dan 2100) untuk menghindari error Postgres
   if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
     return date
   }
 
-  // 4. Try DD/MM/YYYY or DD-MM-YYYY (Indonesian format)
+  // 5. Try DD/MM/YYYY
   const match = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
   if (match) {
     const day = parseInt(match[1], 10)
-    const month = parseInt(match[2], 10) - 1 // Month is 0-indexed
+    const month = parseInt(match[2], 10) - 1
     const year = parseInt(match[3], 10)
     date = new Date(year, month, day)
+    date.setHours(12, 0, 0, 0)
     if (!isNaN(date.getTime())) return date
   }
 
@@ -104,23 +166,6 @@ export const uploadFile = async (req, res, next) => {
     if (type === 'datin') type = 'sos'
 
     console.log(`📂 Processing Upload - Original Type: ${req.query.type}, Resolved Type: ${type}`)
-
-    // ========================================
-    // IMPORTANT: Clear old data before upload
-    // ========================================
-    if (type === 'sos') {
-      console.log('🗑️  Deleting all previous DATIN/SOS data...')
-      const deleted = await prisma.sosData.deleteMany({})
-      console.log(`✅ Deleted ${deleted.count} old DATIN records`)
-    } else if (type === 'hsi') {
-      console.log('🗑️  Deleting all previous HSI data...')
-      const deleted = await prisma.hsiData.deleteMany({})
-      console.log(`✅ Deleted ${deleted.count} old HSI records`)
-    } else if (type === 'digital_product') {
-      console.log('🗑️  Deleting all previous Digital Product data...')
-      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "digital_products" RESTART IDENTITY CASCADE`)
-      console.log(`✅ Deleted all old Digital Product records`)
-    }
 
     // Only admin and superadmin can upload files
     if (!['admin', 'superadmin'].includes(userRole)) {
@@ -206,31 +251,42 @@ export const uploadFile = async (req, res, next) => {
     `)
 
     // 1. RESET TABEL HSI
-    try {
-      await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "hsi_data";`)
-    } catch (e) {
-      console.log('⚠️ Warning: Could not drop hsi_data table:', e.message)
+    if (type === 'hsi') {
+      try {
+        await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "hsi_data";`)
+      } catch (e) {
+        console.log('⚠️ Warning: Could not drop hsi_data table:', e.message)
+      }
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "hsi_data" (
+          id BIGSERIAL PRIMARY KEY,
+          order_id TEXT UNIQUE,
+          nomor TEXT, regional TEXT, witel TEXT, regional_old TEXT, witel_old TEXT, datel TEXT, sto TEXT, unit TEXT,
+          jenis_psb TEXT, type_trans TEXT, type_layanan TEXT, customer_name TEXT, status_resume TEXT, provider TEXT,
+          order_date TIMESTAMPTZ, last_updated_date TIMESTAMPTZ,
+          ncli TEXT, pots TEXT, speedy TEXT, loc_id TEXT, wonum TEXT, flag_deposit TEXT, contact_hp TEXT, ins_address TEXT,
+          gps_longitude TEXT, gps_latitude TEXT, kcontact TEXT, channel TEXT, status_inet TEXT, status_onu TEXT,
+          upload TEXT, download TEXT, last_program TEXT, status_voice TEXT, clid TEXT, last_start TEXT, tindak_lanjut TEXT,
+          isi_comment TEXT, user_id_tl TEXT, tgl_comment TIMESTAMPTZ, tanggal_manja TIMESTAMPTZ,
+          kelompok_kendala TEXT, kelompok_status TEXT, hero TEXT, addon TEXT, tgl_ps TIMESTAMPTZ, status_message TEXT,
+          package_name TEXT, group_paket TEXT, reason_cancel TEXT, keterangan_cancel TEXT, tgl_manja TIMESTAMPTZ,
+          detail_manja TEXT, suberrorcode TEXT, engineermemo TEXT, tahun TEXT, bulan TEXT, tanggal TEXT, ps_1 TEXT,
+          cek TEXT, hasil TEXT, telda TEXT, data_proses TEXT, no_order_revoke TEXT, data_ps_revoke TEXT,
+          untuk_ps_pi TEXT, untuk_ps_re TEXT,
+          batch_id TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      `)
     }
 
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "hsi_data" (
-        id BIGSERIAL PRIMARY KEY,
-        order_id TEXT UNIQUE,
-        nomor TEXT, regional TEXT, witel TEXT, regional_old TEXT, witel_old TEXT, datel TEXT, sto TEXT, unit TEXT,
-        jenis_psb TEXT, type_trans TEXT, type_layanan TEXT, customer_name TEXT, status_resume TEXT, provider TEXT,
-        order_date TIMESTAMPTZ, last_updated_date TIMESTAMPTZ,
-        ncli TEXT, pots TEXT, speedy TEXT, loc_id TEXT, wonum TEXT, flag_deposit TEXT, contact_hp TEXT, ins_address TEXT,
-        gps_longitude TEXT, gps_latitude TEXT, kcontact TEXT, channel TEXT, status_inet TEXT, status_onu TEXT,
-        upload TEXT, download TEXT, last_program TEXT, status_voice TEXT, clid TEXT, last_start TEXT, tindak_lanjut TEXT,
-        isi_comment TEXT, user_id_tl TEXT, tgl_comment TIMESTAMPTZ, tanggal_manja TIMESTAMPTZ,
-        kelompok_kendala TEXT, kelompok_status TEXT, hero TEXT, addon TEXT, tgl_ps TIMESTAMPTZ, status_message TEXT,
-        package_name TEXT, group_paket TEXT, reason_cancel TEXT, keterangan_cancel TEXT, tgl_manja TIMESTAMPTZ,
-        detail_manja TEXT, suberrorcode TEXT, engineermemo TEXT, tahun TEXT, bulan TEXT, tanggal TEXT, ps_1 TEXT,
-        cek TEXT, hasil TEXT, telda TEXT, data_proses TEXT, no_order_revol TEXT, data_ps_revoke TEXT,
-        untuk_ps_pi TEXT, untuk_ps_re TEXT,
-        batch_id TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-    `)
+    if (type === 'jt') {
+       try {
+         await prisma.spmkMom.deleteMany({})
+         console.log('🗑️  Cleared spmk_mom table')
+       } catch (e) {
+         console.log('⚠️ Warning: Could not clear spmk_mom table:', e.message)
+       }
+    }
 
     // FIX: Pastikan kolom-kolom penting ada (Self-Healing Schema)
     const hsiTextCols = [
@@ -242,7 +298,7 @@ export const uploadFile = async (req, res, next) => {
       'isi_comment', 'user_id_tl', 'kelompok_kendala', 'kelompok_status', 'hero', 'addon',
       'status_message', 'package_name', 'group_paket', 'reason_cancel', 'keterangan_cancel',
       'detail_manja', 'suberrorcode', 'engineermemo', 'tahun', 'bulan', 'tanggal', 'ps_1',
-      'cek', 'hasil', 'telda', 'data_proses', 'no_order_revol', 'data_ps_revoke', 'untuk_ps_pi',
+      'cek', 'hasil', 'telda', 'data_proses', 'no_order_revoke', 'data_ps_revoke', 'untuk_ps_pi',
       'untuk_ps_re', 'batch_id'
     ]
     const hsiTimeCols = ['order_date', 'last_updated_date', 'tgl_comment', 'tanggal_manja', 'tgl_ps', 'tgl_manja']
@@ -264,7 +320,10 @@ export const uploadFile = async (req, res, next) => {
     const errors = []
     const currentBatchId = `batch_${Date.now()}`
     const importStartTime = new Date()
-    const BATCH_SIZE = 100
+    // Increased batch size for local development (5x faster)
+    // Note: Max Postgres params is ~65535. HSI has ~65 cols. 65 * 1000 = 65000 (Risk). 
+    // So 500 is the safe sweet spot (32,500 params).
+    const BATCH_SIZE = 500
     const sosBuffer = []
     const hsiBuffer = []
     const jtBuffer = []
@@ -438,7 +497,7 @@ export const uploadFile = async (req, res, next) => {
       const keyMap = buildKeyMap(record)
       
       try {
-        if (['digital_product', 'hsi', 'jt'].includes(type)) {
+        if (['digital_product', 'hsi'].includes(type)) {
           const now = new Date()
           const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
           const productName = type === 'digital_product'
@@ -472,66 +531,27 @@ export const uploadFile = async (req, res, next) => {
           const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'no_order')
           if (!orderId) continue
 
-          const sosData = {
+          sosBuffer.push({
             orderId: orderId.toString(),
             nipnas: getValue(record, keyMap, 'nipnas'),
-            standardName: getValue(record, keyMap, 'standard_name', 'standardname', 'standard name (po)', 'standard name'),
-            orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
-            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'order description'),
-            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
-            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen', 'sub segmen'),
-            custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
-            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'cust witel', 'nama witel', 'namawitel'),
-            servCity: getValue(record, keyMap, 'serv_city', 'servcity', 'service city', 'servicecity'),
-            serviceWitel: getValue(record, keyMap, 'service_witel', 'servicewitel', 'service witel'),
-            billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel', 'nama witel'),
-            liProductName: getValue(record, keyMap, 'li_product_name', 'liproductname', 'nama produk', 'product name', 'product', 'productname', 'produk'),
-            liBilldate: cleanDate(getValue(record, keyMap, 'li_billdate', 'libildate', 'bill date', 'billdate')),
-            liMilestone: getValue(record, keyMap, 'li_milestone', 'limilestone', 'milestone', 'order status', 'orderstatus'),
-            kategori: getValue(record, keyMap, 'kategori', 'category'),
-            liStatus: getValue(record, keyMap, 'li_status', 'listatus', 'order_status_n', 'order status', 'orderstatus', 'status'),
-            liStatusDate: cleanDate(getValue(record, keyMap, 'li_status_date', 'listatusdate', 'status date', 'statusdate')),
-            isTermin: getValue(record, keyMap, 'is_termin', 'istermin', 'termin'),
-            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'net price', 'netprice')),
-            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang', 'biaya pasang', 'installation fee', 'installationfee')),
-            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan', 'harga bulanan', 'hargabulanan', 'monthly fee', 'monthlyfee')),
-            orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date', 'ordercreateddate', 'order date', 'orderdate', 'created date', 'createddate', 'date')),
-            agreeType: getValue(record, keyMap, 'agree_type', 'agreetype', 'agreement type', 'agreementtype', 'tipe agreement', 'agreeitemnum', 'agree_item_num', 'payment term', 'paymentterm', 'lipaymentterm', 'li_payment_term'),
-            agreeStartDate: cleanDate(getValue(record, keyMap, 'agree_start_date', 'agreestartdate', 'agreement start date', 'agreementstartdate', 'libillingstartdate', 'li_billing_start_date', 'billing start date', 'billingstartdate')),
-            agreeEndDate: cleanDate(getValue(record, keyMap, 'agree_end_date', 'agreeenddate', 'agreement end date', 'agreementenddate')),
-            lamaKontrakHari: cleanNumber(getValue(record, keyMap, 'lama_kontrak_hari', 'lamakontrakhari', 'lama kontrak (hari)', 'lama kontrak', 'kontrak', 'contract duration', 'contractduration', 'duration')),
-            amortisasi: getValue(record, keyMap, 'amortisasi', 'amortization', 'scaling'),
-            actionCd: getValue(record, keyMap, 'action_cd', 'actioncd', 'action cd', 'action', 'prevorder', 'prev_order', 'prev order'),
-            billCity: getValue(record, keyMap, 'bill_city', 'billcity', 'bill city', 'billregion', 'bill_region', 'bill region'),
-            poName: getValue(record, keyMap, 'po_name', 'poname', 'po name', 'standard name (po)', 'standard_name', 'standardname'),
-            tipeOrder: getValue(record, keyMap, 'tipe_order', 'tipeorder', 'tipe order', 'order_subtype', 'ordersubtype', 'order subtype'),
-            segmenBaru: getValue(record, keyMap, 'segmen_baru', 'segmenbaru', 'segmen baru'),
-            scalling1: getValue(record, keyMap, 'scalling1', 'scalling 1'),
-            scalling2: getValue(record, keyMap, 'scalling2', 'scalling 2'),
-            tipeGrup: getValue(record, keyMap, 'tipe_grup', 'tipegrup', 'tipe grup'),
-            witelBaru: getValue(record, keyMap, 'witel_baru', 'witelbaru', 'witel baru'),
-            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'kategoribaru', 'kategori baru'),
+            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
+            orderSubtype: getValue(record, keyMap, 'order_subtype'),
+            segmen: getValue(record, keyMap, 'segmen'),
+            subSegmen: getValue(record, keyMap, 'sub_segmen'),
+            custCity: getValue(record, keyMap, 'cust_city'),
+            custWitel: getValue(record, keyMap, 'cust_witel'),
+            billWitel: getValue(record, keyMap, 'bill_witel', 'witel'),
+            liProductName: getValue(record, keyMap, 'li_product_name', 'product'),
+            liMilestone: getValue(record, keyMap, 'li_milestone', 'milestone'),
+            liStatus: getValue(record, keyMap, 'li_status', 'status'),
+            kategori: getValue(record, keyMap, 'kategori'),
+            revenue: cleanNumber(getValue(record, keyMap, 'revenue')),
+            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang')),
+            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan')),
+            orderCreatedDate: cleanDate(getValue(record, keyMap, 'order_created_date')),
+            actionCd: getValue(record, keyMap, 'action_cd', 'type_order'),
             batchId: currentBatchId
-          }
-
-          // Debug log for first record only
-          if (sosBuffer.length === 0) {
-            console.log('🔍 DEBUG - Sample SOS data mapping:', {
-              biayaPasang: sosData.biayaPasang,
-              hrgBulanan: sosData.hrgBulanan,
-              lamaKontrakHari: sosData.lamaKontrakHari,
-              billCity: sosData.billCity,
-              tipeOrder: sosData.tipeOrder,
-              agreeType: sosData.agreeType
-            })
-            console.log('🔍 DEBUG - Raw values from file:', {
-              lamaKontrakRaw: getValue(record, keyMap, 'lama_kontrak_hari', 'lamakontrakhari'),
-              billCityRaw: getValue(record, keyMap, 'bill_city', 'billcity', 'billregion'),
-              availableKeys: Object.keys(record).filter(k => k.toLowerCase().includes('lama') || k.toLowerCase().includes('bill'))
-            })
-          }
-
-          sosBuffer.push(sosData)
+          })
 
           if (sosBuffer.length >= BATCH_SIZE) {
             successCount += await flushBuffer(sosBuffer, prisma.sosData, 'SOS', 'upsert')
@@ -556,7 +576,7 @@ export const uploadFile = async (req, res, next) => {
             group_paket: ['group_paket'], reason_cancel: ['reason_cancel'], keterangan_cancel: ['keterangan_cancel'],
             tgl_manja: ['tgl_manja'], detail_manja: ['detail_manja'], suberrorcode: ['suberrorcode'], engineermemo: ['engineermemo'],
             tahun: ['tahun'], bulan: ['bulan'], tanggal: ['tanggal'], ps_1: ['ps 1', 'ps1'], cek: ['cek'], hasil: ['hasil'],
-            telda: ['telda'], data_proses: ['data_proses'], no_order_revol: ['no_order_revol'], data_ps_revoke: ['data_ps_revoke'],
+            telda: ['telda'], data_proses: ['data_proses'], no_order_revoke: ['no_order_revoke', 'no_order_revol'], data_ps_revoke: ['data_ps_revoke'],
             untuk_ps_pi: ['untuk_ps_pi'], untuk_ps_re: ['untuk_ps_re']
           }
 
@@ -584,14 +604,97 @@ export const uploadFile = async (req, res, next) => {
           const buffer = isDatin ? datinBuffer : jtBuffer
           const label = isDatin ? 'DATIN' : 'JT'
           
+          const witelBaruVal = getValue(record, keyMap, 'witel baru', 'witel_baru', 'witel', 'lokasi')
+          const witelLamaVal = getValue(record, keyMap, 'witel lama', 'witel_lama', 'witel_eksisting')
+
+          // 1. Skip if Witel is missing (Empty Row)
+          if (!witelBaruVal) continue
+
+          // 2. Filter out unwanted Witels (Jawa Tengah)
+          const unwantedWitels = ['SOLO', 'YOGYA', 'MAGELANG', 'SEMARANG', 'KUDUS', 'PURWOKERTO', 'JATENG', 'PEKALONGAN']
+          const witelStr = ((witelBaruVal || '') + ' ' + (witelLamaVal || '')).toUpperCase()
+          
+          if (unwantedWitels.some(w => witelStr.includes(w))) continue
+
           buffer.push({
-            noNdeSpmk: getValue(record, keyMap, 'no_nde_spmk', 'nondeSpmk') || `nd_${Date.now()}_${i}`,
-            witelBaru: getValue(record, keyMap, 'witel_baru'),
-            statusProyek: label,
-            revenuePlan: cleanNumber(getValue(record, keyMap, 'revenue_plan')),
+            // Identification
             batchId: currentBatchId,
-            poName: getValue(record, keyMap, 'po_name'),
-            segmen: getValue(record, keyMap, 'segmen')
+            
+            // Core Info
+            bulan: getValue(record, keyMap, 'bulan'),
+            tahun: cleanNumber(getValue(record, keyMap, 'tahun')),
+            region: getValue(record, keyMap, 'region'),
+            witelBaru: witelBaruVal,
+            witelLama: witelLamaVal,
+            idIHld: getValue(record, keyMap, 'id i-hld', 'id_i_hld', 'id ihld', 'ihld', 'id_i-hld'),
+            
+            // SPMK Info
+            noNdeSpmk: getValue(record, keyMap, 'no nde spmk', 'no_nde_spmk', 'nonde spmk', 'no nde', 'nomor_spmk') || `nd_${Date.now()}_${i}`,
+            perihalNdeSpmk: getValue(record, keyMap, 'perihal nde spmk', 'perihal_nde_spmk'),
+            uraianKegiatan: getValue(record, keyMap, 'uraian kegiatan', 'uraian_kegiatan', 'uraian', 'pekerjaan', 'kegiatan', 'project_name', 'nama_project'),
+            segmen: getValue(record, keyMap, 'segmen', 'segment', 'segmen_pelanggan', 'nama_pelanggan'),
+            poName: getValue(record, keyMap, 'po', 'po_name', 'po name', 'mitra', 'nama_po', 'nama mitra'),
+            mitraLokal: getValue(record, keyMap, 'mitra lokal', 'mitra_lokal'),
+            
+            // Dates
+            tanggalGolive: cleanDate(getValue(record, keyMap, 'tanggal golive', 'tanggal golive\n(dd/mm/yyyy)', 'tanggal_golive', 'tgl_golive', 'golive', 'tanggal_selesai')),
+            tanggalMom: cleanDate(getValue(record, keyMap, 'tanggal mom', 'tanggal_mom', 'tgl_mom', 'mom_date')),
+            tanggalCb: cleanDate(getValue(record, keyMap, 'tanggal cb', 'tanggal_cb', 'tgl_cb', 'tanggal_spmk')),
+            
+            // Technical & Status
+            jenisKegiatan: getValue(record, keyMap, 'jenis kegiatan', 'jenis_kegiatan', 'jenis', 'type', 'jenis_layanan'),
+            revenuePlan: cleanNumber(getValue(record, keyMap, 'revenue plan', 'revenue_plan', 'rev', 'nilai', 'rab', 'nilai_proyek')),
+            rab: cleanNumber(getValue(record, keyMap, 'rab')),
+            statusProyek: getValue(record, keyMap, 'status proyek', 'status_proyek', 'status') || label,
+            goLive: (getValue(record, keyMap, 'golive', 'go_live', 'go live', 'status_golive') || 'N').toString().substring(0, 1),
+            baDrop: (getValue(record, keyMap, 'ba drop', 'ba_drop', 'drop', 'ba_progress') || '').toString(),
+            populasiNonDrop: (getValue(record, keyMap, 'populasi (non drop)', 'populasi_non_drop', 'populasi', 'non_drop') || 'Y').toString().substring(0, 1),
+            mom: getValue(record, keyMap, 'mom'),
+            konfirmasiPo: getValue(record, keyMap, 'konfirmasi po', 'konfirmasi_po'),
+            
+            // Tracking & Aging
+            usia: cleanNumber(getValue(record, keyMap, 'usia')),
+            totalPort: getValue(record, keyMap, 'total port', 'total_port'),
+            templateDurasi: getValue(record, keyMap, 'template durasi', 'template_durasi'),
+            toc: getValue(record, keyMap, 'toc'),
+            keteranganToc: getValue(record, keyMap, 'keterangan toc', 'keterangan_toc', 'keterangan'),
+            umurPekerjaan: getValue(record, keyMap, 'umur pekerjaan', 'umur_pekerjaan'),
+            kategoriUmurPekerjaan: getValue(record, keyMap, 'kategori umur pekerjaan', 'kategori_umur_pekerjaan'),
+            
+            // Detailed Status
+            statusTompsLastActivity: getValue(record, keyMap, 'status tomps - last activity', 'status_tomps_last_activity', 'status tomps last activity', 'status_tomps', 'tomps'),
+            statusTompsNew: getValue(record, keyMap, 'status tomps new', 'status_tomps_new', 'tomps_new'),
+            statusIHld: getValue(record, keyMap, 'status i-hld', 'status_i_hld', 'status ihld', 'status hld'),
+            
+            // PO Name Sanitization & Fallback
+            poName: (() => {
+              let po = getValue(record, keyMap, 'po', 'po_name', 'po name', 'mitra', 'nama_po', 'nama mitra')
+              const mitraLokal = getValue(record, keyMap, 'mitra lokal', 'mitra_lokal')
+              const uraian = getValue(record, keyMap, 'uraian kegiatan', 'uraian_kegiatan', 'uraian', 'pekerjaan')
+              
+              // 1. Clean existing PO (handle Excel errors)
+              if (po && (po.toString().includes('#NAME') || po.toString().includes('#REF'))) po = null
+              
+              // 2. Fallback to Mitra Lokal
+              if (!po && mitraLokal) po = mitraLokal
+              
+              // 3. Fallback to Uraian Extraction (Try to find PT. or CV. or PT3xxx)
+              if (!po && uraian) {
+                // Regex to find PT. Name, CV. Name, or PT codes like PT3BR, PT2NS
+                const match = uraian.toString().match(/(PT\.?\s?[\w\s]+|CV\.?\s?[\w\s]+|PT\d+[A-Z0-9]+)/i)
+                if (match) {
+                   // Take first 3 words max to avoid taking the whole sentence
+                   const words = match[0].split(' ').slice(0, 4).join(' ')
+                   po = words.toUpperCase()
+                }
+              }
+              
+              return po || 'UNIDENTIFIED PO'
+            })(),
+
+            namaOdpGoLive: getValue(record, keyMap, 'nama odp go live', 'nama_odp_go_live'),
+            bak: getValue(record, keyMap, 'bak'),
+            keteranganPelimpahan: getValue(record, keyMap, 'keterangan pelimpahan', 'keterangan_pelimpahan')
           })
 
           if (buffer.length >= BATCH_SIZE) {
@@ -666,6 +769,44 @@ export const getImportLogs = async (req, res, next) => {
     })
 
     successResponse(res, allLogs, 'Import logs retrieved successfully')
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Truncate/Clear all data for a specific type
+export const truncateData = async (req, res, next) => {
+  try {
+    let type = (req.query.type || '').toString().toLowerCase()
+    
+    // Normalize aliases
+    if (['digital', 'dp'].includes(type)) type = 'digital_product'
+    if (type === 'datin') type = 'sos'
+    
+    let tableName = ''
+    let label = ''
+
+    if (type === 'digital_product') {
+      tableName = 'digital_products'
+      label = 'Digital Product'
+    } else if (type === 'hsi') {
+      tableName = 'hsi_data'
+      label = 'HSI'
+    } else if (type === 'sos') {
+      tableName = 'sos_data'
+      label = 'SOS / Datin'
+    } else if (type === 'jt' || type === 'tambahan') {
+      tableName = 'spmk_mom'
+      label = 'Jaringan Tambahan (SPMK)'
+    } else {
+      return errorResponse(res, 'Invalid type', 'Please specify a valid type (hsi, digital, sos, jt)', 400)
+    }
+
+    // Execute Truncate
+    console.log(`🗑️ Truncating table: ${tableName} for type: ${type}`)
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE;`)
+
+    successResponse(res, null, `Successfully deleted all data for ${label}`)
   } catch (error) {
     next(error)
   }
