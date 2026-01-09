@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
@@ -18,7 +18,8 @@ const ReportsHSI = () => {
   const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
-  const [data, setData] = useState([])
+  const [tableData, setTableData] = useState([])
+  const [totals, setTotals] = useState({})
   const [loading, setLoading] = useState(false)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
@@ -54,8 +55,9 @@ const ReportsHSI = () => {
           headers: { Authorization: `Bearer ${token}` }
         }
       )
-      if (response.data?.data?.tableData) {
-        setData(response.data.data.tableData)
+      if (response.data?.data) {
+        setTableData(response.data.data.tableData || [])
+        setTotals(response.data.data.totals || {})
       }
     } catch (error) {
       console.error('Failed to fetch HSI report:', error)
@@ -69,47 +71,28 @@ const ReportsHSI = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate])
 
-  const filteredData = useMemo(() => {
-    if (!selectedWitel) return data
-    return data.filter(row => row.witel === selectedWitel)
-  }, [data, selectedWitel])
-
-  // Calculate Totals
-  const totals = useMemo(() => {
-    const initial = {
-      registered: 0, pre_pi: 0, inpro_sc: 0, qc1: 0, fcc: 0, rjct_fcc: 0, survey_manja: 0, un_sc: 0,
-      pi_under_24: 0, pi_24_72: 0, pi_over_72: 0, total_pi: 0,
-      fo_wfm_plgn: 0, fo_wfm_teknis: 0, fo_wfm_system: 0, fo_wfm_others: 0,
-      fo_uim: 0, fo_asp: 0, fo_osm: 0, total_fallout: 0,
-      act_comp: 0, ps: 0,
-      cancel_plgn: 0, cancel_teknis: 0, cancel_system: 0, cancel_others: 0, total_cancel: 0,
-      revoke: 0
-    }
-
-    const sum = filteredData.reduce((acc, row) => {
-      Object.keys(initial).forEach(key => {
-        acc[key] += (row[key] || 0)
-      })
-      return acc
-    }, initial)
-
-    // Calculate Percentage Totals
-    const numeratorPiRe = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps + sum.total_cancel
-    sum.pi_re_percent = sum.registered > 0 ? ((numeratorPiRe / sum.registered) * 100).toFixed(2) : 0
-
-    const denominatorPsRe = sum.registered - sum.rjct_fcc - sum.un_sc - sum.revoke
-    sum.ps_re_percent = denominatorPsRe > 0 ? ((sum.ps / denominatorPsRe) * 100).toFixed(2) : 0
-
-    const denominatorPsPi = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps
-    sum.ps_pi_percent = denominatorPsPi > 0 ? ((sum.ps / denominatorPsPi) * 100).toFixed(2) : 0
-
-    return sum
-  }, [filteredData])
-
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
     window.location.href = `/api/export/report-hsi?${params.toString()}`
   }
+
+  // Filter is done on backend for RSO, but frontend filter for specific view
+  // Note: Since backend returns hierarchical flat list (Parent -> Children), 
+  // simple filter might break the hierarchy visual if not careful.
+  // Ideally, if user selects "BALI", we should show BALI parent and its children.
+  // But for now, let's keep it simple: if selectedWitel, filter by witel (parent) AND its children (witel_old logic not needed if backend grouped nicely, but here we have flat list).
+  // The current backend returns a flat list where children follow their parent.
+  // Row structure: { witel_display, row_type: 'main'|'sub', ... }
+  
+  // Actually, filtering a flat hierarchical list is tricky. 
+  // Let's rely on the fact that if a parent matches, we probably want its children too.
+  // Or, since the backend sends EVERYTHING, we can filter.
+  // Since 'witel' property exists on all rows (parent has it, child has it as parent reference), we can filter by that.
+  
+  const displayData = React.useMemo(() => {
+    if (!selectedWitel) return tableData
+    return tableData.filter(row => row.witel === selectedWitel)
+  }, [tableData, selectedWitel])
 
   return (
     <>
@@ -207,16 +190,20 @@ const ReportsHSI = () => {
             <tbody className="bg-white text-gray-700">
                 {loading ? (
                     <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Loading data...</td></tr>
-                ) : filteredData.length === 0 ? (
+                ) : displayData.length === 0 ? (
                     <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Tidak ada data untuk periode ini.</td></tr>
                 ) : (
-                    filteredData.map((row, index) => (
+                    displayData.map((row, index) => (
                     <tr 
                         key={index} 
-                        className="bg-white hover:bg-blue-50 transition-colors"
+                        className={`transition-colors ${
+                            row.row_type === 'main' ? 'bg-blue-50/50 hover:bg-blue-100 font-bold' : 'bg-white hover:bg-gray-50'
+                        }`}
                     >
-                        <td className="border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 bg-inherit font-semibold">
-                            {row.witel}
+                        <td className={`border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 bg-inherit ${
+                            row.row_type === 'sub' ? 'pl-6 text-gray-500 italic' : 'text-blue-800'
+                        }`}>
+                            {row.witel_display}
                         </td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
@@ -224,18 +211,18 @@ const ReportsHSI = () => {
                         <td className="border border-slate-300 p-1">{formatNumber(row.inpro_sc)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.qc1)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fcc)}</td>
-                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.rjct_fcc)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_manja)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.un_sc)}</td>
+                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.cancel_by_fcc || row.rjct_fcc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_new_manja || row.survey_manja)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.unsc || row.un_sc)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_24)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_24_72)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_72)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_1_hari || row.pi_under_24)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_1_3_hari || row.pi_24_72)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_3_hari || row.pi_over_72)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_pi)}</td>
                         
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_plgn || row.fo_wfm_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_teknis || row.fo_wfm_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_sys || row.fo_wfm_system)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_others)}</td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_uim)}</td>
@@ -244,21 +231,21 @@ const ReportsHSI = () => {
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_fallout)}</td>
                         
                         <td className="border border-slate-300 p-1 bg-green-50 font-bold">{formatNumber(row.act_comp)}</td>
-                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.ps)}</td>
+                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.jml_comp_ps || row.ps)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_plgn || row.cancel_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_teknis || row.cancel_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_sys || row.cancel_system)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.cancel_others)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_cancel)}</td>
 
                         <td className="border border-slate-300 p-1 bg-red-50 font-bold">{formatNumber(row.revoke)}</td>
 
-                        <td className="border border-slate-300 p-1 bg-blue-50 font-bold">{row.perf_pi_re}%</td>
-                        <td className={`border border-slate-300 p-1 ${getPsReColor(row.perf_ps_re)}`}>
-                            {row.perf_ps_re}%
+                        <td className="border border-slate-300 p-1 bg-blue-50 font-bold">{row.pi_re_percent}%</td>
+                        <td className={`border border-slate-300 p-1 ${getPsReColor(row.ps_re_percent)}`}>
+                            {row.ps_re_percent}%
                         </td>
-                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{row.perf_ps_pi}%</td>
+                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{row.ps_pi_percent}%</td>
                     </tr>
                 )))}
             </tbody>
@@ -266,24 +253,24 @@ const ReportsHSI = () => {
             {/* TABLE FOOTER (TOTALS) */}
             <tfoot className="sticky bottom-0 z-20">
                 <tr className={totalRowStyle}>
-                    <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">TOTAL</td>
+                    <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">GRAND TOTAL</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.pre_pi)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.registered)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.inpro_sc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.inprogress_sc)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.qc1)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fcc)}</td>
-                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.rjct_fcc)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.survey_manja)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.un_sc)}</td>
+                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.cancel_by_fcc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.survey_new_manja)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.unsc)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_24)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_24_72)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_72)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_1_hari)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_1_3_hari)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_3_hari)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_pi)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_plgn)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_teknis)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_sys)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_others)}</td>
 
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fo_uim)}</td>
@@ -292,11 +279,11 @@ const ReportsHSI = () => {
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_fallout)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.act_comp)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.ps)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.jml_comp_ps)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_plgn)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_teknis)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_sys)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_others)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_cancel)}</td>
 
