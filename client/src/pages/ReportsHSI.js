@@ -2,28 +2,23 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const ReportsHSI = () => {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const formatDateLocal = (date) => {
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
-  const [endDate, setEndDate] = useState(formatDateLocal(now))
+  const [startDate, setStartDate] = useState(startOfMonth)
+  const [endDate, setEndDate] = useState(now)
   const [selectedWitel, setSelectedWitel] = useState('')
-  const [data, setData] = useState([])
+  const [reportData, setReportData] = useState([])
+  const [totals, setTotals] = useState({})
   const [loading, setLoading] = useState(false)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  // --- Helpers from PHP Version ---
+  // --- Helpers ---
   const formatNumber = (num) => {
     return new Intl.NumberFormat('id-ID').format(num || 0);
   };
@@ -50,12 +45,17 @@ const ReportsHSI = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
         {
-          params: { start_date: startDate, end_date: endDate },
+          params: { 
+            start_date: startDate.toISOString(), 
+            end_date: endDate.toISOString() 
+          },
           headers: { Authorization: `Bearer ${token}` }
         }
       )
-      if (response.data?.data?.tableData) {
-        setData(response.data.data.tableData)
+      
+      if (response.data?.data) {
+        setReportData(response.data.data.reportData || [])
+        setTotals(response.data.data.totals || {})
       }
     } catch (error) {
       console.error('Failed to fetch HSI report:', error)
@@ -65,82 +65,98 @@ const ReportsHSI = () => {
   }
 
   useEffect(() => {
-    fetchData()
+    if (startDate && endDate) {
+        fetchData()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate])
 
   const filteredData = useMemo(() => {
-    if (!selectedWitel) return data
-    return data.filter(row => row.witel === selectedWitel)
-  }, [data, selectedWitel])
-
-  // Calculate Totals
-  const totals = useMemo(() => {
-    const initial = {
-      registered: 0, pre_pi: 0, inpro_sc: 0, qc1: 0, fcc: 0, rjct_fcc: 0, survey_manja: 0, un_sc: 0,
-      pi_under_24: 0, pi_24_72: 0, pi_over_72: 0, total_pi: 0,
-      fo_wfm_plgn: 0, fo_wfm_teknis: 0, fo_wfm_system: 0, fo_wfm_others: 0,
-      fo_uim: 0, fo_asp: 0, fo_osm: 0, total_fallout: 0,
-      act_comp: 0, ps: 0,
-      cancel_plgn: 0, cancel_teknis: 0, cancel_system: 0, cancel_others: 0, total_cancel: 0,
-      revoke: 0
-    }
-
-    const sum = filteredData.reduce((acc, row) => {
-      Object.keys(initial).forEach(key => {
-        acc[key] += (row[key] || 0)
-      })
-      return acc
-    }, initial)
-
-    // Calculate Percentage Totals
-    const numeratorPiRe = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps + sum.total_cancel
-    sum.pi_re_percent = sum.registered > 0 ? ((numeratorPiRe / sum.registered) * 100).toFixed(2) : 0
-
-    const denominatorPsRe = sum.registered - sum.rjct_fcc - sum.un_sc - sum.revoke
-    sum.ps_re_percent = denominatorPsRe > 0 ? ((sum.ps / denominatorPsRe) * 100).toFixed(2) : 0
-
-    const denominatorPsPi = sum.total_pi + sum.total_fallout + sum.act_comp + sum.ps
-    sum.ps_pi_percent = denominatorPsPi > 0 ? ((sum.ps / denominatorPsPi) * 100).toFixed(2) : 0
-
-    return sum
-  }, [filteredData])
+    if (!selectedWitel) return reportData
+    // Filter logic needs to be aware of parent-child structure
+    // If filtering by Witel, we show the Parent Row for that Witel AND all its children (which have row_type='sub')
+    // But the current API returns a flat list mixed with parents and children.
+    // However, the `reportData` is already structured as [Parent A, Child A1, Child A2, Parent B, ...].
+    // If we select "JATIM TIMUR", we want Parent JATIM TIMUR and its children.
+    // The children don't have a 'witel' property equal to parent witel directly in the flat list property used for display (witel_display is witel_old).
+    // But we can filter by the block.
+    // Simpler approach: Just filter the parent rows and their subsequent children.
+    // Or simpler: The backend returns totals for Witel. If filtering by Witel, maybe we should re-fetch?
+    // For now, let's just filter the list if possible, otherwise show all.
+    // Given the structure, client-side filtering of this flattened tree is tricky without an ID reference.
+    // Let's rely on the backend or just hide rows.
+    
+    // Actually, the simplest way for this specific structure is to check if the row belongs to the selected witel.
+    // But child rows only have `witel_old` in `witel_display`. They don't have a `parent_witel` field in the response I designed?
+    // Wait, in my backend controller:
+    // `const witel = row.witel || 'Unknown';` -> this is used for grouping.
+    // The child object pushed to `finalReportData` is the raw row + extra fields.
+    // So the child object DOES have `witel` property from the DB query!
+    // `SELECT witel, witel_old, ...`
+    // So yes, `row.witel` exists on both Parent and Child rows.
+    
+    return reportData.filter(row => row.witel === selectedWitel)
+  }, [reportData, selectedWitel])
 
   const handleExport = () => {
-    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-hsi?${params.toString()}`
+    // Implement Excel export download
+    // Since this is a specialized report, we might need a dedicated endpoint or handle it client side.
+    // For now, let's trigger the download using the existing export endpoint pattern if available, 
+    // or just alert if not ready.
+    // The user asked to match old code which used `window.location.href`.
+    const params = new URLSearchParams({ 
+        start_date: startDate.toISOString(), 
+        end_date: endDate.toISOString() 
+    })
+    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
   }
 
   return (
     <>
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
           <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
             <option value="">Semua Witel</option>
             {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
           </select>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+          <div className="flex gap-2 items-center relative z-50"> 
+            <div className="relative z-50">
+                <DatePicker 
+                    selected={startDate} 
+                    onChange={(date) => setStartDate(date)} 
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                    placeholderText="Start Date"
+                    className="border border-gray-300 rounded text-xs p-1.5 w-28 cursor-pointer focus:ring-blue-500 focus:border-blue-500"
+                />
             </div>
-            <span className="text-gray-400 font-light">|</span>
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+            <span className="text-gray-400">-</span>
+            <div className="relative z-50">
+                <DatePicker 
+                    selected={endDate} 
+                    onChange={(date) => setEndDate(date)} 
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    placeholderText="End Date"
+                    className="border border-gray-300 rounded text-xs p-1.5 w-28 cursor-pointer focus:ring-blue-500 focus:border-blue-500"
+                />
             </div>
+            
+            <button onClick={fetchData} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded hover:bg-blue-700 font-bold shadow transition">
+                Go
+            </button>
+            
+            <button 
+                onClick={handleExport} 
+                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition ml-2"
+            >
+                <FiDownload size={16}/> Excel
+            </button>
           </div>
-
-          <button onClick={fetchData} className="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 whitespace-nowrap h-10">
-            Refresh
-          </button>
-
-          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
-            <FiDownload className="mr-2" size={16} />
-            Ekspor Report
-          </button>
         </div>
       </div>
 
@@ -148,7 +164,7 @@ const ReportsHSI = () => {
         <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wide mb-4">
             Performance Report HSI Per Witel
         </h3>
-        <div className="overflow-x-auto max-h-[80vh]">
+        <div className="overflow-x-auto max-h-[80vh] relative z-0">
           <table className="w-full text-[10px] border-collapse border border-slate-400 text-center font-sans">
             
             {/* TABLE HEAD */}
@@ -213,52 +229,58 @@ const ReportsHSI = () => {
                     filteredData.map((row, index) => (
                     <tr 
                         key={index} 
-                        className="bg-white hover:bg-blue-50 transition-colors"
+                        className={`
+                            transition-colors 
+                            ${row.row_type === 'main' ? 'bg-slate-100' : 'bg-white hover:bg-blue-50'}
+                            ${row.row_type === 'main' ? 'font-bold text-black border-t-2 border-slate-300' : ''}
+                        `}
                     >
-                        <td className="border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 bg-inherit font-semibold">
-                            {row.witel}
+                        <td className={`border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 
+                            ${row.row_type === 'main' ? 'bg-slate-100 font-extrabold uppercase' : 'bg-inherit pl-6'}
+                        `}>
+                            {row.witel_display}
                         </td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.registered)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.inpro_sc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.inprogress_sc)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.qc1)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fcc)}</td>
-                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.rjct_fcc)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_manja)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.un_sc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_by_fcc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_new_manja)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.unsc)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_24)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_24_72)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_72)}</td>
-                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_pi)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_1_hari)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_1_3_hari)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_3_hari)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.total_pi)}</td>
                         
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_sys)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_others)}</td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_uim)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_asp)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_osm)}</td>
-                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_fallout)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.total_fallout)}</td>
                         
-                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{formatNumber(row.act_comp)}</td>
-                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.ps)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.act_comp)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.jml_comp_ps)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_sys)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.cancel_others)}</td>
-                        <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_cancel)}</td>
+                        <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.total_cancel)}</td>
 
-                        <td className="border border-slate-300 p-1 bg-red-50 font-bold">{formatNumber(row.revoke)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.revoke)}</td>
 
-                        <td className="border border-slate-300 p-1 bg-blue-50 font-bold">{row.perf_pi_re}%</td>
-                        <td className={`border border-slate-300 p-1 ${getPsReColor(row.perf_ps_re)}`}>
-                            {row.perf_ps_re}%
+                        <td className="border border-slate-300 p-1">{row.pi_re_percent}%</td>
+                        <td className={`border border-slate-300 p-1 ${getPsReColor(row.ps_re_percent)}`}>
+                            {row.ps_re_percent}%
                         </td>
-                        <td className="border border-slate-300 p-1 bg-green-50 font-bold">{row.perf_ps_pi}%</td>
+                        <td className="border border-slate-300 p-1">{row.ps_pi_percent}%</td>
                     </tr>
                 )))}
             </tbody>
@@ -269,21 +291,21 @@ const ReportsHSI = () => {
                     <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">TOTAL</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.pre_pi)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.registered)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.inpro_sc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.inprogress_sc)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.qc1)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fcc)}</td>
-                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.rjct_fcc)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.survey_manja)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.un_sc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_by_fcc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.survey_new_manja)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.unsc)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_24)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_24_72)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_72)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_1_hari)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_1_3_hari)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_3_hari)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_pi)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_plgn)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_teknis)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_sys)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_others)}</td>
 
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fo_uim)}</td>
@@ -292,15 +314,15 @@ const ReportsHSI = () => {
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_fallout)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.act_comp)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.ps)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.jml_comp_ps)}</td>
 
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_plgn)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_teknis)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_system)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_plgn)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_teknis)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_sys)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_others)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.total_cancel)}</td>
 
-                    <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.revoke)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.revoke)}</td>
 
                     <td className="border border-slate-400 p-1">{totals.pi_re_percent}%</td>
                     <td className={`border border-slate-400 p-1 ${getPsReColor(totals.ps_re_percent)}`}>

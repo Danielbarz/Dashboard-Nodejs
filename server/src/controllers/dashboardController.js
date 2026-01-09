@@ -562,41 +562,102 @@ export const getReportAnalysis = async (req, res, next) => {
 export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
-
-    let whereClause = {}
-
+    
+    // Base conditions with RSO2 Scope (Keep this for safety/scope)
+    const conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
+    
     if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
+      conditions.push(`order_date >= '${start_date}'::date`)
+      conditions.push(`order_date < ('${end_date}'::date + INTERVAL '1 day')`)
     }
 
-    const tableData = await prisma.hsiData.groupBy({
-      by: ['witel'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        upload: true
-      }
+    const whereSql = `WHERE ${conditions.join(' AND ')}`
+
+    const query = `
+      SELECT
+        witel,
+        COUNT(*) as registered,
+        
+        -- PRE PI
+        SUM(CASE WHEN UPPER(status_resume) LIKE '%PRE PI%' THEN 1 ELSE 0 END) as pre_pi,
+        
+        -- INPRO SC
+        SUM(CASE WHEN UPPER(data_proses) = 'INPRO SC' THEN 1 ELSE 0 END) as inpro_sc,
+        
+        -- QC1
+        SUM(CASE WHEN UPPER(data_proses) = 'CANCEL QC1' THEN 1 ELSE 0 END) as qc1,
+        
+        -- FCC
+        SUM(CASE WHEN UPPER(data_proses) = 'CANCEL FCC' THEN 1 ELSE 0 END) as fcc,
+        
+        -- RJCT FCC
+        SUM(CASE WHEN UPPER(kelompok_status) = 'REJECT_FCC' THEN 1 ELSE 0 END) as rjct_fcc,
+        
+        -- Survey Manja
+        SUM(CASE WHEN UPPER(data_proses) = 'OGP SURVEY' AND UPPER(status_resume) LIKE '%INVALID SURVEY%' THEN 1 ELSE 0 END) as survey_manja,
+        
+        -- UN-SC
+        SUM(CASE WHEN UPPER(data_proses) = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
+        
+        -- PI Aging
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) < INTERVAL '24 hours' THEN 1 ELSE 0 END) as pi_under_24,
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) >= INTERVAL '24 hours' AND (NOW() - order_date) <= INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_24_72,
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) > INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_over_72,
+        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
+        
+        -- Fallout (FO)
+        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
+        SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
+        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
+        
+        -- FO WFM Split (Simplified Logic based on kel_kendala or default)
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%PELANGGAN%' THEN 1 ELSE 0 END) as fo_wfm_plgn,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%TEKNIS%' THEN 1 ELSE 0 END) as fo_wfm_teknis,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_system,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR (UPPER(kelompok_kendala) NOT LIKE '%PELANGGAN%' AND UPPER(kelompok_kendala) NOT LIKE '%TEKNIS%' AND UPPER(kelompok_kendala) NOT LIKE '%SYSTEM%')) THEN 1 ELSE 0 END) as fo_wfm_others,
+        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
+        
+        -- ACT COMP
+        SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp,
+        
+        -- PS
+        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as ps,
+        
+        -- CANCEL Split
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%PELANGGAN%' THEN 1 ELSE 0 END) as cancel_plgn,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%TEKNIS%' THEN 1 ELSE 0 END) as cancel_teknis,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%SYSTEM%' THEN 1 ELSE 0 END) as cancel_system,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR (UPPER(kelompok_kendala) NOT LIKE '%PELANGGAN%' AND UPPER(kelompok_kendala) NOT LIKE '%TEKNIS%' AND UPPER(kelompok_kendala) NOT LIKE '%SYSTEM%')) THEN 1 ELSE 0 END) as cancel_others,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
+        
+        -- REVOKE
+        SUM(CASE WHEN data_proses = 'REVOKE' THEN 1 ELSE 0 END) as revoke
+        
+      FROM hsi_data
+      ${whereSql}
+      GROUP BY witel
+    `
+
+    const tableData = await prisma.$queryRawUnsafe(query)
+    
+    // Calculate Percentages
+    const formattedData = tableData.map(row => {
+        const r = {}
+        for (const k in row) r[k] = typeof row[k] === 'bigint' ? Number(row[k]) : row[k]
+        
+        const pi_re_numerator = r.total_pi + r.total_fallout + r.act_comp + r.ps + r.total_cancel
+        const perf_pi_re = r.registered > 0 ? ((pi_re_numerator / r.registered) * 100).toFixed(2) : 0
+        
+        const ps_re_denominator = r.registered - r.rjct_fcc - r.un_sc - r.revoke
+        const perf_ps_re = ps_re_denominator > 0 ? ((r.ps / ps_re_denominator) * 100).toFixed(2) : 0
+        
+        const ps_pi_denominator = r.total_pi + r.total_fallout + r.act_comp + r.ps
+        const perf_ps_pi = ps_pi_denominator > 0 ? ((r.ps / ps_pi_denominator) * 100).toFixed(2) : 0
+        
+        return { ...r, perf_pi_re, perf_ps_re, perf_ps_pi }
     })
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witel || 'Unknown',
-      totalHsi: row._count.id,
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-      avgRevenue: 0
-    }))
-
-    successResponse(
-      res,
-      { tableData: formattedTableData },
-      'Report HSI data retrieved successfully'
-    )
+    successResponse(res, { tableData: formattedData }, 'Report HSI data retrieved successfully')
   } catch (error) {
     next(error)
   }
@@ -1196,26 +1257,28 @@ export const getHSIFlowStats = async (req, res, next) => {
     const { startDate, endDate, witel, branch } = req.query
 
     // FIX: Gunakan array RSO2 sebagai base filter, dan pastikan string escaping aman
-    let conditions = [`witel IN ('${RSO2_WITELS.join("','")}')`]
+    let conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
     
     // FIX: Cek apakah witel ada dan bukan string kosong
     if (witel && witel.trim() !== '') {
-      const witelArr = witel.split(',').map(w => w.trim()).filter(w => w !== '')
+      const witelArr = witel.split(',').map(w => w.trim().toUpperCase()).filter(w => w !== '')
       if (witelArr.length > 0) {
-        conditions.push(`witel IN ('${witelArr.join("','")}')`)
+        conditions.push(`UPPER(witel) IN (${witelArr.map(w => `'${w}'`).join(',')})`)
       }
     }
 
     if (branch && branch.trim() !== '') {
-      const branchArr = branch.split(',').map(b => b.trim()).filter(b => b !== '')
+      const branchArr = branch.split(',').map(b => b.trim().toUpperCase()).filter(b => b !== '')
       if (branchArr.length > 0) {
-        conditions.push(`witel_old IN ('${branchArr.join("','")}')`)
+        conditions.push(`UPPER(witel_old) IN (${branchArr.map(b => `'${b}'`).join(',')})`)
       }
     }
 
     if (startDate && endDate) {
-      // Pastikan format tanggal aman untuk SQL
-      conditions.push(`order_date >= '${startDate}'::date AND order_date <= '${endDate}'::date`)
+      // Logic Date Range yang benar:
+      // startDate 00:00:00 <= orderDate < (endDate + 1 hari) 00:00:00
+      conditions.push(`order_date >= '${startDate}'::date`)
+      conditions.push(`order_date < ('${endDate}'::date + INTERVAL '1 day')`)
     }
 
     const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -1274,19 +1337,20 @@ export const getHSIFlowDetail = async (req, res, next) => {
     // (Consolidated logic for both Export and Preview to bypass schema mismatch)
     console.log("[FLOW_DETAIL] Processing request...", { witel, branch, detail_category, export_detail });
 
-    let sqlConditions = [`witel IN ('${RSO2_WITELS.join("','")}')`]
+    let sqlConditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
 
     // Helper to escape values simply (not full injection proof but safer than direct interpolation for known patterns)
     if (witel && witel.trim()) {
-        const witelArr = witel.split(',').map(w => w.trim()).filter(w => w !== '')
-        if (witelArr.length > 0) sqlConditions.push(`witel IN ('${witelArr.join("','")}')`)
+        const witelArr = witel.split(',').map(w => w.trim().toUpperCase()).filter(w => w !== '')
+        if (witelArr.length > 0) sqlConditions.push(`UPPER(witel) IN (${witelArr.map(w => `'${w}'`).join(',')})`)
     }
     if (branch && branch.trim()) {
-        const branchArr = branch.split(',').map(b => b.trim()).filter(b => b !== '')
-        if (branchArr.length > 0) sqlConditions.push(`witel_old IN ('${branchArr.join("','")}')`)
+        const branchArr = branch.split(',').map(b => b.trim().toUpperCase()).filter(b => b !== '')
+        if (branchArr.length > 0) sqlConditions.push(`UPPER(witel_old) IN (${branchArr.map(b => `'${b}'`).join(',')})`)
     }
     if (startDate && endDate) {
-        sqlConditions.push(`order_date >= '${startDate}'::date AND order_date <= '${endDate}'::date`)
+        sqlConditions.push(`order_date >= '${startDate}'::date`)
+        sqlConditions.push(`order_date < ('${endDate}'::date + INTERVAL '1 day')`)
     }
 
     if (detail_category) {
@@ -1377,9 +1441,7 @@ export const getHSIFlowDetail = async (req, res, next) => {
     // 1. EXPORT MODE
     if (export_detail === 'true') {
         const query = `
-            SELECT 
-                order_id, order_date, customer_name, witel, sto, type_layanan, 
-                kelompok_status, status_resume, data_proses, status_message, witel_old
+            SELECT *
             FROM hsi_data 
             ${whereSql}
             ORDER BY order_date DESC
@@ -1407,7 +1469,7 @@ export const getHSIFlowDetail = async (req, res, next) => {
                         formattedRow[k] = formattedRow[k].toISOString().split('T')[0];
                     }
                     if (typeof formattedRow[k] === 'bigint') {
-                        formattedRow[k] = Number(formattedRow[k]);
+                        formattedRow[k] = formattedRow[k].toString();
                     }
                 });
                 worksheet.addRow(formattedRow);

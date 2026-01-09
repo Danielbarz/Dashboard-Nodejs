@@ -426,7 +426,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\NANDA\\TUGAS\\KP TELKOM\\DASHBOARD JS\\Dashboard-Nodejs\\server\\src\\generated\\client",
+      "value": "D:\\01. Non-Academics\\MAGANG\\Telkom-Dashboard-Nodejs\\server\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -440,7 +440,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\NANDA\\TUGAS\\KP TELKOM\\DASHBOARD JS\\Dashboard-Nodejs\\server\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\01. Non-Academics\\MAGANG\\Telkom-Dashboard-Nodejs\\server\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

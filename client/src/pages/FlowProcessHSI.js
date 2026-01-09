@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from '../services/api';
-import axios from 'axios'; // <--- TAMBAHKAN INI
+import axios from 'axios'; 
 
 // =================================================================================
-// 1. SUB-KOMPONEN UI (Diletakkan di luar agar performa stabil & tidak error)
+// 1. SUB-KOMPONEN UI
 // =================================================================================
 
 const MultiSelectDropdown = ({ options, selected, onChange, placeholder }) => {
@@ -57,7 +57,6 @@ const HeaderStep = ({ title, color = "bg-gray-800", isLast }) => (
 );
 
 const MainCard = ({ title, count, total, colorClass = "bg-slate-50 border-2 border-gray-300", onClick, loading }) => {
-    // Logic persentase: Jika total ada, hitung %. Jika tidak, string kosong.
     const percent = total > 0 ? ((count / total) * 100).toFixed(2) + '%' : '';
     
     return (
@@ -117,25 +116,147 @@ const TreeCard = ({ title, count, total, color = "bg-white", borderColor = "bord
 };
 
 // =================================================================================
-// 2. MAIN COMPONENT (MIGRASI DARI INERTIA KE REACT SPA)
+// 2. COMPONENT TABEL DETAIL (EXTRACTED)
+// =================================================================================
+
+const DetailTable = ({ 
+    category, 
+    loading, 
+    data, 
+    onExport, 
+    onPageChange, 
+    currentPage,
+    id 
+}) => (
+    <div className="mt-8 bg-white rounded-3xl shadow border border-gray-200 p-8 scroll-mt-20" id={id}>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-blue-600 rounded-full"></div>
+                <div>
+                    <h3 className="text-lg font-bold text-gray-800">Detail Data: <span className="text-blue-600">{category}</span></h3>
+                    <p className="text-sm text-gray-500">Menampilkan daftar order untuk kategori terpilih.</p>
+                </div>
+            </div>
+            <button 
+                onClick={onExport}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 text-sm font-bold transition-colors"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export Excel
+            </button>
+        </div>
+
+        <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tgl Order</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Customer</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Witel</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Layanan</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status Group</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Resume Status</th>
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                    {loading ? (
+                        <tr>
+                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500">Loading data...</td>
+                        </tr>
+                    ) : data && data.data && data.data.length > 0 ? (
+                        data.data.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">{item.order_id}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.order_date ? new Date(item.order_date).toLocaleDateString() : '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800">{item.customer_name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-600">{item.witel}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.type_layanan}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                        item.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' : 
+                                        (item.kelompok_status && item.kelompok_status.includes('CANCEL')) ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                        {item.kelompok_status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-xs text-gray-500 max-w-xs truncate" title={item.status_resume}>
+                                    {item.status_resume}
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500 italic">Tidak ada data detail untuk kategori ini.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+
+        {data && data.meta && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm text-gray-700">
+                            Showing <span className="font-medium">{(data.meta.page - 1) * 10 + 1}</span> to <span className="font-medium">{Math.min(data.meta.page * 10, data.meta.total)}</span> of <span className="font-medium">{data.meta.total}</span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button
+                                onClick={() => onPageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                            >
+                                <span className="sr-only">Previous</span>
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                            <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+                                Page {currentPage} of {data.meta.totalPages || 1}
+                            </span>
+                            <button
+                                onClick={() => onPageChange(currentPage + 1)}
+                                disabled={currentPage === (data.meta.totalPages || 1)}
+                                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                            >
+                                <span className="sr-only">Next</span>
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+);
+
+// =================================================================================
+// 3. MAIN COMPONENT
 // =================================================================================
 
 export default function FlowProcessHSI() {
     
     // --- STATE INITIALIZATION ---
-    // Menggantikan props dari Inertia dengan state lokal
     const [dateRange, setDateRange] = useState([null, null]);
     const [startDate, endDate] = dateRange;
     
     const [selectedWitels, setSelectedWitels] = useState([]);
     const [selectedBranches, setSelectedBranches] = useState([]);
+    
+    // ACTIVE STATE
     const [activeCategory, setActiveCategory] = useState(null);
+    const [activeSection, setActiveSection] = useState(null); // 'main' | 'revoke'
     
     // Loading states
     const [loading, setLoading] = useState(false);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    // Data states (awalnya kosong/0)
+    // Data states
     const [flowStats, setFlowStats] = useState({
         re: 0, valid_re: 0, valid_wo: 0, valid_pi: 0, ps_count: 0,
         ogp_verif: 0, cancel_qc1: 0, cancel_fcc: 0, cancel_wo: 0, unsc: 0,
@@ -174,7 +295,7 @@ export default function FlowProcessHSI() {
         document.title = "Flow Process HSI";
     }, []);
 
-    // --- FETCH DATA (PENGGANTI ROUTER.GET) ---
+    // --- FETCH DATA ---
     const loadStats = async () => {
         setLoading(true);
         try {
@@ -186,7 +307,6 @@ export default function FlowProcessHSI() {
             };
             const response = await api.get('/dashboard/hsi/flow', { params });
             if (response.data.data) {
-                // Update stats dan branchMap
                 setFlowStats(prev => ({ ...prev, ...response.data.data }));
                 if (response.data.data.branchMap) {
                     setBranchMap(response.data.data.branchMap);
@@ -232,12 +352,16 @@ export default function FlowProcessHSI() {
     }, [startDate, endDate, selectedWitels, selectedBranches]);
 
     // --- HANDLERS ---
-    const handleCardClick = (categoryName) => {
+    const handleCardClick = (categoryName, section) => {
         setActiveCategory(categoryName);
+        setActiveSection(section);
         setCurrentPage(1);
         loadDetail(categoryName, 1);
+        
+        // Scroll ke section yang relevan
         setTimeout(() => {
-            document.getElementById('detail-section')?.scrollIntoView({ behavior: 'smooth' });
+            const elementId = section === 'main' ? 'detail-section-main' : 'detail-section-revoke';
+            document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth' });
         }, 300);
     };
 
@@ -248,14 +372,10 @@ export default function FlowProcessHSI() {
         }
     };
 
-    // HANDLE EXPORT (FIXED & ROBUST)
-    // HANDLE EXPORT (DIRECT AXIOS)
+    // HANDLE EXPORT
     const handleExportDetail = async () => {
         if (!activeCategory) return;
-        
-        // Ubah cursor saat loading
         document.body.style.cursor = 'wait';
-
         try {
             const params = {
                 startDate: startDate ? startDate.toISOString() : undefined,
@@ -265,16 +385,10 @@ export default function FlowProcessHSI() {
                 detail_category: activeCategory,
                 export_detail: 'true'
             };
-            
-            // PENTING: Gunakan 'api' instance, bukan axios langsung
-            // Ini akan otomatis menyertakan Token/Cookie yang sudah disetting di interceptors api.js
             const response = await api.get('/dashboard/hsi/flow/detail', { 
                 params,
-                responseType: 'blob' // Wajib blob untuk file
+                responseType: 'blob'
             });
-
-            // Cek jika server mengembalikan JSON error (bukan file)
-            // Blob type 'application/json' berarti backend mengirim error message
             if (response.data.type === 'application/json') {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -288,24 +402,17 @@ export default function FlowProcessHSI() {
                 reader.readAsText(response.data);
                 return;
             }
-
-            // Download File
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            
-            // Nama file
             const fileName = `Detail_HSI_${activeCategory.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
             link.setAttribute('download', fileName);
-            
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-
         } catch (error) {
             console.error("Export failed:", error);
-            // Handle error status code dari api wrapper
             if (error.response && error.response.status === 401) {
                 alert("Sesi habis. Silakan login ulang.");
             } else if (error.response && error.response.status === 500) {
@@ -322,11 +429,9 @@ export default function FlowProcessHSI() {
     const psRePercent = flowStats?.ps_re_denominator > 0 
         ? ((flowStats.ps_count / flowStats.ps_re_denominator) * 100).toFixed(2) 
         : '0.00';
-        
     const psPiPercent = flowStats?.ps_pi_denominator > 0 
         ? ((flowStats.ps_count / flowStats.ps_pi_denominator) * 100).toFixed(2) 
         : '0.00';
-
     const complyCount = flowStats?.comply_count || 0; 
     const complyDenominator = flowStats?.ps_count || 1; 
     const complyPercent = flowStats?.ps_count > 0 
@@ -386,50 +491,50 @@ export default function FlowProcessHSI() {
                         
                         {/* COLUMN 1: RE */}
                         <div className="space-y-3">
-                            <MainCard title="RE" count={flowStats?.re} onClick={() => handleCardClick('RE')} loading={loading} />
+                            <MainCard title="RE" count={flowStats?.re} onClick={() => handleCardClick('RE', 'main')} loading={loading} />
                             <div className="min-h-[300px] border-2 border-transparent"></div>
                         </div>
 
                         {/* COLUMN 2: Valid RE + Fallout */}
                         <div className="space-y-3">
-                            <MainCard title="Valid RE" count={flowStats?.valid_re} total={flowStats?.re} onClick={() => handleCardClick('Valid RE')} loading={loading} />
+                            <MainCard title="Valid RE" count={flowStats?.valid_re} total={flowStats?.re} onClick={() => handleCardClick('Valid RE', 'main')} loading={loading} />
                             <div className="p-3 bg-slate-50 rounded-lg border-2 border-gray-100 min-h-[300px] flex flex-col gap-3">
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Fallout Points</div>
-                                <DetailCard title="OGP Verif & Valid" count={flowStats?.ogp_verif} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP Verif & Valid')} loading={loading} />
-                                <DetailCard title="Cancel QC 1" count={flowStats?.cancel_qc1} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel QC 1')} loading={loading} />
-                                <DetailCard title="Cancel FCC" count={flowStats?.cancel_fcc} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel FCC')} loading={loading} />
+                                <DetailCard title="OGP Verif & Valid" count={flowStats?.ogp_verif} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP Verif & Valid', 'main')} loading={loading} />
+                                <DetailCard title="Cancel QC 1" count={flowStats?.cancel_qc1} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel QC 1', 'main')} loading={loading} />
+                                <DetailCard title="Cancel FCC" count={flowStats?.cancel_fcc} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel FCC', 'main')} loading={loading} />
                             </div>
                         </div>
 
                         {/* COLUMN 3: Valid WO + Process */}
                         <div className="space-y-3">
-                            <MainCard title="Valid WO" count={flowStats?.valid_wo} total={flowStats?.re} onClick={() => handleCardClick('Valid WO')} loading={loading} />
+                            <MainCard title="Valid WO" count={flowStats?.valid_wo} total={flowStats?.re} onClick={() => handleCardClick('Valid WO', 'main')} loading={loading} />
                             <div className="p-3 bg-slate-50 rounded-lg border-2 border-gray-100 min-h-[300px] flex flex-col gap-3">
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Process</div>
-                                <DetailCard title="Cancel WO" count={flowStats?.cancel_wo} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel WO')} loading={loading} />
-                                <DetailCard title="UNSC" count={flowStats?.unsc} totalForPercent={flowStats?.re} onClick={() => handleCardClick('UNSC')} loading={loading} />
-                                <DetailCard title="OGP SURVEY" count={flowStats?.ogp_survey_count} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP SURVEY')} loading={loading} />
+                                <DetailCard title="Cancel WO" count={flowStats?.cancel_wo} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel WO', 'main')} loading={loading} />
+                                <DetailCard title="UNSC" count={flowStats?.unsc} totalForPercent={flowStats?.re} onClick={() => handleCardClick('UNSC', 'main')} loading={loading} />
+                                <DetailCard title="OGP SURVEY" count={flowStats?.ogp_survey_count} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP SURVEY', 'main')} loading={loading} />
                             </div>
                         </div>
 
                         {/* COLUMN 4: Valid PI + Technician */}
                         <div className="space-y-3">
-                            <MainCard title="Valid PI" count={flowStats?.valid_pi} total={flowStats?.re} onClick={() => handleCardClick('Valid PI')} loading={loading} />
+                            <MainCard title="Valid PI" count={flowStats?.valid_pi} total={flowStats?.re} onClick={() => handleCardClick('Valid PI', 'main')} loading={loading} />
                             <div className="p-3 bg-slate-50 rounded-lg border-2 border-gray-100 min-h-[300px] flex flex-col gap-3">
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Technician</div>
-                                <DetailCard title="Cancel Instalasi" count={flowStats?.cancel_instalasi} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel Instalasi')} loading={loading} />
-                                <DetailCard title="Fallout" count={flowStats?.fallout} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Fallout')} loading={loading} />
-                                <DetailCard title="Revoke" count={flowStats?.revoke_count} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Revoke')} loading={loading} />
+                                <DetailCard title="Cancel Instalasi" count={flowStats?.cancel_instalasi} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Cancel Instalasi', 'main')} loading={loading} />
+                                <DetailCard title="Fallout" count={flowStats?.fallout} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Fallout', 'main')} loading={loading} />
+                                <DetailCard title="Revoke" count={flowStats?.revoke_count} totalForPercent={flowStats?.re} highlight onClick={() => handleCardClick('Revoke', 'main')} loading={loading} />
                             </div>
                         </div>
 
                         {/* COLUMN 5: PS + Provisioning + RATIO BOX */}
                         <div className="space-y-3">
-                            <MainCard title="PS (COMPLETED)" count={flowStats?.ps_count} total={flowStats?.re} colorClass="bg-green-50 border-2 border-green-500" onClick={() => handleCardClick('PS (COMPLETED)')} loading={loading} />
+                            <MainCard title="PS (COMPLETED)" count={flowStats?.ps_count} total={flowStats?.re} colorClass="bg-green-50 border-2 border-green-500" onClick={() => handleCardClick('PS (COMPLETED)', 'main')} loading={loading} />
                             
                             <div className="p-3 bg-slate-50 rounded-lg border-2 border-gray-100 flex flex-col gap-3">
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Provisioning</div>
-                                <DetailCard title="OGP Provisioning" count={flowStats?.ogp_provi} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP Provisioning')} loading={loading} />
+                                <DetailCard title="OGP Provisioning" count={flowStats?.ogp_provi} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP Provisioning', 'main')} loading={loading} />
                             </div>
 
                             {/* RATIO BOX */}
@@ -455,6 +560,19 @@ export default function FlowProcessHSI() {
                     </div>
                 </div>
 
+                {/* TABLE FOR MAIN FLOWCHART (Appears here if 'main' section clicked) */}
+                {activeCategory && activeSection === 'main' && (
+                    <DetailTable 
+                        id="detail-section-main"
+                        category={activeCategory}
+                        loading={detailLoading}
+                        data={detailData}
+                        onExport={handleExportDetail}
+                        onPageChange={handlePageChange}
+                        currentPage={currentPage}
+                    />
+                )}
+
                 {/* WRAPPER SECTION 2: REVOKE FLOW CHART (TREE DIAGRAM) */}
                 <div className="mt-12 bg-white rounded-3xl shadow border border-gray-200 p-8">
                     <div className="flex items-center gap-3 mb-8">
@@ -469,7 +587,7 @@ export default function FlowProcessHSI() {
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-16 bg-gray-300"></div>
                                 <div 
                                     className={`bg-red-50 border-2 border-red-200 p-4 rounded-3xl text-center shadow min-w-[200px] cursor-pointer hover:bg-red-100 transition-colors ${loading ? 'opacity-70' : ''}`}
-                                    onClick={() => handleCardClick('Total Revoke')}
+                                    onClick={() => handleCardClick('Total Revoke', 'revoke')}
                                 >
                                     <div className="text-xs font-bold text-red-600 uppercase mb-1">Total Revoke</div>
                                     <div className="text-3xl font-extrabold text-red-900">{loading ? '...' : (flowStats?.revoke_count?.toLocaleString() || 0)}</div>
@@ -479,14 +597,14 @@ export default function FlowProcessHSI() {
                             <div className="flex justify-center gap-10 w-full relative mb-12">
                                 <div className="absolute -top-6 left-[20%] right-[20%] h-10 border-t-2 border-r-2 border-l-2 border-gray-300 rounded-t-3xl"></div>
                                 <div className="flex flex-col items-center w-1/3 relative">
-                                    <TreeCard title="Follow Up Completed" count={flowStats?.followup_completed} total={flowStats?.revoke_count} borderColor="border-blue-300" textColor="text-blue-900" color="bg-blue-50" onClick={() => handleCardClick('Follow Up Completed')} loading={loading} />
+                                    <TreeCard title="Follow Up Completed" count={flowStats?.followup_completed} total={flowStats?.revoke_count} borderColor="border-blue-300" textColor="text-blue-900" color="bg-blue-50" onClick={() => handleCardClick('Follow Up Completed', 'revoke')} loading={loading} />
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-12 bg-gray-300"></div>
                                 </div>
                                 <div className="flex flex-col items-center w-1/3 z-10">
-                                    <TreeCard title="Revoke Completed" count={flowStats?.revoke_completed} total={flowStats?.revoke_count} onClick={() => handleCardClick('Revoke Completed')} loading={loading} />
+                                    <TreeCard title="Revoke Completed" count={flowStats?.revoke_completed} total={flowStats?.revoke_count} onClick={() => handleCardClick('Revoke Completed', 'revoke')} loading={loading} />
                                 </div>
                                 <div className="flex flex-col items-center w-1/3 z-10">
-                                    <TreeCard title="Revoke Order" count={flowStats?.revoke_order} total={flowStats?.revoke_count} onClick={() => handleCardClick('Revoke Order')} loading={loading} />
+                                    <TreeCard title="Revoke Order" count={flowStats?.revoke_order} total={flowStats?.revoke_count} onClick={() => handleCardClick('Revoke Order', 'revoke')} loading={loading} />
                                 </div>
                             </div>
                             {/* LEVEL 3 */}
@@ -495,22 +613,22 @@ export default function FlowProcessHSI() {
                                     <div className="absolute top-0 border-t-2 border-l-2 border-r-2 border-gray-300 rounded-t-3xl h-6" style={{ left: 'calc(10% - 1.2rem)', right: 'calc(10% - 1.2rem)' }}></div>
                                     <div className="grid grid-cols-5 gap-12">
                                         <div className="relative flex flex-col items-center">
-                                            <TreeCard title="PS" count={flowStats?.ps_revoke} total={flowStats?.followup_completed} color="bg-green-50" borderColor="border-green-200" textColor="text-green-800" onClick={() => handleCardClick('PS Revoke')} loading={loading} />
+                                            <TreeCard title="PS" count={flowStats?.ps_revoke} total={flowStats?.followup_completed} color="bg-green-50" borderColor="border-green-200" textColor="text-green-800" onClick={() => handleCardClick('PS Revoke', 'revoke')} loading={loading} />
                                         </div>
                                         <div className="relative flex flex-col items-center">
                                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gray-300"></div>
-                                            <TreeCard title="OGP Provi" count={flowStats?.ogp_provi_revoke} total={flowStats?.followup_completed} color="bg-yellow-50" borderColor="border-yellow-200" textColor="text-yellow-800" onClick={() => handleCardClick('OGP Provi Revoke')} loading={loading} />
+                                            <TreeCard title="OGP Provi" count={flowStats?.ogp_provi_revoke} total={flowStats?.followup_completed} color="bg-yellow-50" borderColor="border-yellow-200" textColor="text-yellow-800" onClick={() => handleCardClick('OGP Provi Revoke', 'revoke')} loading={loading} />
                                         </div>
                                         <div className="relative flex flex-col items-center">
                                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gray-300"></div>
-                                            <TreeCard title="Fallout" count={flowStats?.fallout_revoke} total={flowStats?.followup_completed} color="bg-orange-50" borderColor="border-orange-200" textColor="text-orange-800" onClick={() => handleCardClick('Fallout Revoke')} loading={loading} />
+                                            <TreeCard title="Fallout" count={flowStats?.fallout_revoke} total={flowStats?.followup_completed} color="bg-orange-50" borderColor="border-orange-200" textColor="text-orange-800" onClick={() => handleCardClick('Fallout Revoke', 'revoke')} loading={loading} />
                                         </div>
                                         <div className="relative flex flex-col items-center">
                                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gray-300"></div>
-                                            <TreeCard title="Cancel" count={flowStats?.cancel_revoke} total={flowStats?.followup_completed} color="bg-red-50" borderColor="border-red-200" textColor="text-red-800" onClick={() => handleCardClick('Cancel Revoke')} loading={loading} />
+                                            <TreeCard title="Cancel" count={flowStats?.cancel_revoke} total={flowStats?.followup_completed} color="bg-red-50" borderColor="border-red-200" textColor="text-red-800" onClick={() => handleCardClick('Cancel Revoke', 'revoke')} loading={loading} />
                                         </div>
                                         <div className="relative flex flex-col items-center">
-                                            <TreeCard title="Lain-Lain" count={flowStats?.lain_lain_revoke} total={flowStats?.followup_completed} onClick={() => handleCardClick('Lain-Lain Revoke')} loading={loading} />
+                                            <TreeCard title="Lain-Lain" count={flowStats?.lain_lain_revoke} total={flowStats?.followup_completed} onClick={() => handleCardClick('Lain-Lain Revoke', 'revoke')} loading={loading} />
                                         </div>
                                     </div>
                                 </div>
@@ -519,113 +637,17 @@ export default function FlowProcessHSI() {
                     </div>
                 </div>
 
-                {/* DETAIL DATA TABLE SECTION (SHOW ONLY IF ACTIVE) */}
-                {activeCategory && (
-                    <div className="mt-12 bg-white rounded-3xl shadow border border-gray-200 p-8 scroll-mt-20" id="detail-section">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-1 bg-blue-600 rounded-full"></div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-800">Detail Data: <span className="text-blue-600">{activeCategory}</span></h3>
-                                    <p className="text-sm text-gray-500">Menampilkan daftar order untuk kategori terpilih.</p>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={handleExportDetail}
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 text-sm font-bold transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Export Excel
-                            </button>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tgl Order</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Customer</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Witel</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Layanan</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status Group</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Resume Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {detailLoading ? (
-                                        <tr>
-                                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500">Loading data...</td>
-                                        </tr>
-                                    ) : detailData && detailData.data && detailData.data.length > 0 ? (
-                                        detailData.data.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">{item.order_id}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.order_date ? new Date(item.order_date).toLocaleDateString() : '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-800">{item.customer_name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-600">{item.witel}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.type_layanan}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                        item.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' : 
-                                                        (item.kelompok_status && item.kelompok_status.includes('CANCEL')) ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                        {item.kelompok_status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs text-gray-500 max-w-xs truncate" title={item.status_resume}>
-                                                    {item.status_resume}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500 italic">Tidak ada data detail untuk kategori ini.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {detailData && detailData.meta && (
-                            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
-                                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-700">
-                                            Showing <span className="font-medium">{(detailData.meta.page - 1) * 10 + 1}</span> to <span className="font-medium">{Math.min(detailData.meta.page * 10, detailData.meta.total)}</span> of <span className="font-medium">{detailData.meta.total}</span> results
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                            <button
-                                                onClick={() => handlePageChange(currentPage - 1)}
-                                                disabled={currentPage === 1}
-                                                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-                                            >
-                                                <span className="sr-only">Previous</span>
-                                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                            <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
-                                                Page {currentPage} of {detailData.meta.totalPages || 1}
-                                            </span>
-                                            <button
-                                                onClick={() => handlePageChange(currentPage + 1)}
-                                                disabled={currentPage === (detailData.meta.totalPages || 1)}
-                                                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
-                                            >
-                                                <span className="sr-only">Next</span>
-                                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </nav>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                {/* TABLE FOR REVOKE TREE (Appears here if 'revoke' section clicked) */}
+                {activeCategory && activeSection === 'revoke' && (
+                    <DetailTable 
+                        id="detail-section-revoke"
+                        category={activeCategory}
+                        loading={detailLoading}
+                        data={detailData}
+                        onExport={handleExportDetail}
+                        onPageChange={handlePageChange}
+                        currentPage={currentPage}
+                    />
                 )}
 
             </div>
