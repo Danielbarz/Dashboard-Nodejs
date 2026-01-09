@@ -723,38 +723,207 @@ export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = {}
-
+    // Base conditions
+    const conditions = []
+    
+    // Filter by Date
     if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
+      conditions.push(`order_date >= '${start_date}'::date AND order_date <= '${end_date}'::date`)
     }
 
-    const tableData = await prisma.hsiData.groupBy({
-      by: ['witel'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        upload: true
+    // Filter by RSO 2 Witel (Hardcoded as per other controllers)
+    const RSO2_WITELS = ['JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+    conditions.push(`witel IN ('${RSO2_WITELS.join("','")}')`)
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT
+        witel,
+        witel_old,
+        
+        -- 1. PRE PI
+        SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
+        
+        -- 2. REGISTERED (RE)
+        COUNT(*) as registered,
+        
+        -- 3. INPROGRESS SC
+        SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
+        
+        -- 4. QC1
+        SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
+        
+        -- 5. FCC
+        SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
+        
+        -- 6. CANCEL BY FCC
+        SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
+        
+        -- 7. SURVEY NEW MANJA
+        SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
+        
+        -- 8. UN-SC
+        SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
+        
+        -- PI AGING (Based on last_updated_date)
+        -- 9. PI < 1 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) < INTERVAL '24 hours' THEN 1 ELSE 0 END) as pi_under_1_hari,
+        -- 10. PI 1-3 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) >= INTERVAL '24 hours' AND (NOW() - last_updated_date) <= INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_1_3_hari,
+        -- 11. PI > 3 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) > INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_over_3_hari,
+        -- 12. TOTAL PI
+        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
+
+        -- FALLOUT WFM
+        -- 13. FO WFM - KNDL PLGN
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA PELANGGAN' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn,
+        -- 14. FO WFM - KNDL TEKNIS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA TEKNIS' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
+        -- 15. FO WFM - KNDL SYS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA SYSTEM' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
+        -- 16. FO WFM - OTHERS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'OTHERS' THEN 1 ELSE 0 END) as fo_wfm_others,
+        
+        -- OTHER FALLOUTS
+        -- 17. FO UIM
+        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
+        -- 18. FO ASP
+        SUM(CASE WHEN kelompok_status = 'FO_ASP' THEN 1 ELSE 0 END) as fo_asp,
+        -- 19. FO OSM
+        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
+        
+        -- 20. TOTAL FALLOUT (SUM of FO_UIM, FO_ASP, FO_OSM)
+        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASP', 'FO_OSM') THEN 1 ELSE 0 END) as total_fallout,
+
+        -- 21. ACT COMP (QC2)
+        SUM(CASE WHEN kelompok_status = 'ACT_COMP' THEN 1 ELSE 0 END) as act_comp,
+        
+        -- 22. JML COMP (PS)
+        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps,
+
+        -- CANCEL DETAILS
+        -- 23. CANCEL - KNDL PLGN
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA PELANGGAN' THEN 1 ELSE 0 END) as cancel_kndl_plgn,
+        -- 24. CANCEL - KNDL TEKNIS
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA TEKNIS' THEN 1 ELSE 0 END) as cancel_kndl_teknis,
+        -- 25. CANCEL - KNDL SYS
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA SYSTEM' THEN 1 ELSE 0 END) as cancel_kndl_sys,
+        -- 26. CANCEL - OTHERS (BLANK)
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others,
+        
+        -- 27. TOTAL CANCEL
+        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
+
+        -- 28. REVOKE
+        SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke
+
+      FROM hsi_data
+      ${whereSql}
+      GROUP BY witel, witel_old
+      ORDER BY witel, witel_old
+    `
+
+    const rawData = await prisma.$queryRawUnsafe(query)
+
+    // --- Process Logic in JS (Grouping & Totals) ---
+
+    // 1. Helper to calculate percentages
+    const calculatePercentages = (item) => {
+      // Cast string/BigInt to Number first
+      const val = (k) => Number(item[k] || 0)
+
+      // 29. PI/RE (%)
+      // Formula: (Total PI + Total Fallout + Act Comp + Jumlah PS + Total Cancel) / Registered
+      const num_pire = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps') + val('total_cancel')
+      item.pi_re_percent = val('registered') > 0 ? ((num_pire / val('registered')) * 100).toFixed(2) : 0
+
+      // 30. PS/RE (%)
+      // Formula: (PS / (Registered - Cancel by FCC - UNSC - Revoke))
+      const denom_psre = val('registered') - val('cancel_by_fcc') - val('un_sc') - val('revoke')
+      item.ps_re_percent = denom_psre > 0 ? ((val('jml_comp_ps') / denom_psre) * 100).toFixed(2) : 0
+
+      // 31. PS/PI (%)
+      // Formula: (PS / (Total PI + Total Fallout + Act Comp + Jumlah PS))
+      const denom_pspi = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps')
+      item.ps_pi_percent = denom_pspi > 0 ? ((val('jml_comp_ps') / denom_pspi) * 100).toFixed(2) : 0
+      
+      return item
+    }
+
+    // 2. Group by Witel (Parent)
+    const grouped = {}
+    
+    // Initialize numeric fields list for aggregation
+    const numericFields = [
+      'pre_pi', 'registered', 'inprogress_sc', 'qc1', 'fcc', 'cancel_by_fcc', 'survey_new_manja', 'un_sc',
+      'pi_under_1_hari', 'pi_1_3_hari', 'pi_over_3_hari', 'total_pi',
+      'fo_wfm_kndl_plgn', 'fo_wfm_kndl_teknis', 'fo_wfm_kndl_sys', 'fo_wfm_others',
+      'fo_uim', 'fo_asp', 'fo_osm', 'total_fallout',
+      'act_comp', 'jml_comp_ps',
+      'cancel_kndl_plgn', 'cancel_kndl_teknis', 'cancel_kndl_sys', 'cancel_others', 'total_cancel',
+      'revoke'
+    ]
+
+    rawData.forEach(row => {
+      const witel = row.witel
+      if (!grouped[witel]) {
+        grouped[witel] = {
+          witel_display: witel,
+          row_type: 'main',
+          children: []
+        }
+        // Initialize sums
+        numericFields.forEach(f => grouped[witel][f] = 0)
       }
+
+      // Convert BigInts in row to Number
+      const cleanRow = {}
+      for (const [k, v] of Object.entries(row)) {
+        cleanRow[k] = typeof v === 'bigint' ? Number(v) : v
+      }
+      
+      // Add child row
+      cleanRow.witel_display = cleanRow.witel_old || '(Blank)'
+      cleanRow.row_type = 'sub'
+      calculatePercentages(cleanRow)
+      grouped[witel].children.push(cleanRow)
+
+      // Add to parent sums
+      numericFields.forEach(f => {
+        grouped[witel][f] += (cleanRow[f] || 0)
+      })
     })
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witel || 'Unknown',
-      totalHsi: row._count.id,
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-      avgRevenue: 0
-    }))
+    // 3. Flatten structure (Parent -> Children) and Calc Parent Percentages
+    const finalReportData = []
+    const grandTotal = { witel_display: 'GRAND TOTAL', row_type: 'total' }
+    numericFields.forEach(f => grandTotal[f] = 0)
+
+    Object.values(grouped).forEach(parent => {
+      calculatePercentages(parent)
+      finalReportData.push(parent) // Push Parent
+      
+      // Add to Grand Total
+      numericFields.forEach(f => grandTotal[f] += parent[f])
+
+      // Push Children
+      parent.children.forEach(child => finalReportData.push(child))
+      
+      // Remove children array from parent object to clean up response (optional, but good for flat table)
+      delete parent.children
+    })
+
+    // 4. Calculate Grand Total Percentages
+    calculatePercentages(grandTotal)
 
     successResponse(
       res,
-      { tableData: formattedTableData },
+      { 
+        tableData: finalReportData, // Frontend expects a flat list mixed with parents and subs
+        totals: grandTotal 
+      },
       'Report HSI data retrieved successfully'
     )
   } catch (error) {
