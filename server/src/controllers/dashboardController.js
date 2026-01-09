@@ -1211,10 +1211,6 @@ export const getHSIDashboard = async (req, res, next) => {
     if (selectedBranches.length > 0) {
       baseWhere.witelOld = { in: selectedBranches }
     }
-<<<<<<< HEAD
-    
-    // Search
-=======
     if (start_date && end_date) {
       whereClause.orderDate = {
         gte: new Date(start_date),
@@ -1222,7 +1218,6 @@ export const getHSIDashboard = async (req, res, next) => {
       }
     }
 
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     if (search) {
       baseWhere.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
@@ -1344,13 +1339,6 @@ export const getHSIDashboard = async (req, res, next) => {
       chart5Map[dim].total += i._count.id
     })
     
-<<<<<<< HEAD
-    // Sort Data: Urutkan wilayah berdasarkan total error terbanyak (Descending)
-    const chart5Data = Object.values(chart5Map).sort((a, b) => b.total - a.total)
-    
-    // Sort Keys: Ubah Set ke Array agar bisa dibaca frontend
-    const chart5Keys = Array.from(chart5KeySet).sort()
-=======
     // Fixed keys for consistent legend
     const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
     const chart5Data = Object.values(chart5Map)
@@ -1367,17 +1355,11 @@ export const getHSIDashboard = async (req, res, next) => {
         lte: new Date(end_date)
       }
     }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
 
     // --- CHART 6: Cancel Non-FCC (PS Date, Sorted) ---
     const chart6Raw = await prisma.hsiData.groupBy({
-<<<<<<< HEAD
-      by: [dimension, 'suberrorcode'], 
-      where: { ...wherePsDate, kelompokStatus: 'CANCEL' },
-=======
       by: [dimension, 'suberrorcode'],
       where: cancelWhere,
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
       _count: { id: true }
     })
     
@@ -1398,19 +1380,11 @@ export const getHSIDashboard = async (req, res, next) => {
     const chart6Data = Object.values(chart6Map).sort((a, b) => b.total - a.total)
     const chart6Keys = [...chart6KeySet]
 
-<<<<<<< HEAD
-    // --- MAP DATA (Order Date) ---
-    const mapWhere = { 
-      ...whereOrderDate, 
-      gpsLatitude: { not: null }, 
-      gpsLongitude: { not: null } 
-=======
     // --- MAP DATA ---
     const mapWhere = {
       ...whereClause,
       gpsLatitude: { not: null },
       gpsLongitude: { not: null }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     }
 
     if (mapStatusArr.length > 0) {
@@ -1498,15 +1472,9 @@ export const getHSIDashboard = async (req, res, next) => {
     // --- TABLE DATA (Order Date) ---
     const skip = (Number(page) - 1) * Number(limit)
     const tableDataRaw = await prisma.hsiData.findMany({
-<<<<<<< HEAD
-      where: whereOrderDate, 
-      take: Number(limit), 
-      skip: skip, 
-=======
       where: whereClause,
       take: Number(limit),
       skip: skip,
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
       orderBy: { orderDate: 'desc' },
       select: {
         orderId: true,
