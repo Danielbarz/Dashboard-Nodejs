@@ -82,9 +82,9 @@ export const getJobProgress = async (req, res, next) => {
   try {
     const { jobId } = req.params
     const progressKey = `import:progress:${jobId}`
-    
+
     const progressData = await redis.get(progressKey)
-    
+
     if (!progressData) {
       return errorResponse(res, 'Progress not found or expired', 404)
     }
@@ -101,15 +101,13 @@ export const getJobStatus = async (req, res, next) => {
   try {
     const { jobId } = req.params
     const job = await fileImportQueue.getJob(jobId)
-    
+
     if (!job) {
       return errorResponse(res, 'Job not found', 404)
     }
 
     const state = await job.getState()
-    const bullProgress = await job.progress()
-    const redisProgressRaw = await redis.get(`import:progress:${jobId}`)
-    const redisProgress = redisProgressRaw ? JSON.parse(redisProgressRaw) : null
+    const progress = job.progress()
     const result = job.returnvalue
 
     // Safely serialize result to avoid circular references
@@ -118,8 +116,7 @@ export const getJobStatus = async (req, res, next) => {
     successResponse(res, {
       jobId: job.id,
       state,
-      progress: redisProgress?.progress ?? bullProgress ?? 0,
-      message: redisProgress?.message,
+      progress,
       result: safeResult,
       timestamp: job.timestamp,
       processedOn: job.processedOn,

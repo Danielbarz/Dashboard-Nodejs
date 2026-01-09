@@ -8,7 +8,7 @@ const Login = () => {
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -19,16 +19,16 @@ const Login = () => {
 
     try {
       const response = await login(email, password)
-      
+
       // Get user from localStorage (already set by authService)
       const userStr = localStorage.getItem('user')
       const userData = userStr ? JSON.parse(userStr) : null
       const userRole = userData?.role || 'user'
-      
+
       console.log('=== LOGIN DEBUG ===')
       console.log('User from localStorage:', userData)
       console.log('User role:', userRole)
-      
+
       // Redirect based on role
       if (userRole === 'superadmin') {
         console.log('✅ Redirecting Super Admin to /admin/users')

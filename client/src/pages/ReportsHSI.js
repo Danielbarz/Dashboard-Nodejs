@@ -1,208 +1,496 @@
-import React, { useState, useMemo } from 'react'
-import { FiDownload } from 'react-icons/fi'
+<<<<<<< HEAD
+import React, { useState, useEffect, useMemo } from 'react'
+import { FiDownload, FiRefreshCw } from 'react-icons/fi'
+import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const ReportsHSI = () => {
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const formatDateLocal = (date) => {
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
-  const [endDate, setEndDate] = useState(formatDateLocal(now))
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
   const [selectedWitel, setSelectedWitel] = useState('')
+  const [reportData, setReportData] = useState([])
+  const [totals, setTotals] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  const tableData = useMemo(() => [
-    { id: 1, category: 'SME', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 2, category: '', witel: 'BALI', red: 45, inpro_sc: 5, qc: 8, fcc: 7, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 2, h3: 1, h3plus: 0, total_pi: 3, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 1, asp: 1, osm: 0, total_fallout: 4, act_comp: 35, jml_comp: 35, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '94%', ps_re: '92%', ps_pi: '95%', isCategoryHeader: false },
-    { id: 3, category: '', witel: 'JATIM BARAT', red: 38, inpro_sc: 4, qc: 6, fcc: 5, rjct_fcc: 1, survey: 2, un_sc: 2, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 1, osm: 0, total_fallout: 2, act_comp: 31, jml_comp: 31, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '92%', ps_re: '90%', ps_pi: '93%', isCategoryHeader: false },
-    { id: 4, category: '', witel: 'JATIM TIMUR', red: 52, inpro_sc: 6, qc: 9, fcc: 8, rjct_fcc: 3, survey: 4, un_sc: 2, h1: 3, h3: 2, h3plus: 0, total_pi: 5, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 1, asp: 1, osm: 0, total_fallout: 4, act_comp: 40, jml_comp: 40, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '96%', ps_re: '94%', ps_pi: '97%', isCategoryHeader: false },
-    { id: 5, category: '', witel: 'NUSA TENGGARA', red: 30, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 25, jml_comp: 25, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '90%', ps_re: '88%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 6, category: '', witel: 'SURAMADU', red: 42, inpro_sc: 5, qc: 7, fcc: 6, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 2, h3: 1, h3plus: 0, total_pi: 3, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 0, asp: 1, osm: 0, total_fallout: 3, act_comp: 34, jml_comp: 34, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 2, revoke: 1, pi_re: '94%', ps_re: '91%', ps_pi: '94%', isCategoryHeader: false },
-    { id: 7, category: 'GOV', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 8, category: '', witel: 'BALI', red: 25, inpro_sc: 2, qc: 4, fcc: 3, rjct_fcc: 1, survey: 1, un_sc: 1, h1: 1, h3: 0, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 20, jml_comp: 20, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '88%', ps_re: '85%', ps_pi: '88%', isCategoryHeader: false },
-    { id: 9, category: '', witel: 'JATIM BARAT', red: 28, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 22, jml_comp: 22, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '89%', ps_re: '87%', ps_pi: '91%', isCategoryHeader: false },
-    { id: 10, category: '', witel: 'JATIM TIMUR', red: 35, inpro_sc: 4, qc: 6, fcc: 5, rjct_fcc: 2, survey: 3, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 1, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 28, jml_comp: 28, kndl_plgn_c: 1, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '91%', ps_re: '89%', ps_pi: '92%', isCategoryHeader: false },
-    { id: 11, category: '', witel: 'NUSA TENGGARA', red: 20, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 15, jml_comp: 15, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '87%', ps_re: '82%', ps_pi: '87%', isCategoryHeader: false },
-    { id: 12, category: '', witel: 'SURAMADU', red: 30, inpro_sc: 3, qc: 5, fcc: 4, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 1, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 24, jml_comp: 24, kndl_plgn_c: 0, kndl_teknis_c: 1, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '90%', ps_re: '87%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 13, category: 'PRIVATE', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 14, category: '', witel: 'BALI', red: 15, inpro_sc: 1, qc: 2, fcc: 2, rjct_fcc: 0, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 12, jml_comp: 12, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '85%', ps_re: '81%', ps_pi: '85%', isCategoryHeader: false },
-    { id: 15, category: '', witel: 'JATIM BARAT', red: 18, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 14, jml_comp: 14, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '87%', ps_re: '83%', ps_pi: '88%', isCategoryHeader: false },
-    { id: 16, category: '', witel: 'JATIM TIMUR', red: 22, inpro_sc: 2, qc: 4, fcc: 3, rjct_fcc: 1, survey: 2, un_sc: 1, h1: 1, h3: 1, h3plus: 0, total_pi: 2, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 1, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 1, act_comp: 18, jml_comp: 18, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 1, kndl_others_c: 0, total_cancel: 1, revoke: 0, pi_re: '89%', ps_re: '85%', ps_pi: '90%', isCategoryHeader: false },
-    { id: 17, category: '', witel: 'NUSA TENGGARA', red: 12, inpro_sc: 1, qc: 2, fcc: 1, rjct_fcc: 0, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 10, jml_comp: 10, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '83%', ps_re: '78%', ps_pi: '83%', isCategoryHeader: false },
-    { id: 18, category: '', witel: 'SURAMADU', red: 20, inpro_sc: 2, qc: 3, fcc: 2, rjct_fcc: 1, survey: 1, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 16, jml_comp: 16, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '86%', ps_re: '82%', ps_pi: '86%', isCategoryHeader: false },
-    { id: 19, category: 'SOE', witel: '', red: 0, inpro_sc: 0, qc: 0, fcc: 0, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 0, h3plus: 0, total_pi: 0, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 0, jml_comp: 0, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '0%', ps_re: '0%', ps_pi: '0%', isCategoryHeader: true },
-    { id: 20, category: '', witel: 'BALI', red: 8, inpro_sc: 0, qc: 1, fcc: 1, rjct_fcc: 0, survey: 0, un_sc: 0, h1: 0, h3: 1, h3plus: 0, total_pi: 1, kndl_plgn_f: 0, kndl_teknis_f: 0, kndl_system_f: 0, kndl_others_f: 0, uim: 0, asp: 0, osm: 0, total_fallout: 0, act_comp: 6, jml_comp: 6, kndl_plgn_c: 0, kndl_teknis_c: 0, kndl_system_c: 0, kndl_others_c: 0, total_cancel: 0, revoke: 0, pi_re: '80%', ps_re: '75%', ps_pi: '80%', isCategoryHeader: false },
-  ], [])
+  // --- Helpers ---
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('id-ID').format(num || 0);
+  };
 
-  const filteredData = useMemo(() => {
-    let result = tableData
-    if (selectedWitel) result = result.filter(row => row.witel === selectedWitel || row.isCategoryHeader)
-    return result
-  }, [tableData, selectedWitel])
+  const getPsReColor = (value) => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return '';
+    return num >= 80 ? 'bg-[#24c55f] text-white font-bold' : 'bg-[#e65253] text-white font-bold';
+  };
 
-  const visibleRows = filteredData
+  const colors = {
+    blue: 'bg-[#3e81f4]',
+    red: 'bg-[#e65253]',
+    green: 'bg-[#24c55f]',
+    gray: 'bg-[#6b717f]',
+  };
 
+  const totalRowStyle = "bg-[#cccccc] text-[#464647] font-bold border-slate-400";
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('accessToken')
+      const params = {}
+      if (startDate) params.start_date = startDate.toISOString()
+      if (endDate) params.end_date = endDate.toISOString()
+
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
+        {
+          params,
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      
+      if (response.data?.data) {
+        // Backend returns tableData, not reportData
+        setReportData(response.data.data.tableData || response.data.data.reportData || [])
+        setTotals(response.data.data.totals || {})
+      }
+    } catch (error) {
+      console.error('Failed to fetch HSI report:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate])
+=======
+import React, { useState, useEffect, useMemo } from 'react';
+import api from '../services/api';
+import { FiDownload, FiFilter, FiRefreshCw } from 'react-icons/fi';
+
+const ReportsHSI = () => {
+    // 1. STATE INITIALIZATION
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(now.toISOString().split('T')[0]);
+    const [loading, setLoading] = useState(false);
+    const [tableData, setTableData] = useState([]);
+    const [totals, setTotals] = useState({});
+    const [selectedWitel, setSelectedWitel] = useState('ALL');
+
+    // 2. FETCH DATA
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const params = { start_date: startDate, end_date: endDate };
+            const response = await api.get('/report/hsi', { params });
+            if (response.data.success) {
+                setTableData(response.data.data.tableData || []);
+                setTotals(response.data.data.totals || {});
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [startDate, endDate]);
+>>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
+
+    // 3. FILTERING LOGIC
+    const displayData = useMemo(() => {
+        if (selectedWitel === 'ALL') return tableData;
+        
+        // If a specific witel is selected, find the parent and its children
+        // The tableData is already flat [Parent, Child, Child, Parent, Child...]
+        // We find the parent row and all subsequent 'sub' rows until next 'main'
+        const result = [];
+        let capturing = false;
+        
+        for (const row of tableData) {
+            if (row.row_type === 'main') {
+                if (row.witel_display === selectedWitel) {
+                    capturing = true;
+                    result.push(row);
+                } else {
+                    capturing = false;
+                }
+            } else if (row.row_type === 'sub' && capturing) {
+                result.push(row);
+            }
+        }
+        return result;
+    }, [tableData, selectedWitel]);
+
+<<<<<<< HEAD
   const handleExport = () => {
-    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-hsi?${params.toString()}`
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate.toISOString())
+    if (endDate) params.append('end_date', endDate.toISOString())
+    
+    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
+  }
+
+  // Reset all filters
+  const handleResetFilter = () => {
+    setStartDate(null)
+    setEndDate(null)
+    setSelectedWitel('')
+  }
+
+  // Export to Excel (CSV format)
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk di-export')
+      return
+    }
+
+    // Define headers
+    const headers = [
+      'Witel', 'PRE PI', 'Registered', 'Inpro SC', 'QC1', 'FCC', 'RJCT FCC', 'Survey Manja', 'UN-SC',
+      'PI < 1 Hari', 'PI 1-3 Hari', 'PI > 3 Hari', 'Total PI',
+      'FO WFM Plgn', 'FO WFM Teknis', 'FO WFM System', 'FO WFM Others',
+      'FO UIM', 'FO ASP', 'FO OSM', 'Total Fallout',
+      'ACT COMP', 'JML COMP (PS)',
+      'Cancel Plgn', 'Cancel Teknis', 'Cancel System', 'Cancel Others', 'Total Cancel',
+      'Revoke', 'PI/RE %', 'PS/RE %', 'PS/PI %'
+    ]
+
+    // Map data rows
+    const rows = filteredData.map(row => [
+      row.witel || row.witel_display || '',
+      row.pre_pi || 0,
+      row.registered || 0,
+      row.inpro_sc || row.inprogress_sc || 0,
+      row.qc1 || 0,
+      row.fcc || 0,
+      row.rjct_fcc || row.cancel_by_fcc || 0,
+      row.survey_manja || row.survey_new_manja || 0,
+      row.un_sc || row.unsc || 0,
+      row.pi_under_24 || row.pi_under_1_hari || 0,
+      row.pi_24_72 || row.pi_1_3_hari || 0,
+      row.pi_over_72 || row.pi_over_3_hari || 0,
+      row.total_pi || 0,
+      row.fo_wfm_plgn || row.fo_wfm_kndl_plgn || 0,
+      row.fo_wfm_teknis || row.fo_wfm_kndl_teknis || 0,
+      row.fo_wfm_system || row.fo_wfm_kndl_sys || 0,
+      row.fo_wfm_others || 0,
+      row.fo_uim || 0,
+      row.fo_asp || 0,
+      row.fo_osm || 0,
+      row.total_fallout || 0,
+      row.act_comp || 0,
+      row.ps || row.jml_comp_ps || 0,
+      row.cancel_plgn || row.cancel_kndl_plgn || 0,
+      row.cancel_teknis || row.cancel_kndl_teknis || 0,
+      row.cancel_system || row.cancel_kndl_sys || 0,
+      row.cancel_others || 0,
+      row.total_cancel || 0,
+      row.revoke || 0,
+      row.perf_pi_re || row.pi_re_percent || 0,
+      row.perf_ps_re || row.ps_re_percent || 0,
+      row.perf_ps_pi || row.ps_pi_percent || 0
+    ])
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Add BOM for Excel UTF-8 compatibility
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    
+    // Create download link
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Generate filename with date
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.download = `Report_HSI_${dateStr}.csv`
+    
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
     <>
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border focus:ring-blue-500 focus:border-blue-500">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
+          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
             <option value="">Semua Witel</option>
             {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
           </select>
+=======
+    const witels = useMemo(() => {
+        return ['ALL', ...new Set(tableData.filter(r => r.row_type === 'main').map(r => r.witel_display))];
+    }, [tableData]);
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 shadow-sm">
-            <div className="flex flex-col justify-center px-2">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none mb-0.5">Dari</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700 outline-none" />
+    // 4. HELPERS
+    const formatNumber = (num) => Number(num || 0).toLocaleString('id-ID');
+    
+    const getPsReColor = (val) => {
+        const v = parseFloat(val);
+        if (v >= 90) return 'text-green-600 font-bold';
+        if (v >= 70) return 'text-yellow-600 font-bold';
+        return 'text-red-600 font-bold';
+    };
+>>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
+
+    const headerStyle = "bg-[#333333] text-white font-bold text-[10px] uppercase tracking-wider";
+    const subHeaderStyle = "bg-[#444444] text-white font-bold text-[9px] uppercase";
+    const totalRowStyle = "bg-[#cccccc] text-black font-bold text-[10px]";
+    
+    const colors = {
+        blue: "bg-blue-600 text-white",
+        red: "bg-red-600 text-white",
+        green: "bg-green-700 text-white",
+        orange: "bg-orange-500 text-white",
+        gray: "bg-gray-600 text-white"
+    };
+
+    return (
+        <div className="flex flex-col space-y-4 p-2 md:p-4 bg-slate-50 min-h-screen">
+            {/* TOOLBAR */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Witel</label>
+                        <select 
+                            value={selectedWitel} 
+                            onChange={(e) => setSelectedWitel(e.target.value)}
+                            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
+                        >
+                            {witels.map(w => <option key={w} value={w}>{w}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex flex-col">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Periode</label>
+                        <div className="flex items-center gap-2">
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-50" />
+                            <span className="text-slate-300">-</span>
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-50" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button onClick={fetchData} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
+                        <FiRefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md shadow-green-100 transition-all">
+                        <FiDownload /> Export
+                    </button>
+                </div>
             </div>
-            <span className="text-gray-300 font-light text-2xl">|</span>
-            <div className="flex flex-col justify-center px-2">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none mb-0.5">Sampai</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700 outline-none" />
+
+            {/* TABLE CONTAINER */}
+            <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto max-h-[75vh]">
+                    <table className="min-w-full border-collapse text-center text-[10px]">
+                        <thead className="sticky top-0 z-20">
+                            {/* LEVEL 1 HEADERS */}
+                            <tr className={headerStyle}>
+                                <th rowSpan="2" className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#333333] min-w-[120px]">WITEL / BRANCH</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">PRE PI</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2 bg-blue-800">RE (REG)</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">INPRO SC</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">QC1</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">FCC</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2 bg-red-800">RJCT FCC</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">SURVEY MANJA</th>
+                                <th rowSpan="2" className="border border-slate-400 p-2">UN-SC</th>
+                                <th colSpan="4" className={`border border-slate-400 p-1 ${colors.blue}`}>OGP AGING (PI)</th>
+                                <th colSpan="4" className={`border border-slate-400 p-1 ${colors.gray}`}>FALLOUT WFM</th>
+                                <th colSpan="4" className={`border border-slate-400 p-1 ${colors.orange}`}>FALLOUT OTHERS</th>
+                                <th rowSpan="2" className={`border border-slate-400 p-2 ${colors.green}`}>ACT COMP</th>
+                                <th rowSpan="2" className={`border border-slate-400 p-2 ${colors.green}`}>PS</th>
+                                <th colSpan="5" className={`border border-slate-400 p-1 ${colors.red}`}>CANCEL</th>
+                                <th rowSpan="2" className={`border border-slate-400 p-2 ${colors.red}`}>REVOKE</th>
+                                <th colSpan="3" className="border border-slate-400 p-1 bg-indigo-800">PERFORMANCE</th>
+                            </tr>
+                            {/* LEVEL 2 HEADERS */}
+                            <tr className={subHeaderStyle}>
+                                <th className="border border-slate-400 p-1 font-normal">&lt; 24H</th>
+                                <th className="border border-slate-400 p-1 font-normal">24-72H</th>
+                                <th className="border border-slate-400 p-1 font-normal">&gt; 72H</th>
+                                <th className="border border-slate-400 p-1 bg-blue-500">TOTAL</th>
+
+                                <th className="border border-slate-400 p-1 font-normal">Plgn</th>
+                                <th className="border border-slate-400 p-1 font-normal">Teknis</th>
+                                <th className="border border-slate-400 p-1 font-normal">System</th>
+                                <th className="border border-slate-400 p-1 font-normal">Others</th>
+
+                                <th className="border border-slate-400 p-1 font-normal">UIM</th>
+                                <th className="border border-slate-400 p-1 font-normal">ASP</th>
+                                <th className="border border-slate-400 p-1 font-normal">OSM</th>
+                                <th className="border border-slate-400 p-1 bg-gray-500">TOTAL</th>
+
+                                <th className="border border-slate-400 p-1 font-normal">Plgn</th>
+                                <th className="border border-slate-400 p-1 font-normal">Teknis</th>
+                                <th className="border border-slate-400 p-1 font-normal">System</th>
+                                <th className="border border-slate-400 p-1 font-normal">Others</th>
+                                <th className="border border-slate-400 p-1 bg-red-500">TOTAL</th>
+
+                                <th className="border border-slate-400 p-1 bg-indigo-600">PI/RE</th>
+                                <th className="border border-slate-400 p-1 bg-indigo-600">PS/RE</th>
+                                <th className="border border-slate-400 p-1 bg-indigo-600">PS/PI</th>
+                            </tr>
+                        </thead>
+
+                        {/* TABLE BODY */}
+                        <tbody className="bg-white text-gray-700">
+                            {loading ? (
+                                <tr><td colSpan="30" className="py-10 text-sm text-slate-400">Loading data report...</td></tr>
+                            ) : displayData.length === 0 ? (
+                                <tr><td colSpan="30" className="py-10 text-sm text-slate-400">Tidak ada data untuk periode ini.</td></tr>
+                            ) : (
+                                displayData.map((row, index) => (
+                                <tr 
+                                    key={index} 
+                                    className={`transition-colors ${
+                                        row.row_type === 'main' ? 'bg-blue-50/50 hover:bg-blue-100 font-bold' : 'bg-white hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <td className={`border border-slate-200 p-1 text-left sticky left-0 z-10 px-2 bg-inherit shadow-[1px_0_0_0_#e2e8f0] ${
+                                        row.row_type === 'sub' ? 'pl-6 text-slate-500 italic' : 'text-blue-800'
+                                    }`}>
+                                        {row.witel_display}
+                                    </td>
+
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.pre_pi)}</td>
+                                    <td className="border border-slate-200 p-1 bg-blue-50/30">{formatNumber(row.registered)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.inprogress_sc || row.inpro_sc)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.qc1)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fcc)}</td>
+                                    <td className="border border-slate-200 p-1 text-red-600 font-bold bg-red-50/30">{formatNumber(row.cancel_by_fcc || row.rjct_fcc)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.survey_new_manja || row.survey_manja)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.unsc || row.un_sc)}</td>
+
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.pi_under_1_hari || row.pi_under_24)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.pi_1_3_hari || row.pi_24_72)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.pi_over_3_hari || row.pi_over_72)}</td>
+                                    <td className="border border-slate-200 p-1 bg-blue-50 font-bold">{formatNumber(row.total_pi)}</td>
+                                    
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_plgn || row.fo_wfm_plgn)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_teknis || row.fo_wfm_teknis)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_sys || row.fo_wfm_system)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_others)}</td>
+
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_uim)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_asp)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.fo_osm)}</td>
+                                    <td className="border border-slate-200 p-1 bg-slate-50 font-bold">{formatNumber(row.total_fallout)}</td>
+
+                                    <td className="border border-slate-200 p-1 bg-green-50 font-bold">{formatNumber(row.act_comp)}</td>
+                                    <td className="border border-slate-200 p-1 bg-green-100 font-bold">{formatNumber(row.jml_comp_ps || row.ps)}</td>
+
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.cancel_kndl_plgn || row.cancel_plgn)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.cancel_kndl_teknis || row.cancel_teknis)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.cancel_kndl_sys || row.cancel_system)}</td>
+                                    <td className="border border-slate-200 p-1">{formatNumber(row.cancel_others)}</td>
+                                    <td className="border border-slate-200 p-1 bg-red-50 font-bold">{formatNumber(row.total_cancel)}</td>
+
+                                    <td className="border border-slate-200 p-1 bg-red-100 font-bold">{formatNumber(row.revoke)}</td>
+
+                                    <td className="border border-slate-200 p-1 bg-indigo-50 font-bold">{row.pi_re_percent}%</td>
+                                    <td className={`border border-slate-200 p-1 ${getPsReColor(row.ps_re_percent)}`}>
+                                        {row.ps_re_percent}%
+                                    </td>
+                                    <td className="border border-slate-200 p-1 bg-green-50 font-bold">{row.ps_pi_percent}%</td>
+                                </tr>
+                            )))}
+                        </tbody>
+
+                        {/* TABLE FOOTER (TOTALS) */}
+                        <tfoot className="sticky bottom-0 z-20">
+                            <tr className={totalRowStyle}>
+                                <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc] shadow-[1px_0_0_0_#94a3b8]">GRAND TOTAL</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.pre_pi)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.registered)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.inprogress_sc)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.qc1)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fcc)}</td>
+                                <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.cancel_by_fcc)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.survey_new_manja)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.unsc)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_1_hari)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.pi_1_3_hari)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.pi_over_3_hari)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.total_pi)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_plgn)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_teknis)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_kndl_sys)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_wfm_others)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_uim)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_asp)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.fo_osm)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.total_fallout)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.act_comp)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.jml_comp_ps)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_plgn)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_teknis)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_kndl_sys)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.cancel_others)}</td>
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.total_cancel)}</td>
+
+                                <td className="border border-slate-400 p-1">{formatNumber(totals.revoke)}</td>
+
+                                <td className="border border-slate-400 p-1">{totals.pi_re_percent}%</td>
+                                <td className={`border border-slate-400 p-1 ${getPsReColor(totals.ps_re_percent)}`}>
+                                    {totals.ps_re_percent}%
+                                </td>
+                                <td className="border border-slate-400 p-1">{totals.ps_pi_percent}%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
+<<<<<<< HEAD
+            
+            <button onClick={fetchData} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded hover:bg-blue-700 font-bold shadow transition">
+                Go
+            </button>
+            
+            <button 
+                onClick={handleResetFilter} 
+                className="bg-gray-500 text-white text-xs px-3 py-1.5 rounded hover:bg-gray-600 flex items-center gap-1 font-bold shadow transition"
+                title="Reset Filter"
+            >
+                <FiRefreshCw size={14}/> Reset
+            </button>
+            
+            <button 
+                onClick={handleExportExcel} 
+                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition"
+                disabled={filteredData.length === 0}
+            >
+                <FiDownload size={16}/> Excel
+            </button>
           </div>
-
-          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10 shadow-md transition-colors">
-            <FiDownload className="mr-2" size={16} />
-            Ekspor Report
-          </button>
+=======
+>>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
         </div>
-      </div>
+    );
+};
 
-      {/* Styled Table Container */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100 z-0 relative">
-        <div className="flex items-center justify-between mb-4">
-           <h2 className="text-xl font-bold text-gray-800">Data Report HSI</h2>
-           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Live Data</span>
-        </div>
-        
-        <div className="relative overflow-auto  rounded-lg border border-gray-200 shadow-inner isolate">
-          <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
-            <thead className="bg-gray-50  shadow-sm">
-              <tr className="bg-gradient-to-r from-blue-700 to-blue-600 border-b border-blue-800">
-                <th rowSpan="2" className="px-3 py-3 text-center font-bold text-white border-r border-blue-500 whitespace-nowrap sticky left-0 z-[5] bg-blue-700 shadow-xl">WITEL</th>
-                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border-r border-blue-500 bg-opacity-90">PROGRESS</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-red-500 bg-red-600 whitespace-nowrap">RJCT FCC</th>
-                <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-gray-500 bg-gray-600">SURVEY</th>
-                <th colSpan="4" className="px-2 py-2 text-center font-bold text-white border-r border-gray-500 bg-gray-600">OGP</th>
-                <th colSpan="8" className="px-2 py-2 text-center font-bold text-white border-r border-gray-500 bg-gray-600">PI FALLOUT</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-green-500 bg-green-600 whitespace-nowrap">ACT COMP<br/>(QC2)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-green-500 bg-green-600 whitespace-nowrap">JML COMP<br/>(PS)</th>
-                <th colSpan="5" className="px-2 py-2 text-center font-bold text-white border-r border-red-500 bg-red-600">CANCEL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border-r border-red-500 bg-red-600 whitespace-nowrap">REVOKE</th>
-                <th colSpan="3" className="px-2 py-2 text-center font-bold text-white bg-blue-600">PERFORMANCE</th>
-              </tr>
-              <tr className="bg-gray-700">
-                {/* Progress */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">RED</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">INPRO<br/>SC</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">QC</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">FCC</th>
-                
-                {/* Survey */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">SURVEY</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">UN-SC</th>
-
-                {/* OGP */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">&lt;1 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">1-3 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">&gt;3 HARI</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">TOTAL PI</th>
-
-                {/* Fallout */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>PLGN</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>TEKNIS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>SYSTEM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">KNDL<br/>OTHERS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">UIM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">ASP</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">OSM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-gray-600 text-[10px] whitespace-nowrap hover:bg-gray-600 transition-colors  bg-gray-700">TOTAL<br/>FALLOUT</th>
-
-                {/* Cancel */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>PLGN</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>TEKNIS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>SYSTEM</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">KNDL<br/>OTHERS</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-red-500 bg-red-600 text-[10px] whitespace-nowrap hover:bg-red-500 transition-colors ">TOTAL<br/>CANCEL</th>
-
-                {/* Performance */}
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PI/RE</th>
-                <th className="px-2 py-2 text-center font-semibold text-white border-r border-blue-500 bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PS/RE</th>
-                <th className="px-2 py-2 text-center font-semibold text-white bg-blue-600 text-[10px] whitespace-nowrap hover:bg-blue-500 transition-colors ">PS/PI</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center text-[11px]">
-              {visibleRows.map((row) => (
-                <tr key={row.id} className={`${row.isCategoryHeader ? 'bg-gray-800 font-bold text-white' : 'hover:bg-blue-50 transition-colors even:bg-gray-50'}`}>
-                  <td className={`px-3 py-2 whitespace-nowrap border-r border-gray-200 text-left font-semibold sticky left-0 z-[5] ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-white'}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.red}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.inpro_sc}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.qc}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.fcc}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50 text-red-700'}`}>{row.rjct_fcc}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.survey}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.un_sc}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h1}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h3}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.h3plus}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'text-blue-700'}`}>{row.total_pi}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_plgn_f}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_teknis_f}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_system_f}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.kndl_others_f}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.uim}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.asp}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : ''}`}>{row.osm}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'text-orange-700'}`}>{row.total_fallout}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-green-50 text-green-700'}`}>{row.act_comp}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-green-100 text-green-800'}`}>{row.jml_comp}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50'}`}>{row.kndl_plgn_c}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50'}`}>{row.kndl_teknis_c}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50'}`}>{row.kndl_system_c}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50'}`}>{row.kndl_others_c}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-50 text-red-700'}`}>{row.total_cancel}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-red-100 text-red-800'}`}>{row.revoke}</td>
-                  
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-blue-50 text-blue-800'}`}>{row.pi_re}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap border-r border-gray-200 font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-blue-50 text-blue-800'}`}>{row.ps_re}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap font-bold ${row.isCategoryHeader ? 'bg-gray-800 text-white' : 'bg-blue-50 text-blue-800'}`}>{row.ps_pi}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data HSI</h2>
-        <FileUploadForm reportType="hsi" />
-      </div>
-    </>
-  )
-}
-
-export default ReportsHSI
+export default ReportsHSI;

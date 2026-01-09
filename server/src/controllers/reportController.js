@@ -1,4 +1,4 @@
-﻿import prisma from '../lib/prisma.js'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import PO_MAPPING from '../utils/poMapping.js'
 
@@ -80,7 +80,8 @@ export const getReportTambahan = async (req, res, next) => {
         baDrop: true,
         statusTompsLastActivity: true,
         statusIHld: true,
-        statusTompsNew: true
+        statusTompsNew: true,
+        poName: true
       }
     })
 
@@ -178,6 +179,10 @@ export const getReportTambahan = async (req, res, next) => {
           witelMap[parentKey].golive_rev += revenue
           witelMap[childKey].golive_jml++
           witelMap[childKey].golive_rev += revenue
+          
+          // ALSO count GoLive projects as "FI-OGP Live" in Progress buckets so the chart isn't empty
+          witelMap[parentKey]['piOgp']++
+          witelMap[childKey]['piOgp']++
         } else {
           // Progress Phase (goLive='N' && nonDrop)
           // Map status using statusIHld (contains phase info like 'Instalasi')
@@ -185,11 +190,17 @@ export const getReportTambahan = async (req, res, next) => {
           const statusText = (row.statusIHld || row.statusTompsNew || '').toUpperCase()
           let bucket = 'initial'
 
-          if (statusText.includes('SURVEY') || statusText.includes('DRM')) bucket = 'survey' // Survey & DRM
-          else if (statusText.includes('PERIZINAN') || statusText.includes('MOS')) bucket = 'perizinan'
-          else if (statusText.includes('INSTALASI')) bucket = 'instalasi'
-          else if (statusText.includes('FI') || statusText.includes('OGP')) bucket = 'piOgp'
-          else bucket = 'initial' // Default to Initial (including actual 'INITIAL' or unknown)
+          if (statusText.includes('SURVEY') || statusText.includes('DRM') || statusText.includes('DESIGN')) {
+            bucket = 'survey'
+          } else if (statusText.includes('PERIZINAN') || statusText.includes('MOS') || statusText.includes('PERMIT') || statusText.includes('SITAC')) {
+            bucket = 'perizinan'
+          } else if (statusText.includes('INSTALASI') || statusText.includes('INSTALLATION') || statusText.includes('COMMTEST') || statusText.includes('UT') || statusText.includes('UJI TERIMA') || statusText.includes('CONSTRUCTION')) {
+            bucket = 'instalasi'
+          } else if (statusText.includes('FI') || statusText.includes('OGP') || statusText.includes('BAST') || statusText.includes('REKON') || statusText.includes('GO LIVE') || statusText.includes('GOLIVE') || statusText.includes('COMPLETED') || statusText.includes('CLOSED') || statusText.includes('LIVE')) {
+            bucket = 'piOgp'
+          } else {
+            bucket = 'initial' // Default to Initial (including actual 'INITIAL' or unknown)
+          }
 
           witelMap[parentKey][bucket]++
           witelMap[childKey][bucket]++
@@ -209,14 +220,14 @@ export const getReportTambahan = async (req, res, next) => {
       })
       .map(row => ({
       ...row,
-      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
+      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlah_lop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
-    // Project data (belum GO LIVE, non-drop)
+    // Project data (All Non-Drop projects, including Go Live)
+    // Modified to show history of longest projects regardless of status
     let projectRows = await prisma.spmkMom.findMany({
       where: {
         ...applyDateFilter(whereClause),
-        goLive: 'N',
         populasiNonDrop: { not: 'N' }
       },
       select: {
@@ -230,7 +241,9 @@ export const getReportTambahan = async (req, res, next) => {
         uraianKegiatan: true,
         statusTompsLastActivity: true,
         tanggalMom: true,
-        poName: true
+        poName: true,
+        goLive: true, // Need this to check status
+        statusProyek: true
       }
     })
 
@@ -238,7 +251,6 @@ export const getReportTambahan = async (req, res, next) => {
       projectRows = await prisma.spmkMom.findMany({
         where: {
           ...whereClause,
-          goLive: 'N',
           populasiNonDrop: { not: 'N' }
         },
         select: {
@@ -252,7 +264,9 @@ export const getReportTambahan = async (req, res, next) => {
           uraianKegiatan: true,
           statusTompsLastActivity: true,
           tanggalMom: true,
-          poName: true
+          poName: true,
+          goLive: true,
+          statusProyek: true
         }
       })
     }
@@ -377,15 +391,330 @@ export const getReportTambahan = async (req, res, next) => {
       items: items.sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 3)
     }))
 
+    // --- NEW CHARTS AGGREGATION ---
+
+    // 1. Top 10 Mitra by Revenue
+    const mitraRevenueMap = {}
+    rawData.forEach(row => {
+      const po = (row.poName || '').trim() || 'Unknown'
+      // Skip Unknown POs for the chart to keep it clean
+      if (po === 'Unknown' || po === '#NAME?' || po === '#REF!') return
+
+      const revenue = parseFloat(row.revenuePlan || 0)
+      if (!mitraRevenueMap[po]) {
+        mitraRevenueMap[po] = { poName: po, totalRevenue: 0, projectCount: 0 }
+      }
+      mitraRevenueMap[po].totalRevenue += revenue
+      mitraRevenueMap[po].projectCount += 1
+    })
+    
+    const topMitraRevenue = Object.values(mitraRevenueMap)
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 10)
+
+    // 2. Trend Go-Live (Input vs Output)
+    // Use wider date range if not specified (e.g. 12 months back) to show meaningful trend
+    let trendStartDate = start_date ? new Date(start_date) : new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+    let trendEndDate = end_date ? new Date(end_date) : new Date()
+    
+    const trendMap = {}
+    
+    // RE-FETCHING raw data with dates included (Optimization: could be merged with initial query but let's keep safe)
+    const trendRows = await prisma.spmkMom.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { tanggalMom: { gte: trendStartDate, lte: trendEndDate } },
+              { tanggalGolive: { gte: trendStartDate, lte: trendEndDate } }
+            ]
+          },
+          // Apply same witel exclusions as main report
+          { witelBaru: { notIn: excludedWitels } }
+        ]
+      },
+      select: {
+        tanggalMom: true, // Input
+        tanggalGolive: true, // Output
+        goLive: true // Status needed for proxy logic
+      }
+    })
+
+    trendRows.forEach(row => {
+      // Input Trend (Based on MOM Date)
+      if (row.tanggalMom && row.tanggalMom >= trendStartDate && row.tanggalMom <= trendEndDate) {
+        const monthKey = row.tanggalMom.toISOString().slice(0, 7) // YYYY-MM
+        if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
+        trendMap[monthKey].input++
+      }
+
+      // Output Trend (Based on GoLive Date OR Proxy)
+      let outputDate = row.tanggalGolive
+      
+      // Fallback: If Done but no date, use MOM date as proxy
+      if (!outputDate && row.goLive === 'Y' && row.tanggalMom) {
+        outputDate = row.tanggalMom
+      }
+
+      if (outputDate && outputDate >= trendStartDate && outputDate <= trendEndDate) {
+        const monthKey = outputDate.toISOString().slice(0, 7) // YYYY-MM
+        if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
+        trendMap[monthKey].output++
+      }
+    })
+
+    const trendGolive = Object.values(trendMap).sort((a, b) => a.month.localeCompare(b.month))
+
+    // 3. Distribusi Bucket Usia (Health Check)
+    // Only for NOT GoLive projects
+    const bucketUsia = {
+      under30: 0,
+      between30and60: 0,
+      between60and90: 0,
+      over90: 0
+    }
+
+    projectRows.forEach(row => { // projectRows is already filtered for GoLive='N'
+      const usia = typeof row.usia === 'number' ? row.usia : 0
+      if (usia < 30) bucketUsia.under30++
+      else if (usia <= 60) bucketUsia.between30and60++
+      else if (usia <= 90) bucketUsia.between60and90++
+      else bucketUsia.over90++
+    })
+
+    const bucketUsiaData = [
+      { label: '< 30 Hari', count: bucketUsia.under30, color: '#22c55e' }, // Green
+      { label: '30 - 60 Hari', count: bucketUsia.between30and60, color: '#eab308' }, // Yellow
+      { label: '60 - 90 Hari', count: bucketUsia.between60and90, color: '#f97316' }, // Orange
+      { label: '> 90 Hari', count: bucketUsia.over90, color: '#ef4444' } // Red
+    ]
+
     successResponse(
       res,
       {
         tableData: formattedTableData,
         projectData,
+        rawProjectRows: projectRows, // Send raw rows for Preview Table
         topUsiaByWitel,
-        topUsiaByPo
+        topUsiaByPo,
+        topMitraRevenue,
+        trendGolive,
+        bucketUsiaData
       },
       'Report Tambahan data retrieved successfully'
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Get Report HSI - from HSI data table
+export const getReportHSI = async (req, res, next) => {
+  try {
+    const { start_date, end_date } = req.query
+
+    // Base conditions
+    const conditions = []
+    
+    // Filter by Date
+    if (start_date && end_date) {
+      conditions.push(`order_date >= '${start_date}'::date AND order_date <= '${end_date}'::date`)
+    }
+
+    // Filter by RSO 2 Witel (Hardcoded as per other controllers)
+    const RSO2_WITELS = ['JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+    conditions.push(`witel IN ('${RSO2_WITELS.join("','")}')`)
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT
+        witel,
+        witel_old,
+        
+        -- 1. PRE PI
+        SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
+        
+        -- 2. REGISTERED (RE)
+        COUNT(*) as registered,
+        
+        -- 3. INPROGRESS SC
+        SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
+        
+        -- 4. QC1
+        SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
+        
+        -- 5. FCC
+        SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
+        
+        -- 6. CANCEL BY FCC
+        SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
+        
+        -- 7. SURVEY NEW MANJA
+        SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
+        
+        -- 8. UN-SC
+        SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
+        
+        -- PI AGING (Based on last_updated_date)
+        -- 9. PI < 1 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) < INTERVAL '24 hours' THEN 1 ELSE 0 END) as pi_under_1_hari,
+        -- 10. PI 1-3 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) >= INTERVAL '24 hours' AND (NOW() - last_updated_date) <= INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_1_3_hari,
+        -- 11. PI > 3 HARI
+        SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - last_updated_date) > INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_over_3_hari,
+        -- 12. TOTAL PI
+        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
+
+        -- FALLOUT WFM
+        -- 13. FO WFM - KNDL PLGN
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA PELANGGAN' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn,
+        -- 14. FO WFM - KNDL TEKNIS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA TEKNIS' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
+        -- 15. FO WFM - KNDL SYS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'KENDALA SYSTEM' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
+        -- 16. FO WFM - OTHERS
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'OTHERS' THEN 1 ELSE 0 END) as fo_wfm_others,
+        
+        -- OTHER FALLOUTS
+        -- 17. FO UIM
+        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
+        -- 18. FO ASP
+        SUM(CASE WHEN kelompok_status = 'FO_ASP' THEN 1 ELSE 0 END) as fo_asp,
+        -- 19. FO OSM
+        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
+        
+        -- 20. TOTAL FALLOUT (SUM of FO_UIM, FO_ASP, FO_OSM)
+        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASP', 'FO_OSM') THEN 1 ELSE 0 END) as total_fallout,
+
+        -- 21. ACT COMP (QC2)
+        SUM(CASE WHEN kelompok_status = 'ACT_COMP' THEN 1 ELSE 0 END) as act_comp,
+        
+        -- 22. JML COMP (PS)
+        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps,
+
+        -- CANCEL DETAILS
+        -- 23. CANCEL - KNDL PLGN
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA PELANGGAN' THEN 1 ELSE 0 END) as cancel_kndl_plgn,
+        -- 24. CANCEL - KNDL TEKNIS
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA TEKNIS' THEN 1 ELSE 0 END) as cancel_kndl_teknis,
+        -- 25. CANCEL - KNDL SYS
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'KENDALA SYSTEM' THEN 1 ELSE 0 END) as cancel_kndl_sys,
+        -- 26. CANCEL - OTHERS (BLANK)
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others,
+        
+        -- 27. TOTAL CANCEL
+        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
+
+        -- 28. REVOKE
+        SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke
+
+      FROM hsi_data
+      ${whereSql}
+      GROUP BY witel, witel_old
+      ORDER BY witel, witel_old
+    `
+
+    const rawData = await prisma.$queryRawUnsafe(query)
+
+    // --- Process Logic in JS (Grouping & Totals) ---
+
+    // 1. Helper to calculate percentages
+    const calculatePercentages = (item) => {
+      // Cast string/BigInt to Number first
+      const val = (k) => Number(item[k] || 0)
+
+      // 29. PI/RE (%)
+      // Formula: (Total PI + Total Fallout + Act Comp + Jumlah PS + Total Cancel) / Registered
+      const num_pire = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps') + val('total_cancel')
+      item.pi_re_percent = val('registered') > 0 ? ((num_pire / val('registered')) * 100).toFixed(2) : 0
+
+      // 30. PS/RE (%)
+      // Formula: (PS / (Registered - Cancel by FCC - UNSC - Revoke))
+      const denom_psre = val('registered') - val('cancel_by_fcc') - val('un_sc') - val('revoke')
+      item.ps_re_percent = denom_psre > 0 ? ((val('jml_comp_ps') / denom_psre) * 100).toFixed(2) : 0
+
+      // 31. PS/PI (%)
+      // Formula: (PS / (Total PI + Total Fallout + Act Comp + Jumlah PS))
+      const denom_pspi = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps')
+      item.ps_pi_percent = denom_pspi > 0 ? ((val('jml_comp_ps') / denom_pspi) * 100).toFixed(2) : 0
+      
+      return item
+    }
+
+    // 2. Group by Witel (Parent)
+    const grouped = {}
+    
+    // Initialize numeric fields list for aggregation
+    const numericFields = [
+      'pre_pi', 'registered', 'inprogress_sc', 'qc1', 'fcc', 'cancel_by_fcc', 'survey_new_manja', 'un_sc',
+      'pi_under_1_hari', 'pi_1_3_hari', 'pi_over_3_hari', 'total_pi',
+      'fo_wfm_kndl_plgn', 'fo_wfm_kndl_teknis', 'fo_wfm_kndl_sys', 'fo_wfm_others',
+      'fo_uim', 'fo_asp', 'fo_osm', 'total_fallout',
+      'act_comp', 'jml_comp_ps',
+      'cancel_kndl_plgn', 'cancel_kndl_teknis', 'cancel_kndl_sys', 'cancel_others', 'total_cancel',
+      'revoke'
+    ]
+
+    rawData.forEach(row => {
+      const witel = row.witel
+      if (!grouped[witel]) {
+        grouped[witel] = {
+          witel_display: witel,
+          row_type: 'main',
+          children: []
+        }
+        // Initialize sums
+        numericFields.forEach(f => grouped[witel][f] = 0)
+      }
+
+      // Convert BigInts in row to Number
+      const cleanRow = {}
+      for (const [k, v] of Object.entries(row)) {
+        cleanRow[k] = typeof v === 'bigint' ? Number(v) : v
+      }
+      
+      // Add child row
+      cleanRow.witel_display = cleanRow.witel_old || '(Blank)'
+      cleanRow.row_type = 'sub'
+      calculatePercentages(cleanRow)
+      grouped[witel].children.push(cleanRow)
+
+      // Add to parent sums
+      numericFields.forEach(f => {
+        grouped[witel][f] += (cleanRow[f] || 0)
+      })
+    })
+
+    // 3. Flatten structure (Parent -> Children) and Calc Parent Percentages
+    const finalReportData = []
+    const grandTotal = { witel_display: 'GRAND TOTAL', row_type: 'total' }
+    numericFields.forEach(f => grandTotal[f] = 0)
+
+    Object.values(grouped).forEach(parent => {
+      calculatePercentages(parent)
+      finalReportData.push(parent) // Push Parent
+      
+      // Add to Grand Total
+      numericFields.forEach(f => grandTotal[f] += parent[f])
+
+      // Push Children
+      parent.children.forEach(child => finalReportData.push(child))
+      
+      // Remove children array from parent object to clean up response (optional, but good for flat table)
+      delete parent.children
+    })
+
+    // 4. Calculate Grand Total Percentages
+    calculatePercentages(grandTotal)
+
+    successResponse(
+      res,
+      { 
+        tableData: finalReportData, // Frontend expects a flat list mixed with parents and subs
+        totals: grandTotal 
+      },
+      'Report HSI data retrieved successfully'
     )
   } catch (error) {
     next(error)
@@ -397,10 +726,10 @@ export const getReportDatin = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = { statusProyek: { contains: 'DATIN' } }
+    let whereClause = { statusProyek: { contains: 'DATIN', mode: 'insensitive' } }
 
     if (start_date && end_date) {
-      whereClause.createdAt = {
+      whereClause.tanggalMom = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
@@ -474,7 +803,7 @@ export const getReportAnalysis = async (req, res, next) => {
         targetRows = regionMapping[selectedRegion]
       } 
       // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
-      else if (witelList.length > 0) {
+      else if (selectedWitels.length > 0) {
         targetRows = targetRows.filter(r => witelList.includes(r))
       }
     }
@@ -601,45 +930,165 @@ export const getReportAnalysis = async (req, res, next) => {
   }
 }
 
+// REPORT HSI (MIGRATED FROM LARAVEL)
+// ==========================================
+
+// Helper: Fetch HSI Data (Shared by View and Export)
+const fetchHSIReportData = async (start_date, end_date) => {
+    const RSO2_WITELS = ['JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+
+    // Base conditions
+    const conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
+    
+    // Filter by Date
+    if (start_date && end_date) {
+      conditions.push(`order_date >= '${start_date}'::date`)
+      conditions.push(`order_date < ('${end_date}'::date + INTERVAL '1 day')`)
+    }
+
+    const whereSql = `WHERE ${conditions.join(' AND ')}`
+
+    const query = `
+      SELECT
+        witel,
+        witel_old,
+        
+        -- 1. PRE PI
+        SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
+        
+        -- 2. REGISTERED (RE)
+        COUNT(*) as registered,
+        
+        -- 3. INPROGRESS SC
+        SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
+        
+        -- 4. QC1
+        SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
+        
+        -- 5. FCC
+        SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
+        
+        -- 6. CANCEL BY FCC
+        SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
+        
+        -- 7. SURVEY NEW MANJA
+        SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
+        
+        -- 8. UN-SC
+        SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
+        
+        -- PI AGING (Based on last_updated_date)
+        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) < 24 THEN 1 ELSE 0 END) as pi_under_1_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) >= 24 AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) <= 72 THEN 1 ELSE 0 END) as pi_1_3_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) > 72 THEN 1 ELSE 0 END) as pi_over_3_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
+
+        -- FALLOUT WFM
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as fo_wfm_others,
+        
+        -- OTHER FALLOUTS
+        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
+        SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
+        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
+        
+        -- TOTAL FALLOUT
+        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
+
+        -- COMPLETION
+        SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp,
+        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps,
+
+        -- CANCEL DETAILS
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as cancel_kndl_plgn,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as cancel_kndl_teknis,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as cancel_kndl_sys,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
+
+        -- REVOKE
+        SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke
+
+      FROM hsi_data
+      ${whereSql}
+      GROUP BY witel, witel_old
+      ORDER BY witel, witel_old
+    `
+
+    const rawData = await prisma.$queryRawUnsafe(query)
+
+    // --- Process Logic in JS ---
+    const numericFields = [
+      'pre_pi', 'registered', 'inprogress_sc', 'qc1', 'fcc', 'cancel_by_fcc', 'survey_new_manja', 'un_sc',
+      'pi_under_1_hari', 'pi_1_3_hari', 'pi_over_3_hari', 'total_pi',
+      'fo_wfm_kndl_plgn', 'fo_wfm_kndl_teknis', 'fo_wfm_kndl_sys', 'fo_wfm_others',
+      'fo_uim', 'fo_asp', 'fo_osm', 'total_fallout',
+      'act_comp', 'jml_comp_ps',
+      'cancel_kndl_plgn', 'cancel_kndl_teknis', 'cancel_kndl_sys', 'cancel_others', 'total_cancel',
+      'revoke'
+    ]
+
+    const calculatePercentages = (item) => {
+        const val = (k) => Number(item[k] || 0)
+        const num_pire = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps') + val('total_cancel');
+        item.pi_re_percent = val('registered') > 0 ? ((num_pire / val('registered')) * 100).toFixed(2) : 0;
+
+        const denom_psre = val('registered') - val('cancel_by_fcc') - val('un_sc') - val('revoke');
+        item.ps_re_percent = denom_psre > 0 ? ((val('jml_comp_ps') / denom_psre) * 100).toFixed(2) : 0;
+
+        const denom_pspi = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps');
+        item.ps_pi_percent = denom_pspi > 0 ? ((val('jml_comp_ps') / denom_pspi) * 100).toFixed(2) : 0;
+    };
+
+    const grouped = {}
+    rawData.forEach(row => {
+      const witel = row.witel
+      if (!grouped[witel]) {
+        grouped[witel] = {
+          witel_display: witel,
+          witel: witel,
+          row_type: 'main',
+          children: []
+        }
+        numericFields.forEach(f => grouped[witel][f] = 0)
+      }
+
+      const cleanRow = {}
+      for (const [k, v] of Object.entries(row)) cleanRow[k] = typeof v === 'bigint' ? Number(v) : v
+      
+      cleanRow.witel_display = cleanRow.witel_old || '(Blank)'
+      cleanRow.row_type = 'sub'
+      calculatePercentages(cleanRow)
+      grouped[witel].children.push(cleanRow)
+
+      numericFields.forEach(f => grouped[witel][f] += (cleanRow[f] || 0))
+    })
+
+    const finalReportData = []
+    const grandTotal = { witel_display: 'GRAND TOTAL', row_type: 'total' }
+    numericFields.forEach(f => grandTotal[f] = 0)
+
+    Object.values(grouped).forEach(parent => {
+      calculatePercentages(parent)
+      finalReportData.push(parent)
+      numericFields.forEach(f => grandTotal[f] += parent[f])
+      parent.children.forEach(child => finalReportData.push(child))
+      delete parent.children
+    })
+
+    calculatePercentages(grandTotal)
+
+    return { tableData: finalReportData, totals: grandTotal }
+}
+
 // Get Report HSI - from HSI data table
 export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
-
-    let whereClause = {}
-
-    if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
-
-    const tableData = await prisma.hsiData.groupBy({
-      by: ['witel'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        upload: true
-      }
-    })
-
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witel || 'Unknown',
-      totalHsi: row._count.id,
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-      avgRevenue: 0
-    }))
-
-    successResponse(
-      res,
-      { tableData: formattedTableData },
-      'Report HSI data retrieved successfully'
-    )
+    const data = await fetchHSIReportData(start_date, end_date)
+    successResponse(res, data, 'Report HSI data retrieved successfully')
   } catch (error) {
     next(error)
   }
@@ -1036,19 +1485,42 @@ export const getReportDatinDetails = async (req, res, next) => {
       segmen: row.segmen,
       subSegmen: row.subSegmen,
       kategori: row.kategori,
+      
+      // Detailed Fields
       kategoriUmur: row.kategoriUmur,
-      umurOrder: row.lamaKontrakHari, 
+      umurOrder: row.umurOrder,
+      lamaKontrak: row.lamaKontrakHari,
+      amortisasi: row.amortisasi,
+      
       billWitel: row.billWitel,
       custWitel: row.custWitel,
       serviceWitel: row.serviceWitel,
+      witelBaru: row.witelBaru || row.custWitel, // Fallback if witelBaru empty
+      
+      billCity: row.billCity,
+      custCity: row.custCity,
+      servCity: row.servCity,
+      
       status: row.liStatus,
       milestone: row.liMilestone,
+      statusDate: row.liStatusDate ? row.liStatusDate.toISOString().split('T')[0] : '-',
+      billDate: row.liBilldate ? row.liBilldate.toISOString().split('T')[0] : '-',
+      
       biayaPasang: parseFloat(row.biayaPasang || 0),
       hargaBulanan: parseFloat(row.hrgBulanan || 0),
-      lamaKontrak: row.lamaKontrakHari,
-      billCity: row.custCity,
-      tipeOrder: row.agreeType,
-      witelBaru: row.custWitel
+      
+      tipeOrder: row.actionCd || row.tipeOrder || row.agreeType, // Prioritize Action CD
+      agreeType: row.agreeType,
+      agreeStartDate: row.agreeStartDate ? row.agreeStartDate.toISOString().split('T')[0] : '-',
+      agreeEndDate: row.agreeEndDate ? row.agreeEndDate.toISOString().split('T')[0] : '-',
+      isTermin: row.isTermin,
+      
+      poName: row.poName,
+      segmenBaru: row.segmenBaru,
+      kategoriBaru: row.kategoriBaru,
+      tipeGrup: row.tipeGrup,
+      scalling1: row.scalling1,
+      scalling2: row.scalling2
     }))
 
     successResponse(res, {
@@ -1165,21 +1637,29 @@ export const getReportDatinSummary = async (req, res, next) => {
         return match || 'OTHER'
       }
 
-      // Default: Map to Major Witel
-      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'].some(k => w.includes(k))) return 'BALI'
+      // Default: Map to Major Witel (Frontend witelList: BALI, JATIM BARAT, JATIM TIMUR, NUSA TENGGARA, SURAMADU)
+      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'].some(k => w.includes(k))) return 'BALI'
       if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].some(k => w.includes(k))) return 'JATIM BARAT'
       if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].some(k => w.includes(k))) return 'JATIM TIMUR'
-      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'].some(k => w.includes(k))) return 'NUSA TENGGARA'
+      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'].some(k => w.includes(k))) return 'NUSA TENGGARA'
       if (['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].some(k => w.includes(k))) return 'SURAMADU'
+      
+      // Fallback: Check if the string itself contains the major region names
+      if (w.includes('BALI')) return 'BALI'
+      if (w.includes('BARAT')) return 'JATIM BARAT'
+      if (w.includes('TIMUR')) return 'JATIM TIMUR'
+      if (w.includes('NUSA') || w.includes('NTB') || w.includes('NTT')) return 'NUSA TENGGARA'
+      if (w.includes('SURAMADU') || w.includes('MADURA') || w.includes('SURABAYA')) return 'SURAMADU'
+
       return 'OTHER'
     }
 
     const getOrderType = (actionCd) => {
       const a = (actionCd || '').toUpperCase()
-      if (a.startsWith('A')) return 'AO' // Add -> AO
+      if (a.startsWith('A') || a.startsWith('NEW') || a.startsWith('INST')) return 'AO' // Add -> AO
       if (a.startsWith('S')) return 'SO' // Suspend -> SO
-      if (a.startsWith('D')) return 'DO' // Delete -> DO
-      if (a.startsWith('M')) return 'MO' // Modify/Move -> MO
+      if (a.startsWith('D') || a.startsWith('TERM')) return 'DO' // Delete -> DO
+      if (a.startsWith('M') || a.startsWith('U') || a.startsWith('CH')) return 'MO' // Modify/Move/Update/Change -> MO
       if (a.startsWith('R')) return 'RO' // Resume -> RO
       return 'OTHER'
     }
@@ -1210,8 +1690,20 @@ export const getReportDatinSummary = async (req, res, next) => {
       }
       targetWitels.forEach(w => {
         table1Map[cat].witels[w] = {
-          ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-          ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+          ao_3bln: 0, est_ao_3bln: 0,
+          so_3bln: 0, est_so_3bln: 0,
+          do_3bln: 0, est_do_3bln: 0,
+          mo_3bln: 0, est_mo_3bln: 0,
+          ro_3bln: 0, est_ro_3bln: 0,
+          total_3bln: 0, est_3bln: 0,
+
+          ao_3bln2: 0, est_ao_3bln2: 0,
+          so_3bln2: 0, est_so_3bln2: 0,
+          do_3bln2: 0, est_do_3bln2: 0,
+          mo_3bln2: 0, est_mo_3bln2: 0,
+          ro_3bln2: 0, est_ro_3bln2: 0,
+          total_3bln2: 0, est_3bln2: 0,
+
           grand_total: 0
         }
       })
@@ -1334,25 +1826,45 @@ export const getReportDatinSummary = async (req, res, next) => {
       const t1 = table1Map[category].witels[witel]
       if (t1) {
         if (isLessThan3Months2) {
-          if (orderType2 === 'AO') t1.ao_3bln++
-          else if (orderType2 === 'SO') t1.so_3bln++
-          else if (orderType2 === 'DO') t1.do_3bln++
-          else if (orderType2 === 'MO') t1.mo_3bln++
-          else if (orderType2 === 'RO') t1.ro_3bln++
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln++; t1.est_ao_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln++; t1.est_do_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln++; t1.est_mo_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln++; t1.est_so_3bln += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln++; t1.est_ro_3bln += revenue; }
           
-          t1.est_3bln += revenue
-          t1.total_3bln++
+          // Grand Total should match visible total for consistency
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         } else {
-          if (orderType2 === 'AO') t1.ao_3bln2++
-          else if (orderType2 === 'SO') t1.so_3bln2++
-          else if (orderType2 === 'DO') t1.do_3bln2++
-          else if (orderType2 === 'MO') t1.mo_3bln2++
-          else if (orderType2 === 'RO') t1.ro_3bln2++
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln2++; t1.est_ao_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln2++; t1.est_do_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln2++; t1.est_mo_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln2++; t1.est_so_3bln2 += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln2++; t1.est_ro_3bln2 += revenue; }
           
-          t1.est_3bln2 += revenue
-          t1.total_3bln2++
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         }
-        t1.grand_total++
       }
 
       // Update Table 2
@@ -1386,8 +1898,8 @@ export const getReportDatinSummary = async (req, res, next) => {
         id: idCounter++,
         category: cat,
         witel: '',
-        ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-        ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+        ao_3bln: 0, est_ao_3bln: 0, so_3bln: 0, est_so_3bln: 0, do_3bln: 0, est_do_3bln: 0, mo_3bln: 0, est_mo_3bln: 0, ro_3bln: 0, est_ro_3bln: 0, est_3bln: 0, total_3bln: 0,
+        ao_3bln2: 0, est_ao_3bln2: 0, so_3bln2: 0, est_so_3bln2: 0, do_3bln2: 0, est_do_3bln2: 0, mo_3bln2: 0, est_mo_3bln2: 0, ro_3bln2: 0, est_ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
         grand_total: 0,
         isCategoryHeader: true
       }
@@ -1409,8 +1921,20 @@ export const getReportDatinSummary = async (req, res, next) => {
         const d2 = table2Map[cat].witels[w]
 
         // Add to Category Header Totals
-        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.so_3bln += d1.so_3bln; catHeader1.do_3bln += d1.do_3bln; catHeader1.mo_3bln += d1.mo_3bln; catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
-        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.est_ao_3bln += d1.est_ao_3bln;
+        catHeader1.so_3bln += d1.so_3bln; catHeader1.est_so_3bln += d1.est_so_3bln;
+        catHeader1.do_3bln += d1.do_3bln; catHeader1.est_do_3bln += d1.est_do_3bln;
+        catHeader1.mo_3bln += d1.mo_3bln; catHeader1.est_mo_3bln += d1.est_mo_3bln;
+        catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_ro_3bln += d1.est_ro_3bln;
+        catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
+
+        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.est_ao_3bln2 += d1.est_ao_3bln2;
+        catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.est_so_3bln2 += d1.est_so_3bln2;
+        catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.est_do_3bln2 += d1.est_do_3bln2;
+        catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.est_mo_3bln2 += d1.est_mo_3bln2;
+        catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_ro_3bln2 += d1.est_ro_3bln2;
+        catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        
         catHeader1.grand_total += d1.grand_total;
 
         catHeader2.provide_order += d2.provide_order; catHeader2.in_process += d2.in_process; catHeader2.ready_bill += d2.ready_bill; catHeader2.total_3bln += d2.total_3bln;
@@ -1422,7 +1946,14 @@ export const getReportDatinSummary = async (req, res, next) => {
           category: '',
           witel: w,
           ...d1,
-          est_3bln: (d1.est_3bln / 1000000).toFixed(2), // Convert to Juta
+          est_ao_3bln: (d1.est_ao_3bln / 1000000).toFixed(2),
+          est_do_3bln: (d1.est_do_3bln / 1000000).toFixed(2),
+          est_mo_3bln: (d1.est_mo_3bln / 1000000).toFixed(2),
+          est_3bln: (d1.est_3bln / 1000000).toFixed(2),
+          
+          est_ao_3bln2: (d1.est_ao_3bln2 / 1000000).toFixed(2),
+          est_do_3bln2: (d1.est_do_3bln2 / 1000000).toFixed(2),
+          est_mo_3bln2: (d1.est_mo_3bln2 / 1000000).toFixed(2),
           est_3bln2: (d1.est_3bln2 / 1000000).toFixed(2),
           isCategoryHeader: false
         })
@@ -1435,7 +1966,14 @@ export const getReportDatinSummary = async (req, res, next) => {
       })
 
       // Format Header Money
+      catHeader1.est_ao_3bln = (catHeader1.est_ao_3bln / 1000000).toFixed(2)
+      catHeader1.est_do_3bln = (catHeader1.est_do_3bln / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln = (catHeader1.est_mo_3bln / 1000000).toFixed(2)
       catHeader1.est_3bln = (catHeader1.est_3bln / 1000000).toFixed(2)
+
+      catHeader1.est_ao_3bln2 = (catHeader1.est_ao_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_do_3bln2 = (catHeader1.est_do_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln2 = (catHeader1.est_mo_3bln2 / 1000000).toFixed(2)
       catHeader1.est_3bln2 = (catHeader1.est_3bln2 / 1000000).toFixed(2)
 
       table1Data.push(catHeader1, ...witelRows1)

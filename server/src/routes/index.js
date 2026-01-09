@@ -6,14 +6,13 @@ import fileRoutes from './fileRoutes.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import reportRoutes from './reportRoutes.js'
-import masterRoutes from './masterRoutes.js'
 
 const router = express.Router()
 
 // Health check
 router.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Telkom Dashboard API is running',
     timestamp: new Date().toISOString()
   })
@@ -34,13 +33,12 @@ router.use('/roles', roleRoutes)
 // Admin routes
 router.use('/admin', adminRoutes)
 
-// Master Data routes
-router.use('/master', masterRoutes)
-
 // Report routes
 router.use('/report', reportRoutes)
 
 // Analysis routes
 router.use('/analysis', analysisRoutes)
+// router.use('/dashboard', dashboardRoutes)
+// router.use('/import', importRoutes)
 
 export default router

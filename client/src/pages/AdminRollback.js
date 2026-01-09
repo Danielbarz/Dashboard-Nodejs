@@ -28,11 +28,11 @@ const AdminRollback = () => {
       alert('Please enter a Batch ID')
       return
     }
-    
+
     if (!window.confirm('Are you sure? This will delete data from related tables.')) {
       return
     }
-    
+
     setLoading(true)
     try {
       // API call placeholder - implement when backend rollback endpoint is ready
@@ -77,7 +77,7 @@ const AdminRollback = () => {
                     className="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
-                <button 
+                <button
                   onClick={handleRollback}
                   disabled={loading}
                   className="w-full bg-red-500 text-white font-semibold py-3 rounded-lg shadow hover:bg-red-600 disabled:opacity-50"

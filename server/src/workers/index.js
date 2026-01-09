@@ -18,8 +18,8 @@ fileImportQueue.process('hsi-import', 1, async (job) => {
   return await processor.handle()
 })
 
-// Process JT/Tambahan imports (limited concurrency to reduce DB connections)
-fileImportQueue.process('jt-import', 3, async (job) => {
+// Process JT/Tambahan imports
+fileImportQueue.process('jt-import', 5, async (job) => {
   logger.info(`Processing JT import job ${job.id}`)
   const processor = new ProcessJTImport(job)
   return await processor.handle()

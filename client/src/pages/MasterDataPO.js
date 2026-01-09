@@ -72,7 +72,15 @@ const MasterDataPO = () => {
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/unmapped-orders`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      setUnmappedOrders(response.data.data || [])
+      // Robust handling for both Array (standard) and Object (paginated/stale) responses
+      const data = response.data.data
+      if (Array.isArray(data)) {
+        setUnmappedOrders(data)
+      } else if (data && Array.isArray(data.items)) {
+        setUnmappedOrders(data.items)
+      } else {
+        setUnmappedOrders([])
+      }
     } catch (error) {
       console.error('Failed to fetch unmapped orders:', error)
     }

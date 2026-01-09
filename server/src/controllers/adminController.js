@@ -211,3 +211,16 @@ export const deleteUser = async (req, res, next) => {
     errorResponse(res, 'Failed to delete user', 500)
   }
 }
+
+// Truncate Jaringan Tambahan (JT) data: clear table spmk_mom
+export const truncateJT = async (req, res, next) => {
+  try {
+    // Safety: only admin routes hit this; additional confirmation could be added via payload if needed
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE "spmk_mom" RESTART IDENTITY CASCADE;')
+
+    successResponse(res, { table: 'spmk_mom', truncated: true }, 'JT data truncated successfully')
+  } catch (error) {
+    console.error('Error truncating JT data:', error)
+    errorResponse(res, 'Failed to truncate JT data', 500)
+  }
+}

@@ -5,7 +5,8 @@ import fs from 'fs'
 import { authenticate } from '../middleware/auth.js'
 import {
   uploadFile,
-  getImportLogs
+  getImportLogs,
+  truncateData
 } from '../controllers/fileController.js'
 
 const router = express.Router()
@@ -41,5 +42,6 @@ const upload = multer({
 
 router.post('/upload', authenticate, upload.single('file'), uploadFile)
 router.get('/import-logs', authenticate, getImportLogs)
+router.delete('/data', authenticate, truncateData)
 
 export default router

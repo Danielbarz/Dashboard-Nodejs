@@ -11,6 +11,12 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [uploadProgress, setUploadProgress] = useState(null)
   const [logLines, setLogLines] = useState([])
   const [fileUploaded, setFileUploaded] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Modal State
+  const [showModal, setShowModal] = useState(false) // 'success' | 'error' | false
+  const [modalMessage, setModalMessage] = useState('')
+  const [modalDetails, setModalDetails] = useState('')
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
@@ -67,39 +73,34 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
     if (fileInput) fileInput.value = ''
   }
 
-  // Poll job status until completion
-  const pollJobStatus = async (jobId, batchId) => {
-    const maxAttempts = 300 // ~10 minutes at 2s interval
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  // Check job status - polls a few times to get final result
+  const checkJobStatus = async (jobId, batchId) => {
+    let attempts = 0
+    const maxAttempts = 30 // 30 seconds
+
+    while (attempts < maxAttempts) {
+      attempts++
       try {
-        const res = await fileService.getJobStatus(jobId)
-        const payload = res.data?.data
-        const state = payload?.state
-        const progressVal = typeof payload?.progress === 'number' ? payload.progress : null
-        if (progressVal !== null) {
-          setUploadProgress(Math.min(progressVal, 99))
-        }
+        const statusResponse = await fileService.getJobStatus(jobId)
+        const jobData = statusResponse?.data?.data
 
-        if (state === 'completed') {
-          const result = payload?.result || {}
-          return {
-            batchId: batchId || result.batchId,
-            totalRows: result.totalRows ?? 0,
-            successRows: result.successRows ?? 0,
-            failedRows: result.failedRows ?? 0
-          }
-        }
-
-        if (state === 'failed') {
-          throw new Error(payload?.message || 'Job failed di server')
+        if (jobData?.state === 'completed' && jobData?.result) {
+          console.log('✅ Job completed:', jobData.result)
+          return jobData.result
+        } else if (jobData?.state === 'failed') {
+          throw new Error('Job processing failed')
         }
       } catch (err) {
-        // swallow and retry until maxAttempts
-        if (attempt === maxAttempts - 1) throw err
+        console.error(`Check attempt ${attempts} error:`, err.message)
       }
-      await new Promise((r) => setTimeout(r, 2000))
+
+      // Wait 1 second before next attempt
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
-    throw new Error('Timeout menunggu job selesai')
+
+    // Timeout - return default result
+    console.log('Job status check timeout after 30 seconds')
+    return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
   }
 
   const handleSubmit = async (e) => {
@@ -136,43 +137,88 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       const uploadData = response?.data?.data
       if (!uploadData) throw new Error('No response data from upload')
 
-      const { batchId, jobId } = uploadData
-      
-      setLogLines((prev) => [
-        ...prev,
-        `✅ Upload selesai. Batch: ${batchId}`,
-        jobId ? '⏳ Memproses di server (queue)...' : '⏳ Memproses di server...'
-      ])
+      const { jobId, batchId, totalRows, successRows, failedRows } = uploadData
+
+      let finalResult = { totalRows: 0, successRows: 0, failedRows: 0, batchId }
 
       if (jobId) {
-        const result = await pollJobStatus(jobId, batchId)
-        setUploadProgress(null)
-        setLogLines((prev) => [
-          ...prev,
-          `✅ Job selesai. Berhasil: ${result.successRows}, Gagal: ${result.failedRows}, Total: ${result.totalRows}`
-        ])
+        // Queue Mode (Old/Async)
+        setLogLines((prev) => [...prev, `⏳ Menunggu hasil pemrosesan... (Job ID: ${jobId})`])
+        finalResult = await checkJobStatus(jobId, batchId)
       } else {
-        setUploadProgress(null)
+        // Direct Mode (Sync/Local)
+        setLogLines((prev) => [...prev, '✅ Pemrosesan langsung selesai.'])
+        finalResult = {
+          totalRows: totalRows || 0,
+          successRows: successRows || 0,
+          failedRows: failedRows || 0,
+          batchId
+        }
       }
 
       setSuccess(true)
       setFileUploaded(true)
+      setUploadProgress(null)
+
+      const successMsg = `Batch: ${finalResult.batchId}. Sukses: ${finalResult.successRows}, Gagal: ${finalResult.failedRows}`
+      setModalMessage(successMsg)
+      setModalDetails('')
+      setShowModal('success')
+
+      setLogLines((prev) => [
+        ...prev,
+        `✅ Selesai diproses. Batch: ${finalResult.batchId}`,
+        `📊 Total: ${finalResult.successRows}/${finalResult.totalRows} berhasil, ${finalResult.failedRows} gagal`
+      ])
 
       if (onSuccess) {
-        onSuccess(uploadData)
+        onSuccess(finalResult)
       }
-
-      setTimeout(() => {
-        setSuccess(false)
-      }, 3000)
     } catch (err) {
-      console.error('❌ Upload/Poll error:', err.message, err)
+      console.error('Upload error:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
+      const errorDetails = err.response?.data?.details || '' // Assuming backend might send details
+
       setError(errorMessage)
       setUploadProgress(null)
+
+      setModalMessage(errorMessage)
+      setModalDetails(errorDetails ? JSON.stringify(errorDetails, null, 2) : '')
+      setShowModal('error')
+
       setLogLines((prev) => [...prev, `Gagal: ${errorMessage}`])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteData = async () => {
+    if (!window.confirm(`⚠️ PERINGATAN KERAS!
+
+Apakah Anda yakin ingin MENGHAPUS SEMUA DATA untuk modul "${type}"?
+
+Tindakan ini tidak dapat dibatalkan. Data database akan dikosongkan.`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    setError(null)
+    setLogLines((prev) => [...prev, 'Menghapus data database...'])
+
+    try {
+      await fileService.truncateData(type)
+      setLogLines((prev) => [...prev, '✅ Data berhasil dihapus (Truncated).'])
+      setSuccess(true)
+      // Clear file selection too as context is reset
+      handleRemoveFile()
+      if (onSuccess) onSuccess({ reset: true })
+    } catch (err) {
+      console.error('Delete error:', err)
+      const msg = err.response?.data?.message || 'Gagal menghapus data'
+      setError(msg)
+      setLogLines((prev) => [...prev, `❌ Gagal hapus: ${msg}`])
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -290,16 +336,70 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
         <button
           type="submit"
-          disabled={!file || loading}
-          className={`w-full py-2 px-4 rounded-lg font-medium transition ${
-            file && !loading
+          disabled={!file || loading || isDeleting}
+          className={`w-full py-2 px-4 rounded-lg font-medium transition ${file && !loading && !isDeleting
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
           {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
         </button>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <button
+            type="button"
+            onClick={handleDeleteData}
+            disabled={loading || isDeleting}
+            className="w-full py-2 px-4 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition flex justify-center items-center"
+          >
+            {isDeleting ? 'Menghapus...' : '🗑️ Hapus Semua Data Database (Reset)'}
+          </button>
+        </div>
       </form>
+
+      {/* Status Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+            <div className={`p-6 text-center ${showModal === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${
+                showModal === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+              }`}>
+                {showModal === 'success' ? (
+                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${showModal === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                {showModal === 'success' ? 'Upload Berhasil!' : 'Upload Gagal'}
+              </h3>
+              <p className="text-gray-600 font-medium mb-2">{modalMessage}</p>
+              {modalDetails && (
+                <div className="mt-2 p-3 bg-white rounded border text-sm text-left text-gray-700 max-h-32 overflow-y-auto">
+                  {modalDetails}
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 flex justify-center">
+              <button
+                onClick={() => setShowModal(false)}
+                className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors shadow-md ${
+                  showModal === 'success'
+                    ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                    : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                }`}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

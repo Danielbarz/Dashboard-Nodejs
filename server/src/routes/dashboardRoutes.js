@@ -13,17 +13,23 @@ import {
   getReportDatin,
   getReportAnalysis,
   getReportHSI,
+  getJTDashboard,
+  getJTFilters,
+  getJTReport,
   exportReportAnalysis,
   exportReportDatin,
   exportReportTambahan,
-  exportReportHSI
+  exportReportHSI,
+  exportJTReport,
+  getHSIDashboard,
+  getHSIFlowStats,
+  getHSIFlowDetail,
+  getSOSDatinFilters,
+  getSOSDatinDashboard
 } from '../controllers/dashboardController.js'
-import { getDigitalDashboardData, getDigitalFilterOptions } from '../controllers/digitalController.js'
 
 const router = express.Router()
 
-router.get('/digital-product', authenticate, getDigitalDashboardData)
-router.get('/digital-product/filters', authenticate, getDigitalFilterOptions)
 router.get('/revenue-by-witel', authenticate, getRevenueByWitel)
 router.get('/amount-by-witel', authenticate, getAmountByWitel)
 router.get('/kpi-data', authenticate, getKPIData)
@@ -36,9 +42,20 @@ router.get('/report-tambahan', authenticate, getReportTambahan)
 router.get('/report-datin', authenticate, getReportDatin)
 router.get('/report-analysis', authenticate, getReportAnalysis)
 router.get('/report-hsi', authenticate, getReportHSI)
+router.get('/jt/dashboard', authenticate, getJTDashboard)
+router.get('/jt/filters', authenticate, getJTFilters)
+router.get('/jt/report', authenticate, getJTReport)
 router.get('/export/report-analysis', authenticate, exportReportAnalysis)
 router.get('/export/report-datin', authenticate, exportReportDatin)
 router.get('/export/report-tambahan', authenticate, exportReportTambahan)
 router.get('/export/report-hsi', authenticate, exportReportHSI)
+router.get('/export/report-jt', authenticate, exportJTReport)
+router.get('/hsi/dashboard', authenticate, getHSIDashboard)
+router.get('/hsi/flow', authenticate, getHSIFlowStats)
+router.get('/hsi/flow/detail', authenticate, getHSIFlowDetail)
+
+// Dashboard SOS Datin
+router.get('/sos-datin/filters', authenticate, getSOSDatinFilters)
+router.get('/sos-datin/stats', authenticate, getSOSDatinDashboard)
 
 export default router

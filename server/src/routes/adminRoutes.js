@@ -1,14 +1,29 @@
 import express from 'express'
+import multer from 'multer'
 import { authenticate, adminOnly } from '../middleware/auth.js'
 import {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  truncateJT
 } from '../controllers/adminController.js'
+import {
+  mergeFiles,
+  downloadMergedFile
+} from '../controllers/mergeController.js'
 
 const router = express.Router()
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/temp',
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB per file
+    files: 10
+  }
+})
 
 // All admin routes require authentication and admin role
 router.use(authenticate)
@@ -20,5 +35,12 @@ router.get('/users/:id', getUserById)
 router.post('/users', createUser)
 router.put('/users/:id', updateUser)
 router.delete('/users/:id', deleteUser)
+
+// Maintenance: truncate JT data (spmk_mom)
+router.post('/truncate/jt', truncateJT)
+
+// File merge endpoints
+router.post('/merge-files', upload.array('files', 10), mergeFiles)
+router.get('/merge-files/download', downloadMergedFile)
 
 export default router

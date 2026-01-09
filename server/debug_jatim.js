@@ -1,43 +1,55 @@
 import prisma from './src/lib/prisma.js'
 
-async function debugJatimBarat() {
+async function debugData() {
   try {
-    // Find all 'JATIM BARAT' records
-    const records = await prisma.sosData.findMany({
-      where: {
-        OR: [
-          { custWitel: { contains: 'JATIM BARAT' } },
-          { serviceWitel: { contains: 'JATIM BARAT' } },
-          { custCity: { contains: 'JATIM BARAT' } }
-        ]
-      },
+    console.log('🔍 Checking SPMK MOM Data...')
+    
+    const count = await prisma.spmkMom.count()
+    console.log(`📊 Total Rows: ${count}`)
+
+    if (count === 0) {
+      console.log('❌ Table is empty! Did upload succeed?')
+      return
+    }
+
+    const rows = await prisma.spmkMom.findMany({
+      take: 5,
+      orderBy: { id: 'desc' }, // Get latest
       select: {
         id: true,
-        custWitel: true,
-        serviceWitel: true,
-        custCity: true
+        poName: true,
+        revenuePlan: true,
+        tanggalMom: true,
+        tanggalGolive: true,
+        witelBaru: true
       }
     })
 
-    console.log(`Found ${records.length} records related to JATIM BARAT`)
-    
-    // Group by City to see what cities are lumped under Jatim Barat
-    const cityCounts = {}
-    records.forEach(r => {
-        const city = r.custCity || 'NULL'
-        cityCounts[city] = (cityCounts[city] || 0) + 1
+    console.log('📄 Latest 5 Rows Data:')
+    console.log(JSON.stringify(rows, (key, value) => 
+      typeof value === 'bigint' ? value.toString() : value
+    , 2))
+
+    // Check Aggregations
+    const trendTest = await prisma.spmkMom.findMany({
+      where: {
+        tanggalMom: { not: null }
+      },
+      take: 5,
+      select: { tanggalMom: true }
     })
+    console.log(`📅 Valid Tanggal MOM found: ${trendTest.length} samples`, trendTest)
 
-    console.log('--- Distribution by Cust City ---')
-    Object.entries(cityCounts)
-        .sort(([,a], [,b]) => b - a)
-        .forEach(([city, count]) => console.log(`"${city}": ${count}`))
+    const revenueTest = await prisma.spmkMom.aggregate({
+        _sum: { revenuePlan: true }
+    })
+    console.log(`💰 Total Revenue in DB: ${revenueTest._sum.revenuePlan}`)
 
-  } catch (error) {
-    console.error(error)
+  } catch (e) {
+    console.error('Error:', e)
   } finally {
     await prisma.$disconnect()
   }
 }
 
-debugJatimBarat()
+debugData()

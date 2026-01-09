@@ -53,7 +53,7 @@ export const dashboardService = {
 export const roleService = {
   switchRole: async (targetRole) => {
     const response = await api.post('/roles/switch-role', { targetRole })
-    
+
     // After switching role, fetch updated user profile and update localStorage
     if (response.status === 200) {
       try {
@@ -66,7 +66,7 @@ export const roleService = {
         console.error('Failed to update user profile after role switch:', error)
       }
     }
-    
+
     return response
   },
 
@@ -95,7 +95,32 @@ export const fileService = {
 
   getImportLogs: () => {
     return api.get('/files/import-logs')
+  },
+
+  truncateData: (type) => {
+    return api.delete('/files/data', { params: { type } })
   }
 }
 
 export default api
+
+
+// ... code existing
+
+export const fetchHSIDashboard = async (params) => {
+  const response = await api.get('/dashboard/hsi/dashboard', { params })
+  return response.data
+}
+
+export const fetchHSIFlowStats = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow', { params })
+  return response.data
+}
+
+
+// ... existing code
+
+export const fetchHSIFlowDetail = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow/detail', { params })
+  return response.data
+}

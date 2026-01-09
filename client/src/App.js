@@ -18,10 +18,10 @@ import ReportDigPro from './pages/ReportDigPro'
 import ReportsHSI from './pages/ReportsHSI'
 import ReportsDatin from './pages/ReportsDatin'
 import ReportsTambahan from './pages/ReportsTambahan'
+import Home from './pages/Home'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
-import MasterDataPO from './pages/MasterDataPO'
-import DashboardDigitalProduct from './pages/DashboardDigitalProduct'
+import AdminMergeFiles from './pages/AdminMergeFiles'
 
 function App() {
   return (
@@ -30,6 +30,22 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -60,14 +76,6 @@ function App() {
               <AdminModeRoute>
                 <Reports />
               </AdminModeRoute>
-            }
-          />
-          <Route
-            path="/dashboard-digital-product"
-            element={
-              <ProtectedRoute>
-                <DashboardDigitalProduct />
-              </ProtectedRoute>
             }
           />
           <Route
@@ -159,14 +167,13 @@ function App() {
             }
           />
           <Route
-            path="/admin/master-po"
+            path="/admin/merge-files"
             element={
-              <AdminModeRoute>
-                <MasterDataPO />
+              <AdminModeRoute superOnly>
+                <AdminMergeFiles />
               </AdminModeRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/analysis" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
