@@ -1059,20 +1059,33 @@ export const getHSIDashboard = async (req, res, next) => {
       value: i._count.id 
     }))
 
-    // --- CHART 5: Cancel FCC ---
+    // --- CHART 5: Cancel FCC (Categorized) ---
     const chart5Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'],
       where: { ...whereClause, kelompokStatus: 'REJECT_FCC' },
       _count: { id: true }
     })
-    const chart5Keys = [...new Set(chart5Raw.map(i => i.suberrorcode || 'Null'))]
+
+    const getFccCategory = (code) => {
+        if (!code) return 'Null';
+        const c = code.toUpperCase();
+        if (c.includes('FULL')) return 'ODP FULL';
+        if (c.includes('JAUH')) return 'ODP JAUH';
+        if (c.includes('TIDAK ADA') || c.includes('NO ODP')) return 'TIDAK ADA ODP';
+        return 'Lainnya';
+    }
+
     const chart5Map = {}
     chart5Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
-      const err = i.suberrorcode || 'Null'
+      const category = getFccCategory(i.suberrorcode)
+      
       if (!chart5Map[dim]) chart5Map[dim] = { name: dim }
-      chart5Map[dim][err] = (chart5Map[dim][err] || 0) + i._count.id
+      chart5Map[dim][category] = (chart5Map[dim][category] || 0) + i._count.id
     })
+    
+    // Fixed keys for consistent legend
+    const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
     const chart5Data = Object.values(chart5Map)
 
     // --- CHART 6: Cancel Non-FCC (Special Filter by TGL_PS) ---
@@ -1306,10 +1319,10 @@ export const getHSIFlowStats = async (req, res, next) => {
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '100 | REVOKE COMPLETED' THEN 1 ELSE 0 END) as revoke_completed,
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = 'REVOKE ORDER' THEN 1 ELSE 0 END) as revoke_order,
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'PS' THEN 1 ELSE 0 END) as ps_revoke,
-        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke = 'PI' OR data_ps_revoke = 'ACT_COM') THEN 1 ELSE 0 END) as ogp_provi_revoke,
-        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke = 'FO_WFM' OR data_ps_revoke = 'FO_UIM' OR data_ps_revoke = 'FO_ASAP') THEN 1 ELSE 0 END) as fallout_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('PI', 'ACT_COM') THEN 1 ELSE 0 END) as ogp_provi_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM') THEN 1 ELSE 0 END) as fallout_revoke,
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'CANCEL' THEN 1 ELSE 0 END) as cancel_revoke,
-        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke IS NULL OR data_ps_revoke = '#N/A' OR data_ps_revoke = 'INPROGESS_SC' OR data_ps_revoke = 'REVOKE') THEN 1 ELSE 0 END) as lain_lain_revoke,
+        SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND (data_ps_revoke NOT IN ('PS', 'PI', 'ACT_COM', 'FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM', 'CANCEL') OR data_ps_revoke IS NULL) THEN 1 ELSE 0 END) as lain_lain_revoke,
         SUM(CASE WHEN UPPER(hasil) = 'COMPLY' THEN 1 ELSE 0 END) as comply_count
       FROM hsi_data ${whereSql}
     `
@@ -1422,14 +1435,14 @@ export const getHSIFlowDetail = async (req, res, next) => {
                 sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('PI', 'ACT_COM')"); 
                 break;
             case 'Fallout Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('FO_WFM', 'FO_UIM', 'FO_ASAP')"); 
+                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM')"); 
                 break;
             case 'Cancel Revoke': 
                 sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'CANCEL'"); 
                 break;
             case 'Lain-Lain Revoke': 
                 sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED'");
-                sqlConditions.push("(data_ps_revoke IS NULL OR data_ps_revoke = '#N/A' OR data_ps_revoke = 'INPROGESS_SC' OR data_ps_revoke = 'REVOKE')");
+                sqlConditions.push("(data_ps_revoke NOT IN ('PS', 'PI', 'ACT_COM', 'FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM', 'CANCEL') OR data_ps_revoke IS NULL)");
                 break;
         }
     }
