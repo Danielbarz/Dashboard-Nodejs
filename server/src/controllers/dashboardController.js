@@ -370,18 +370,18 @@ export const getReportTambahan = async (req, res, next) => {
       `SELECT
         TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
-        SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS jumlah_lop,
+        SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS jumlah_lop,
         SUM(COALESCE(revenue_plan,0)) AS rev_all,
-        SUM(CASE WHEN go_live = 'Y' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS golive_jml,
-        SUM(CASE WHEN go_live = 'Y' AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
-        SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END) AS drop_cnt,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS dalam_toc,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS lewat_toc,
-        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS cnt_initial,
-        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS cnt_survey,
-        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS cnt_perizinan,
-        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS cnt_instalasi,
-        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS cnt_fi
+        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
+        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
+        SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END)::int AS drop_cnt,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' AND populasi_non_drop = 'Y' AND go_live = 'N' THEN 1 ELSE 0 END)::int AS dalam_toc,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' AND populasi_non_drop = 'Y' AND go_live = 'N' THEN 1 ELSE 0 END)::int AS lewat_toc,
+        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
+        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
+        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
+        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
+        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
       FROM spmk_mom
       ${dateFilter}
       GROUP BY witel_baru, witel_lama, region
@@ -494,9 +494,9 @@ export const getReportTambahan = async (req, res, next) => {
       `SELECT
         TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END) AS dalam_toc,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END) AS lewat_toc,
-        SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END) AS lop_progress
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
+        SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
       FROM spmk_mom
       ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}
       GROUP BY witel_baru, witel_lama
@@ -588,6 +588,35 @@ export const getReportTambahan = async (req, res, next) => {
        SELECT * FROM Ranked WHERE rn <= 3 ORDER BY po_name, rn`
     )
 
+    // --- NEW: Distribution of Project Age (Bucket Usia) ---
+    const bucketUsiaRaw = await prisma.$queryRawUnsafe(
+      `SELECT
+        CASE
+          WHEN usia < 30 THEN '< 30 Hari'
+          WHEN usia BETWEEN 30 AND 60 THEN '30 - 60 Hari'
+          WHEN usia BETWEEN 61 AND 90 THEN '61 - 90 Hari'
+          ELSE '> 90 Hari'
+        END as range,
+        COUNT(*)::int as count
+      FROM spmk_mom
+      WHERE go_live = 'N' AND populasi_non_drop = 'Y'
+      GROUP BY range
+      ORDER BY range`
+    )
+
+    // --- NEW: Trend Order vs Go-Live (Monthly) ---
+    const trendRaw = await prisma.$queryRawUnsafe(
+      `SELECT
+        TO_CHAR(tanggal_mom, 'YYYY-MM') as month,
+        COUNT(*)::int as total_order,
+        SUM(CASE WHEN go_live = 'Y' THEN 1 ELSE 0 END)::int as total_golive
+      FROM spmk_mom
+      ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"}
+      GROUP BY month
+      ORDER BY month`,
+      ...params
+    )
+
     // Helper formatting
     const formatRaw = (rows) => rows.map(r => ({
       ...r,
@@ -603,12 +632,20 @@ export const getReportTambahan = async (req, res, next) => {
         tableData: finalTable,
         projectData: finalProjects,
         top3Witel: formatRaw(top3WitelRaw),
-        top3Po: formatRaw(top3PoRaw)
+        top3Po: formatRaw(top3PoRaw),
+        bucketUsiaData: bucketUsiaRaw,
+        trendGolive: trendRaw,
+        topMitraRevenue: []
       },
       'Report Tambahan data retrieved successfully'
     )
   } catch (error) {
-    next(error)
+    console.error("GET REPORT TAMBAHAN ERROR:", error)
+    return res.status(500).json({
+      success: false,
+      message: `Error fetching report: ${error.message}`,
+      error: error.toString()
+    })
   }
 }
 
@@ -1098,9 +1135,9 @@ export const getHSIDashboard = async (req, res, next) => {
     } = req.query
 
     // 1. FILTERING
-    const selectedWitels = global_witel ? global_witel.split(',') : []
-    const selectedBranches = global_branch ? global_branch.split(',') : []
-    const mapStatusArr = map_status ? map_status.split(',') : []
+    const selectedWitels = global_witel ? global_witel.split(',').filter(w => w) : []
+    const selectedBranches = global_branch ? global_branch.split(',').filter(b => b) : []
+    const mapStatusArr = map_status ? map_status.split(',').filter(s => s) : []
 
     // Base Filter (Scope RSO2)
     let whereClause = {
@@ -1696,5 +1733,117 @@ export const getHSIFlowDetail = async (req, res, next) => {
   }
 }
 
+
+// ==================== DASHBOARD SOS DATIN ====================
+
+export const getSOSDatinFilters = async (req, res, next) => {
+  try {
+    const baseWhere = {
+      AND: [
+        { OR: [{ witelBaru: { not: 'RSO1' } }, { witelBaru: null }] },
+        { orderCreatedDate: { gte: new Date('2000-01-01') } }
+      ]
+    }
+
+    const [witels, segments, categories] = await Promise.all([
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['witelBaru'], select: { witelBaru: true } }),
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['segmen'], select: { segmen: true } }),
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['kategori'], select: { kategori: true } })
+    ])
+
+    successResponse(res, {
+      witels: witels.map(i => i.witelBaru).filter(Boolean).sort(),
+      segments: segments.map(i => i.segmen).filter(Boolean).sort(),
+      categories: categories.map(i => i.kategori).filter(Boolean).sort()
+    }, 'SOS Datin filter options retrieved')
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getSOSDatinDashboard = async (req, res, next) => {
+  try {
+    const { start_date, end_date, witels, segments, categories } = req.query
+
+    // 1. Build Multi-select Filters
+    let conditions = ["(witel_baru != 'RSO1' OR witel_baru IS NULL)", "order_created_date >= '2000-01-01'"]
+    const params = []
+    let pIdx = 1
+
+    if (start_date && end_date) {
+      conditions.push(`order_created_date BETWEEN $${pIdx} AND $${pIdx + 1}`)
+      params.push(new Date(start_date), new Date(end_date))
+      pIdx += 2
+    }
+
+    if (witels && witels.length > 0) {
+      const wArr = witels.split(',')
+      conditions.push(`witel_baru IN (${wArr.map(() => `$${pIdx++}`).join(',')})`)
+      params.push(...wArr)
+    }
+
+    if (segments && segments.length > 0) {
+      const sArr = segments.split(',')
+      conditions.push(`segmen IN (${sArr.map(() => `$${pIdx++}`).join(',')})`)
+      params.push(...sArr)
+    }
+
+    if (categories && categories.length > 0) {
+      const cArr = categories.split(',')
+      conditions.push(`kategori IN (${cArr.map(() => `$${pIdx++}`).join(',')})`)
+      params.push(...cArr)
+    }
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // 2. Query execution
+    const [ordersByCategory, revenueByCategory, witelDistribution, segmenDistribution] = await Promise.all([
+      // Chart 1: Orders by Category & Age
+      prisma.$queryRawUnsafe(`
+        SELECT kategori,
+          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN 1 ELSE 0 END)::int as lt_3bln_total,
+          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN 1 ELSE 0 END)::int as gt_3bln_total
+        FROM sos_data ${whereSql} AND kategori IS NOT NULL
+        GROUP BY kategori ORDER BY kategori`, ...params),
+
+      // Chart 2: Revenue by Category & Age (in Millions)
+      prisma.$queryRawUnsafe(`
+        SELECT kategori,
+          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) / 1000000 as lt_3bln_revenue,
+          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) / 1000000 as gt_3bln_revenue
+        FROM sos_data ${whereSql} AND kategori IS NOT NULL
+        GROUP BY kategori ORDER BY kategori`, ...params),
+
+      // Chart 3: Witel Distribution
+      prisma.$queryRawUnsafe(`
+        SELECT COALESCE(TRIM(UPPER(witel_baru)), 'UNKNOWN') as witel, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY witel ORDER BY value DESC`, ...params),
+
+      // Chart 4: Segment Distribution (Alias witel for chart component compatibility)
+      prisma.$queryRawUnsafe(`
+        SELECT COALESCE(TRIM(UPPER(segmen)), 'UNKNOWN') as witel, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY witel ORDER BY value DESC`, ...params)
+    ])
+
+    // Format Decimal results to numbers
+    const formatRev = (rows) => rows.map(r => ({
+      ...r,
+      lt_3bln_revenue: Number(r.lt_3bln_revenue || 0),
+      gt_3bln_revenue: Number(r.gt_3bln_revenue || 0)
+    }))
+
+    successResponse(res, {
+      ordersByCategory,
+      revenueByCategory: formatRev(revenueByCategory),
+      witelDistribution,
+      segmenDistribution
+    }, 'SOS Datin dashboard data retrieved')
+
+  } catch (error) {
+    next(error)
+  }
+}
 
 // WOIIIIIIIIIIII

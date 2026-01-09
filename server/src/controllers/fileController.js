@@ -38,9 +38,9 @@ const getValue = (record, keyMap, ...candidates) => {
 const cleanNumber = (value) => {
   if (value === null || value === undefined || value === '') return 0
   if (typeof value === 'number') return value
-  
+
   let strVal = value.toString().trim()
-  
+
   // Remove Rp, IDR, spaces
   strVal = strVal.replace(/Rp|IDR|\s/gi, '')
 
@@ -52,7 +52,7 @@ const cleanNumber = (value) => {
     // Both present. The last one is decimal.
     const lastComma = strVal.lastIndexOf(',')
     const lastDot = strVal.lastIndexOf('.')
-    
+
     if (lastComma > lastDot) {
       // Format: 1.000.000,00 (Indo standard) -> remove dots, replace comma with dot
       strVal = strVal.replace(/\./g, '').replace(',', '.')
@@ -65,7 +65,7 @@ const cleanNumber = (value) => {
     // Heuristic: Split by comma. If any part except the last one has !== 3 digits, it's weird.
     // Simpler: If comma is followed by exactly 2 digits at the end (e.g. ,00), likely decimal.
     // If followed by 3 digits (e.g. ,000), likely thousand.
-    
+
     if (/,\d{2}$/.test(strVal)) {
        // Ends in ,XX -> decimal
        strVal = strVal.replace(',', '.')
@@ -193,7 +193,7 @@ export const uploadFile = async (req, res, next) => {
         const results = []
         let firstLine = ''
         let delimiter = ','
-        
+
         const stream = createReadStream(filePath)
           .on('data', (chunk) => {
             if (!firstLine) {
@@ -209,7 +209,7 @@ export const uploadFile = async (req, res, next) => {
               }
             }
           })
-        
+
         stream
           .pipe(csv({ delimiter }))
           .on('data', (data) => results.push(data))
@@ -333,7 +333,7 @@ export const uploadFile = async (req, res, next) => {
     const currentBatchId = `batch_${Date.now()}`
     const importStartTime = new Date()
     // Increased batch size for local development (5x faster)
-    // Note: Max Postgres params is ~65535. HSI has ~65 cols. 65 * 1000 = 65000 (Risk). 
+    // Note: Max Postgres params is ~65535. HSI has ~65 cols. 65 * 1000 = 65000 (Risk).
     // So 500 is the safe sweet spot (32,500 params).
     const BATCH_SIZE = 100
     const sosBuffer = []
@@ -344,18 +344,18 @@ export const uploadFile = async (req, res, next) => {
     let batchCounter = 0
     const progressLogs = []
 
-    console.log(`🚀 Starting batch import of ${records.length} records (batch size: ${BATCH_SIZE})`) 
+    console.log(`🚀 Starting batch import of ${records.length} records (batch size: ${BATCH_SIZE})`)
     console.log(`ℹ️ Batch ID: ${currentBatchId} - Import start: ${importStartTime.toISOString()}`)
-    
+
     // Helper function to flush a buffer
     const flushBuffer = async (buffer, model, label, mode = 'createMany') => {
       if (buffer.length === 0) return { inserted: 0, failed: 0 }
-      
+
       try {
         batchCounter++
         console.log(`📦 Batch ${batchCounter}: Processing ${buffer.length} ${label} rows`)
         progressLogs.push({ batch: batchCounter, type: label, count: buffer.length, timestamp: new Date() })
-        
+
         let insertedCount = 0
 
         if (mode === 'upsert' && label === 'SOS') {
@@ -364,13 +364,13 @@ export const uploadFile = async (req, res, next) => {
             'order_id','nipnas','standard_name','order_subtype','segmen','sub_segmen',
             'cust_city','cust_witel','bill_witel','li_product_name','li_milestone','li_status','kategori',
             'revenue','biaya_pasang','hrg_bulanan','order_created_date','action_cd','batch_id','created_at','updated_at',
-            'serv_city', 'service_witel', 'li_billdate', 'li_status_date', 
-            'is_termin', 'agree_type', 'agree_start_date', 'agree_end_date', 
-            'lama_kontrak_hari', 'amortisasi', 'kategori_umur', 'umur_order', 
-            'bill_city', 'po_name', 'tipe_order', 'segmen_baru', 'scalling1', 
+            'serv_city', 'service_witel', 'li_billdate', 'li_status_date',
+            'is_termin', 'agree_type', 'agree_start_date', 'agree_end_date',
+            'lama_kontrak_hari', 'amortisasi', 'kategori_umur', 'umur_order',
+            'bill_city', 'po_name', 'tipe_order', 'segmen_baru', 'scalling1',
             'scalling2', 'tipe_grup', 'witel_baru', 'kategori_baru'
           ]
-          
+
           // Deduplicate buffer by orderId to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time"
           const uniqueRowsMap = new Map()
           for (const row of buffer) {
@@ -395,7 +395,7 @@ export const uploadFile = async (req, res, next) => {
               row.servCity ?? null, row.serviceWitel ?? null, row.liBilldate ?? null, row.liStatusDate ?? null,
               row.isTermin ?? null, row.agreeType ?? null, row.agreeStartDate ?? null, row.agreeEndDate ?? null,
               row.lamaKontrakHari ?? null, row.amortisasi ?? null, row.kategoriUmur ?? null, row.umurOrder ?? null,
-              row.billCity ?? null, row.poName ?? null, row.tipeOrder ?? null, row.segmenBaru ?? null, 
+              row.billCity ?? null, row.poName ?? null, row.tipeOrder ?? null, row.segmenBaru ?? null,
               row.scalling1 ?? null, row.scalling2 ?? null, row.tipeGrup ?? null, row.witelBaru ?? null, row.kategoriBaru ?? null
             )
             const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
@@ -439,19 +439,19 @@ export const uploadFile = async (req, res, next) => {
         } else if (mode === 'hsi') {
           // HSI Logic (Improved with ISO String safety)
           const columns = [
-            'order_id', 'nomor', 'regional', 'witel', 'regional_old', 'witel_old', 'datel', 'sto', 'unit', 
-            'jenis_psb', 'type_trans', 'type_layanan', 'customer_name', 'status_resume', 'provider', 
-            'order_date', 'last_updated_date', 'ncli', 'pots', 'speedy', 'loc_id', 'wonum', 'flag_deposit', 
-            'contact_hp', 'ins_address', 'gps_longitude', 'gps_latitude', 'kcontact', 'channel', 'status_inet', 
-            'status_onu', 'upload', 'download', 'last_program', 'status_voice', 'clid', 'last_start', 
-            'tindak_lanjut', 'isi_comment', 'user_id_tl', 'tgl_comment', 'tanggal_manja', 'kelompok_kendala', 
-            'kelompok_status', 'hero', 'addon', 'tgl_ps', 'status_message', 'package_name', 'group_paket', 
-            'reason_cancel', 'keterangan_cancel', 'tgl_manja', 'detail_manja', 'suberrorcode', 'engineermemo', 
-            'tahun', 'bulan', 'tanggal', 'ps_1', 'cek', 'hasil', 'telda', 'data_proses', 'no_order_revoke', 
+            'order_id', 'nomor', 'regional', 'witel', 'regional_old', 'witel_old', 'datel', 'sto', 'unit',
+            'jenis_psb', 'type_trans', 'type_layanan', 'customer_name', 'status_resume', 'provider',
+            'order_date', 'last_updated_date', 'ncli', 'pots', 'speedy', 'loc_id', 'wonum', 'flag_deposit',
+            'contact_hp', 'ins_address', 'gps_longitude', 'gps_latitude', 'kcontact', 'channel', 'status_inet',
+            'status_onu', 'upload', 'download', 'last_program', 'status_voice', 'clid', 'last_start',
+            'tindak_lanjut', 'isi_comment', 'user_id_tl', 'tgl_comment', 'tanggal_manja', 'kelompok_kendala',
+            'kelompok_status', 'hero', 'addon', 'tgl_ps', 'status_message', 'package_name', 'group_paket',
+            'reason_cancel', 'keterangan_cancel', 'tgl_manja', 'detail_manja', 'suberrorcode', 'engineermemo',
+            'tahun', 'bulan', 'tanggal', 'ps_1', 'cek', 'hasil', 'telda', 'data_proses', 'no_order_revoke',
             'data_ps_revoke', 'untuk_ps_pi', 'untuk_ps_re',
             'batch_id', 'created_at', 'updated_at'
           ]
-          
+
           const uniqMap = new Map()
           for (const row of buffer) {
              if (!row.order_id) continue
@@ -464,7 +464,7 @@ export const uploadFile = async (req, res, next) => {
 
           const placeholders = uniqRows.map((row, rowIdx) => {
             const base = rowIdx * columns.length
-            
+
             columns.forEach(col => {
               if (col === 'created_at' || col === 'updated_at') {
                 values.push(now)
@@ -509,7 +509,7 @@ export const uploadFile = async (req, res, next) => {
           })
           insertedCount = result.count
         }
-        
+
         console.log(`✅ Batch ${batchCounter}: Inserted ${insertedCount} ${label} rows`)
         progressLogs.push({ batch: batchCounter, type: label, inserted: insertedCount, status: 'success', timestamp: new Date() })
         buffer.length = 0
@@ -529,7 +529,7 @@ export const uploadFile = async (req, res, next) => {
     // MAIN PROCESSING LOOP
     for (let i = 0; i < records.length; i++) {
       const record = records[i]
-      
+
       // Check if row is completely empty
       if (Object.values(record).every(val => val === '' || val === null || val === undefined)) {
         emptyCount++
@@ -541,7 +541,7 @@ export const uploadFile = async (req, res, next) => {
       }
 
       const keyMap = buildKeyMap(record)
-      
+
       try {
         if (['digital_product'].includes(type)) {
           const now = new Date()
@@ -549,7 +549,7 @@ export const uploadFile = async (req, res, next) => {
           const productName = type === 'digital_product'
             ? (getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name') || 'DIGITAL_PRODUCT')
             : type.toUpperCase()
-          
+
           digitalBuffer.push({
             order_number: orderNumber.toString(),
             product_name: productName,
@@ -578,8 +578,8 @@ export const uploadFile = async (req, res, next) => {
         if (type === 'sos') {
           // Add more variations for Order ID to catch 11k+ rows
           // Common variations: Order ID, No Order, No SC, SC Number, Nomor SC, Account ID, ND, Contract No
-          const orderId = getValue(record, keyMap, 
-            'order_id', 'orderid', 'no_order', 'no_sc', 'nosc', 'scid', 'order_no', 'no_order_sc', 
+          const orderId = getValue(record, keyMap,
+            'order_id', 'orderid', 'no_order', 'no_sc', 'nosc', 'scid', 'order_no', 'no_order_sc',
             'nomor_order', 'id_order', 'order_id_telkom',
             'sc_number', 'sc_no', 'nomor_sc', 'nomer_sc', 'no_sc_telkom',
             'contract_no', 'no_kontrak', 'nomor_kontrak',
@@ -587,11 +587,11 @@ export const uploadFile = async (req, res, next) => {
             'account_id', 'id_akun', 'account_no',
             'id' // Last resort
           )
-          
+
           if (!orderId) {
              const reason = `Missing Order ID. Available keys: ${Object.keys(record).join(', ')}`
              skippedRows.push({ index: i + 1, reason, keys_found: Object.keys(record), data: record })
-             
+
              if (skippedCount < 10) {
                 console.log(`⚠️ Skipping SOS Row ${i+1}: ${reason}`)
                 debugSkipped.push({ row: i+1, reason, data: record })
@@ -688,7 +688,7 @@ export const uploadFile = async (req, res, next) => {
           // --- GENERATOR LOGIC (AUTO-FILL) ---
           // Mengisi kolom ps_1, no_order_revoke, dll berdasarkan status_resume jika kosong
           const status = (hsiRow.status_resume || '').toString().toUpperCase()
-          
+
           if (!hsiRow.ps_1) {
              if (status.includes('PS')) hsiRow.ps_1 = 'PS'
              else if (status.includes('FALLOUT')) hsiRow.ps_1 = 'FALLOUT'
@@ -704,7 +704,7 @@ export const uploadFile = async (req, res, next) => {
              else if (status.includes('CANCEL')) hsiRow.no_order_revoke = 'CANCEL'
           }
           // -----------------------------------
-          
+
           hsiRow.batch_id = currentBatchId
           if (!hsiRow.order_id) hsiRow.order_id = `order_${Date.now()}_${i}`
 
@@ -719,7 +719,7 @@ export const uploadFile = async (req, res, next) => {
           const isDatin = type === 'datin'
           const buffer = isDatin ? datinBuffer : jtBuffer
           const label = isDatin ? 'DATIN' : 'JT'
-          
+
           const witelBaruVal = getValue(record, keyMap, 'witel baru', 'witel_baru', 'witel', 'lokasi')
           const witelLamaVal = getValue(record, keyMap, 'witel lama', 'witel_lama', 'witel_eksisting')
 
@@ -729,13 +729,13 @@ export const uploadFile = async (req, res, next) => {
           // 2. Filter out unwanted Witels (Jawa Tengah)
           const unwantedWitels = ['SOLO', 'YOGYA', 'MAGELANG', 'SEMARANG', 'KUDUS', 'PURWOKERTO', 'JATENG', 'PEKALONGAN']
           const witelStr = ((witelBaruVal || '') + ' ' + (witelLamaVal || '')).toUpperCase()
-          
+
           if (unwantedWitels.some(w => witelStr.includes(w))) continue
 
           buffer.push({
             // Identification
             batchId: currentBatchId,
-            
+
             // Core Info
             bulan: getValue(record, keyMap, 'bulan'),
             tahun: cleanNumber(getValue(record, keyMap, 'tahun')),
@@ -743,7 +743,7 @@ export const uploadFile = async (req, res, next) => {
             witelBaru: witelBaruVal,
             witelLama: witelLamaVal,
             idIHld: getValue(record, keyMap, 'id i-hld', 'id_i_hld', 'id ihld', 'ihld', 'id_i-hld'),
-            
+
             // SPMK Info
             noNdeSpmk: getValue(record, keyMap, 'no nde spmk', 'no_nde_spmk', 'nonde spmk', 'no nde', 'nomor_spmk') || `nd_${Date.now()}_${i}`,
             perihalNdeSpmk: getValue(record, keyMap, 'perihal nde spmk', 'perihal_nde_spmk'),
@@ -751,12 +751,12 @@ export const uploadFile = async (req, res, next) => {
             segmen: getValue(record, keyMap, 'segmen', 'segment', 'segmen_pelanggan', 'nama_pelanggan'),
             poName: getValue(record, keyMap, 'po', 'po_name', 'po name', 'mitra', 'nama_po', 'nama mitra'),
             mitraLokal: getValue(record, keyMap, 'mitra lokal', 'mitra_lokal'),
-            
+
             // Dates
             tanggalGolive: cleanDate(getValue(record, keyMap, 'tanggal golive', 'tanggal golive\n(dd/mm/yyyy)', 'tanggal_golive', 'tgl_golive', 'golive', 'tanggal_selesai')),
             tanggalMom: cleanDate(getValue(record, keyMap, 'tanggal mom', 'tanggal_mom', 'tgl_mom', 'mom_date')),
             tanggalCb: cleanDate(getValue(record, keyMap, 'tanggal cb', 'tanggal_cb', 'tgl_cb', 'tanggal_spmk')),
-            
+
             // Technical & Status
             jenisKegiatan: getValue(record, keyMap, 'jenis kegiatan', 'jenis_kegiatan', 'jenis', 'type', 'jenis_layanan'),
             revenuePlan: cleanNumber(getValue(record, keyMap, 'revenue plan', 'revenue_plan', 'rev', 'nilai', 'rab', 'nilai_proyek')),
@@ -767,7 +767,7 @@ export const uploadFile = async (req, res, next) => {
             populasiNonDrop: (getValue(record, keyMap, 'populasi (non drop)', 'populasi_non_drop', 'populasi', 'non_drop') || 'Y').toString().substring(0, 1),
             mom: getValue(record, keyMap, 'mom'),
             konfirmasiPo: getValue(record, keyMap, 'konfirmasi po', 'konfirmasi_po'),
-            
+
             // Tracking & Aging
             usia: cleanNumber(getValue(record, keyMap, 'usia')),
             totalPort: getValue(record, keyMap, 'total port', 'total_port'),
@@ -776,24 +776,24 @@ export const uploadFile = async (req, res, next) => {
             keteranganToc: getValue(record, keyMap, 'keterangan toc', 'keterangan_toc', 'keterangan'),
             umurPekerjaan: getValue(record, keyMap, 'umur pekerjaan', 'umur_pekerjaan'),
             kategoriUmurPekerjaan: getValue(record, keyMap, 'kategori umur pekerjaan', 'kategori_umur_pekerjaan'),
-            
+
             // Detailed Status
             statusTompsLastActivity: getValue(record, keyMap, 'status tomps - last activity', 'status_tomps_last_activity', 'status tomps last activity', 'status_tomps', 'tomps'),
             statusTompsNew: getValue(record, keyMap, 'status tomps new', 'status_tomps_new', 'tomps_new'),
             statusIHld: getValue(record, keyMap, 'status i-hld', 'status_i_hld', 'status ihld', 'status hld'),
-            
+
             // PO Name Sanitization & Fallback
             poName: (() => {
               let po = getValue(record, keyMap, 'po', 'po_name', 'po name', 'mitra', 'nama_po', 'nama mitra')
               const mitraLokal = getValue(record, keyMap, 'mitra lokal', 'mitra_lokal')
               const uraian = getValue(record, keyMap, 'uraian kegiatan', 'uraian_kegiatan', 'uraian', 'pekerjaan')
-              
+
               // 1. Clean existing PO (handle Excel errors)
               if (po && (po.toString().includes('#NAME') || po.toString().includes('#REF'))) po = null
-              
+
               // 2. Fallback to Mitra Lokal
               if (!po && mitraLokal) po = mitraLokal
-              
+
               // 3. Fallback to Uraian Extraction (Try to find PT. or CV. or PT3xxx)
               if (!po && uraian) {
                 // Regex to find PT. Name, CV. Name, or PT codes like PT3BR, PT2NS
@@ -804,7 +804,7 @@ export const uploadFile = async (req, res, next) => {
                    po = words.toUpperCase()
                 }
               }
-              
+
               return po || 'UNIDENTIFIED PO'
             })(),
 
@@ -903,11 +903,11 @@ export const getImportLogs = async (req, res, next) => {
 export const truncateData = async (req, res, next) => {
   try {
     let type = (req.query.type || '').toString().toLowerCase()
-    
+
     // Normalize aliases
     if (['digital', 'dp'].includes(type)) type = 'digital_product'
     if (type === 'datin') type = 'sos'
-    
+
     let tableName = ''
     let label = ''
 

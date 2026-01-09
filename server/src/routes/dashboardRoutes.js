@@ -21,9 +21,11 @@ import {
   exportReportTambahan,
   exportReportHSI,
   exportJTReport,
-  getHSIDashboard, 
+  getHSIDashboard,
   getHSIFlowStats,
-  getHSIFlowDetail
+  getHSIFlowDetail,
+  getSOSDatinFilters,
+  getSOSDatinDashboard
 } from '../controllers/dashboardController.js'
 
 const router = express.Router()
@@ -51,5 +53,9 @@ router.get('/export/report-jt', authenticate, exportJTReport)
 router.get('/hsi/dashboard', authenticate, getHSIDashboard)
 router.get('/hsi/flow', authenticate, getHSIFlowStats)
 router.get('/hsi/flow/detail', authenticate, getHSIFlowDetail)
+
+// Dashboard SOS Datin
+router.get('/sos-datin/filters', authenticate, getSOSDatinFilters)
+router.get('/sos-datin/stats', authenticate, getSOSDatinDashboard)
 
 export default router

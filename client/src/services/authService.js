@@ -5,17 +5,17 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', { email, password })
       console.log('Login response:', response.data)
-      
+
       const { user, accessToken, refreshToken } = response.data.data
-      
+
       // Save to localStorage
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
       localStorage.setItem('user', JSON.stringify(user))
-      
+
       console.log('Tokens saved to localStorage')
       console.log('User saved:', user)
-      
+
       return response.data
     } catch (error) {
       console.error('Login error:', error)

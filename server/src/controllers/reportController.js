@@ -1,7 +1,6 @@
-﻿import prisma from '../lib/prisma.js'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import PO_MAPPING from '../utils/poMapping.js'
-import CITY_MAPPING from '../utils/cityMapping.js'
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
@@ -221,7 +220,7 @@ export const getReportTambahan = async (req, res, next) => {
       })
       .map(row => ({
       ...row,
-      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
+      persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlah_lop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
     // Project data (All Non-Drop projects, including Go Live)
@@ -509,215 +508,6 @@ export const getReportTambahan = async (req, res, next) => {
   }
 }
 
-// Get Report Datin - from SPMK MOM data  
-export const getReportDatin = async (req, res, next) => {
-  try {
-    const { start_date, end_date } = req.query
-
-    let whereClause = { statusProyek: { contains: 'DATIN' } }
-
-    if (start_date && end_date) {
-      whereClause.createdAt = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
-
-    const tableData = await prisma.spmkMom.groupBy({
-      by: ['witelBaru', 'region'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        revenuePlan: true,
-        rab: true
-      }
-    })
-
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witelBaru || 'Unknown',
-      branch: row.region || 'Unknown',
-      totalAmount: parseFloat(row._sum.revenuePlan || 0),
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id
-    }))
-
-    successResponse(
-      res,
-      {
-        tableData: formattedTableData,
-        posisiGalaksi: []
-      },
-      'Report Datin data retrieved successfully'
-    )
-  } catch (error) {
-    next(error)
-  }
-}
-
-// Get Report Analysis - from Digital Product data segmentation
-export const getReportAnalysis = async (req, res, next) => {
-  try {
-    const { start_date, end_date, witel } = req.query
-
-    let whereClause = {}
-    if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
-
-    // Region Mapping
-    const regionMapping = {
-      'BALI': ['BALI', 'DENPASAR', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'Non-Telda (NCX)', 'SANUR', 'SINGARAJA', 'TABANAN', 'UBUNG'],
-      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'Non-Telda (NCX)', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
-      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'INNER - JATIM TIMUR', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'Non-Telda (NCX)', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
-      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'INNER - NUSA TENGGARA', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'Non-Telda (NCX)', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
-      'SURAMADU': ['SURAMADU', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'Non-Telda (NCX)', 'PAMEKASAN', 'TANDES']
-    }
-
-    let selectedRegion = null
-    let targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
-
-    if (witel) {
-      const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
-      
-      // Case 1: Single Region Selected -> Drilldown to Branches
-      if (witelList.length === 1 && regionMapping[witelList[0]]) {
-        selectedRegion = witelList[0]
-        targetRows = regionMapping[selectedRegion]
-      } 
-      // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
-      else if (witelList.length > 0) {
-        targetRows = targetRows.filter(r => witelList.includes(r))
-      }
-    }
-
-    // Helper to get data for a segment
-    const getSegmentData = async (segmentKeywords) => {
-      // Allow single string or array of strings
-      const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
-      
-      const data = await prisma.digitalProduct.findMany({
-        where: {
-          ...whereClause,
-          OR: keywords.map(k => ({ segment: { contains: k, mode: 'insensitive' } }))
-        },
-        select: {
-          witel: true,
-          productName: true,
-          status: true,
-          revenue: true
-        }
-      })
-
-      // Process data
-      const witelMap = {}
-      
-      targetRows.forEach(w => {
-        witelMap[w] = {
-          nama_witel: w,
-          in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0,
-          prov_comp_n_realisasi: 0, prov_comp_o_realisasi: 0, prov_comp_ae_realisasi: 0, prov_comp_ps_realisasi: 0,
-          revenue_n_ach: 0, revenue_n_target: 0,
-          revenue_o_ach: 0, revenue_o_target: 0,
-          revenue_ae_ach: 0, revenue_ae_target: 0,
-          revenue_ps_ach: 0, revenue_ps_target: 0
-        }
-      })
-
-      let totalOgp = 0
-      let totalClosed = 0
-
-      data.forEach(row => {
-        let rawWitel = (row.witel || '').toUpperCase()
-        let mappedName = null
-
-        if (selectedRegion) {
-          // Drill down logic: Check if rawWitel matches one of the branches in the selected region
-          const branches = regionMapping[selectedRegion] || []
-          // Find which branch this rawWitel belongs to (e.g. "KOTA MALANG" -> "MALANG")
-          const foundBranch = branches.find(b => rawWitel.includes(b))
-          
-          if (foundBranch) {
-            mappedName = foundBranch
-          }
-        } else {
-          // Default logic: Map to Region
-          // Iterate through all regions to find where this rawWitel belongs
-          for (const [region, branches] of Object.entries(regionMapping)) {
-            if (branches.some(b => rawWitel.includes(b))) {
-              mappedName = region
-              break
-            }
-          }
-          
-          // Fallback for special cases or if not found in mapping but contains region name
-          if (!mappedName) {
-             if (rawWitel.includes('BALI')) mappedName = 'BALI'
-             else if (rawWitel.includes('JATIM BARAT')) mappedName = 'JATIM BARAT'
-             else if (rawWitel.includes('JATIM TIMUR')) mappedName = 'JATIM TIMUR'
-             else if (rawWitel.includes('NUSA TENGGARA')) mappedName = 'NUSA TENGGARA'
-             else if (rawWitel.includes('SURAMADU')) mappedName = 'SURAMADU'
-          }
-        }
-        
-        if (!mappedName || !witelMap[mappedName]) return 
-
-        let productCode = ''
-        const pName = (row.productName || '').toLowerCase()
-        if (pName.includes('netmonk')) productCode = 'n'
-        else if (pName.includes('oca')) productCode = 'o'
-        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
-        else if (pName.includes('pijar')) productCode = 'ps'
-        
-        if (!productCode) return
-
-        const status = (row.status || '').toLowerCase()
-        const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
-        const isInProgress = !isCompleted
-
-        if (isInProgress) {
-          witelMap[mappedName][`in_progress_${productCode}`]++
-          totalOgp++
-        } else {
-          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
-          witelMap[mappedName][`revenue_${productCode}_ach`] += parseFloat(row.revenue || 0) / 1000000 // Convert to Juta
-          totalClosed++
-        }
-      })
-
-      return {
-        data: Object.values(witelMap),
-        details: {
-          total: totalOgp + totalClosed,
-          ogp: totalOgp,
-          closed: totalClosed
-        }
-      }
-    }
-
-    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG']) 
-    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'])
-
-    successResponse(
-      res,
-      {
-        legs: legsData.data,
-        sme: smeData.data,
-        detailsLegs: legsData.details,
-        detailsSme: smeData.details
-      },
-      'Report Analysis data retrieved successfully'
-    )
-  } catch (error) {
-    next(error)
-  }
-}
-
 // Get Report HSI - from HSI data table
 export const getReportHSI = async (req, res, next) => {
   try {
@@ -925,6 +715,215 @@ export const getReportHSI = async (req, res, next) => {
         totals: grandTotal 
       },
       'Report HSI data retrieved successfully'
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Get Report Datin - from SPMK MOM data  
+export const getReportDatin = async (req, res, next) => {
+  try {
+    const { start_date, end_date } = req.query
+
+    let whereClause = { statusProyek: { contains: 'DATIN', mode: 'insensitive' } }
+
+    if (start_date && end_date) {
+      whereClause.tanggalMom = {
+        gte: new Date(start_date),
+        lte: new Date(end_date)
+      }
+    }
+
+    const tableData = await prisma.spmkMom.groupBy({
+      by: ['witelBaru', 'region'],
+      where: whereClause,
+      _count: {
+        id: true
+      },
+      _sum: {
+        revenuePlan: true,
+        rab: true
+      }
+    })
+
+    const formattedTableData = tableData.map(row => ({
+      witel: row.witelBaru || 'Unknown',
+      branch: row.region || 'Unknown',
+      totalAmount: parseFloat(row._sum.revenuePlan || 0),
+      jumlahProject: row._count.id,
+      selesai: 0,
+      progress: row._count.id
+    }))
+
+    successResponse(
+      res,
+      {
+        tableData: formattedTableData,
+        posisiGalaksi: []
+      },
+      'Report Datin data retrieved successfully'
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Get Report Analysis - from Digital Product data segmentation
+export const getReportAnalysis = async (req, res, next) => {
+  try {
+    const { start_date, end_date, witel } = req.query
+
+    let whereClause = {}
+    if (start_date && end_date) {
+      whereClause.orderDate = {
+        gte: new Date(start_date),
+        lte: new Date(end_date)
+      }
+    }
+
+    // Region Mapping
+    const regionMapping = {
+      'BALI': ['BALI', 'DENPASAR', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'Non-Telda (NCX)', 'SANUR', 'SINGARAJA', 'TABANAN', 'UBUNG'],
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'Non-Telda (NCX)', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'INNER - JATIM TIMUR', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'Non-Telda (NCX)', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'INNER - NUSA TENGGARA', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'Non-Telda (NCX)', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
+      'SURAMADU': ['SURAMADU', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'Non-Telda (NCX)', 'PAMEKASAN', 'TANDES']
+    }
+
+    let selectedRegion = null
+    let targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+
+    if (witel) {
+      const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
+      
+      // Case 1: Single Region Selected -> Drilldown to Branches
+      if (witelList.length === 1 && regionMapping[witelList[0]]) {
+        selectedRegion = witelList[0]
+        targetRows = regionMapping[selectedRegion]
+      } 
+      // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
+      else if (selectedWitels.length > 0) {
+        targetRows = targetRows.filter(r => witelList.includes(r))
+      }
+    }
+
+    // Helper to get data for a segment
+    const getSegmentData = async (segmentKeywords) => {
+      // Allow single string or array of strings
+      const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
+      
+      const data = await prisma.digitalProduct.findMany({
+        where: {
+          ...whereClause,
+          OR: keywords.map(k => ({ segment: { contains: k, mode: 'insensitive' } }))
+        },
+        select: {
+          witel: true,
+          productName: true,
+          status: true,
+          revenue: true
+        }
+      })
+
+      // Process data
+      const witelMap = {}
+      
+      targetRows.forEach(w => {
+        witelMap[w] = {
+          nama_witel: w,
+          in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0,
+          prov_comp_n_realisasi: 0, prov_comp_o_realisasi: 0, prov_comp_ae_realisasi: 0, prov_comp_ps_realisasi: 0,
+          revenue_n_ach: 0, revenue_n_target: 0,
+          revenue_o_ach: 0, revenue_o_target: 0,
+          revenue_ae_ach: 0, revenue_ae_target: 0,
+          revenue_ps_ach: 0, revenue_ps_target: 0
+        }
+      })
+
+      let totalOgp = 0
+      let totalClosed = 0
+
+      data.forEach(row => {
+        let rawWitel = (row.witel || '').toUpperCase()
+        let mappedName = null
+
+        if (selectedRegion) {
+          // Drill down logic: Check if rawWitel matches one of the branches in the selected region
+          const branches = regionMapping[selectedRegion] || []
+          // Find which branch this rawWitel belongs to (e.g. "KOTA MALANG" -> "MALANG")
+          const foundBranch = branches.find(b => rawWitel.includes(b))
+          
+          if (foundBranch) {
+            mappedName = foundBranch
+          }
+        } else {
+          // Default logic: Map to Region
+          // Iterate through all regions to find where this rawWitel belongs
+          for (const [region, branches] of Object.entries(regionMapping)) {
+            if (branches.some(b => rawWitel.includes(b))) {
+              mappedName = region
+              break
+            }
+          }
+          
+          // Fallback for special cases or if not found in mapping but contains region name
+          if (!mappedName) {
+             if (rawWitel.includes('BALI')) mappedName = 'BALI'
+             else if (rawWitel.includes('JATIM BARAT')) mappedName = 'JATIM BARAT'
+             else if (rawWitel.includes('JATIM TIMUR')) mappedName = 'JATIM TIMUR'
+             else if (rawWitel.includes('NUSA TENGGARA')) mappedName = 'NUSA TENGGARA'
+             else if (rawWitel.includes('SURAMADU')) mappedName = 'SURAMADU'
+          }
+        }
+        
+        if (!mappedName || !witelMap[mappedName]) return 
+
+        let productCode = ''
+        const pName = (row.productName || '').toLowerCase()
+        if (pName.includes('netmonk')) productCode = 'n'
+        else if (pName.includes('oca')) productCode = 'o'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
+        else if (pName.includes('pijar')) productCode = 'ps'
+        
+        if (!productCode) return
+
+        const status = (row.status || '').toLowerCase()
+        const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isInProgress = !isCompleted
+
+        if (isInProgress) {
+          witelMap[mappedName][`in_progress_${productCode}`]++
+          totalOgp++
+        } else {
+          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
+          witelMap[mappedName][`revenue_${productCode}_ach`] += parseFloat(row.revenue || 0) / 1000000 // Convert to Juta
+          totalClosed++
+        }
+      })
+
+      return {
+        data: Object.values(witelMap),
+        details: {
+          total: totalOgp + totalClosed,
+          ogp: totalOgp,
+          closed: totalClosed
+        }
+      }
+    }
+
+    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG']) 
+    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'])
+
+    successResponse(
+      res,
+      {
+        legs: legsData.data,
+        sme: smeData.data,
+        detailsLegs: legsData.details,
+        detailsSme: smeData.details
+      },
+      'Report Analysis data retrieved successfully'
     )
   } catch (error) {
     next(error)
@@ -1307,47 +1306,7 @@ export const getReportDatinDetails = async (req, res, next) => {
         where: whereClause,
         skip,
         take,
-        orderBy: { orderCreatedDate: 'desc' },
-        select: {
-          orderId: true,
-          orderCreatedDate: true,
-          nipnas: true,
-          standardName: true,
-          liProductName: true,
-          revenue: true,
-          segmen: true,
-          subSegmen: true,
-          kategori: true,
-          kategoriUmur: true,
-          umurOrder: true,
-          lamaKontrakHari: true,
-          amortisasi: true,
-          billWitel: true,
-          custWitel: true,
-          serviceWitel: true,
-          witelBaru: true,
-          billCity: true,
-          custCity: true,
-          servCity: true,
-          liStatus: true,
-          liMilestone: true,
-          liStatusDate: true,
-          liBilldate: true,
-          biayaPasang: true,
-          hrgBulanan: true,
-          actionCd: true,
-          tipeOrder: true,
-          agreeType: true,
-          agreeStartDate: true,
-          agreeEndDate: true,
-          isTermin: true,
-          poName: true,
-          segmenBaru: true,
-          kategoriBaru: true,
-          tipeGrup: true,
-          scalling1: true,
-          scalling2: true
-        }
+        orderBy: { orderCreatedDate: 'desc' }
       }),
       prisma.sosData.count({ where: whereClause })
     ])
@@ -1465,8 +1424,7 @@ export const getReportDatinSummary = async (req, res, next) => {
         liStatus: true,
         revenue: true,
         poName: true,
-        nipnas: true,
-        billCity: true
+        nipnas: true
       }
     })
 
@@ -1620,23 +1578,9 @@ export const getReportDatinSummary = async (req, res, next) => {
       const orderType = getOrderType(row.actionCd)
       
       // Update Galaksi - process this BEFORE witel validation
-      let poKey = null
+      let poKey = row.poName
 
-      // 1. Try City Mapping
-      if (row.billCity) {
-         const cityUpper = row.billCity.toUpperCase()
-         const matchedCityKey = Object.keys(CITY_MAPPING).find(key => cityUpper.includes(key))
-         if (matchedCityKey) {
-            poKey = CITY_MAPPING[matchedCityKey]
-         }
-      }
-
-      // 2. Fallback to existing PO Name
-      if (!poKey) {
-         poKey = row.poName
-      }
-
-      // 3. Fallback to NIPNAS Mapping
+      // If poName is not available, try to map from NIPNAS
       if (!poKey && row.nipnas) {
          const mappedName = PO_MAPPING[row.nipnas]
          if (mappedName) {
