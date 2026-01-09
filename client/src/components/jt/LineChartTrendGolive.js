@@ -23,7 +23,7 @@ ChartJS.register(
 
 const LineChartTrendGolive = ({ data = [] }) => {
   const labels = data.map((d) => d.month)
-  
+
   const chartData = useMemo(() => ({
     labels,
     datasets: [

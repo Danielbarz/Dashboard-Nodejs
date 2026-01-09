@@ -17,7 +17,7 @@ const BarChartUsiaWitelJT = ({ data = [] }) => {
   // Usually this component receives an array of { witel, items: [] }
   // We want to show top outliers across witels or top per witel?
   // Let's flatten all items and take top 10 overall for the chart, labeling with Witel
-  
+
   const flatItems = useMemo(() => {
     let all = []
     data.forEach(group => {

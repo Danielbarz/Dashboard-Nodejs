@@ -289,7 +289,7 @@ const Analysis = () => {
               >
                 ← Previous
               </button>
-              
+
               {/* Page Numbers */}
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
