@@ -4,7 +4,7 @@ import config from '../config/index.js'
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
@@ -13,10 +13,10 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7)
-    
+
     const decoded = jwt.verify(token, config.jwt.secret)
     req.user = decoded
-    
+
     next()
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -25,14 +25,14 @@ export const authenticate = async (req, res, next) => {
         message: 'Invalid token'
       })
     }
-    
+
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
         message: 'Token expired'
       })
     }
-    
+
     next(error)
   }
 }

@@ -53,7 +53,7 @@ export const dashboardService = {
 export const roleService = {
   switchRole: async (targetRole) => {
     const response = await api.post('/roles/switch-role', { targetRole })
-    
+
     // After switching role, fetch updated user profile and update localStorage
     if (response.status === 200) {
       try {
@@ -66,7 +66,7 @@ export const roleService = {
         console.error('Failed to update user profile after role switch:', error)
       }
     }
-    
+
     return response
   },
 

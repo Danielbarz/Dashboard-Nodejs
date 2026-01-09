@@ -13,7 +13,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
 const BarChartUsiaPoJT = ({ data = [] }) => {
   // Similar logic to Witel, flatten and show top outliers
-  
+
   const flatItems = useMemo(() => {
     let all = []
     data.forEach(group => {

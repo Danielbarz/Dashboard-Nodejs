@@ -82,9 +82,9 @@ export const getJobProgress = async (req, res, next) => {
   try {
     const { jobId } = req.params
     const progressKey = `import:progress:${jobId}`
-    
+
     const progressData = await redis.get(progressKey)
-    
+
     if (!progressData) {
       return errorResponse(res, 'Progress not found or expired', 404)
     }
@@ -101,7 +101,7 @@ export const getJobStatus = async (req, res, next) => {
   try {
     const { jobId } = req.params
     const job = await fileImportQueue.getJob(jobId)
-    
+
     if (!job) {
       return errorResponse(res, 'Job not found', 404)
     }

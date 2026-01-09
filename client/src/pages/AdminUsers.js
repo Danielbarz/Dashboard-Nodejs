@@ -21,7 +21,7 @@ const AdminUsers = () => {
   })
   const [formErrors, setFormErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
-  
+
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
@@ -51,7 +51,7 @@ const AdminUsers = () => {
 
   const confirmDelete = async () => {
     if (!userToDelete) return
-    
+
     try {
       await api.delete(`/admin/users/${userToDelete.id}`)
       setUsers(users.filter(u => u.id !== userToDelete.id))
@@ -72,11 +72,11 @@ const AdminUsers = () => {
 
   const openEditModal = (user) => {
     setEditingUser(user)
-    setFormData({ 
-      name: user.name, 
-      email: user.email, 
-      password: '', 
-      role: user.role 
+    setFormData({
+      name: user.name,
+      email: user.email,
+      password: '',
+      role: user.role
     })
     setFormErrors({})
     setShowModal(true)
@@ -94,14 +94,14 @@ const AdminUsers = () => {
     if (!formData.name.trim()) errors.name = 'Name is required'
     if (!formData.email.trim()) errors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email is invalid'
-    
+
     if (!editingUser && !formData.password) {
       errors.password = 'Password is required for new users'
     }
     if (formData.password && formData.password.length < 6) {
       errors.password = 'Password must be at least 6 characters'
     }
-    
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -114,15 +114,15 @@ const AdminUsers = () => {
     try {
       if (editingUser) {
         // Update user
-        const updateData = { 
-          name: formData.name, 
-          email: formData.email, 
-          role: formData.role 
+        const updateData = {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role
         }
         if (formData.password) {
           updateData.password = formData.password
         }
-        
+
         const response = await api.put(`/admin/users/${editingUser.id}`, updateData)
         setUsers(users.map(u => u.id === editingUser.id ? response.data.data : u))
       } else {
@@ -153,7 +153,7 @@ const AdminUsers = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <button 
+          <button
             onClick={openAddModal}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 text-sm font-semibold"
           >
@@ -189,15 +189,15 @@ const AdminUsers = () => {
                     <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
                     <td className="px-6 py-4 text-sm"><RoleBadge role={user.role} /></td>
                     <td className="px-6 py-4 text-sm space-x-3">
-                      <button 
+                      <button
                         onClick={() => openEditModal(user)}
                         className="text-blue-600 hover:text-blue-800 font-semibold"
                         title="Edit User"
                       >
                         <FiEdit2 size={18} />
                       </button>
-                      <button 
-                        onClick={() => handleDeleteClick(user)} 
+                      <button
+                        onClick={() => handleDeleteClick(user)}
                         className="text-red-600 hover:text-red-800 font-semibold"
                         title="Delete User"
                       >
@@ -220,7 +220,7 @@ const AdminUsers = () => {
               <h2 className="text-xl font-bold text-gray-900">
                 {editingUser ? 'Edit User' : 'Add New User'}
               </h2>
-              <button 
+              <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
               >
