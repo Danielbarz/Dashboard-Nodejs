@@ -38,3 +38,7 @@ coverage/
 
 # Prisma
 prisma/migrations/
+
+# Prisma Temporary Files
+*.tmp*
+src/generated/**/*.tmp*

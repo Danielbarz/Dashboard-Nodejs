@@ -73,37 +73,10 @@ const ReportsHSI = () => {
 
   const filteredData = useMemo(() => {
     if (!selectedWitel) return reportData
-    // Filter logic needs to be aware of parent-child structure
-    // If filtering by Witel, we show the Parent Row for that Witel AND all its children (which have row_type='sub')
-    // But the current API returns a flat list mixed with parents and children.
-    // However, the `reportData` is already structured as [Parent A, Child A1, Child A2, Parent B, ...].
-    // If we select "JATIM TIMUR", we want Parent JATIM TIMUR and its children.
-    // The children don't have a 'witel' property equal to parent witel directly in the flat list property used for display (witel_display is witel_old).
-    // But we can filter by the block.
-    // Simpler approach: Just filter the parent rows and their subsequent children.
-    // Or simpler: The backend returns totals for Witel. If filtering by Witel, maybe we should re-fetch?
-    // For now, let's just filter the list if possible, otherwise show all.
-    // Given the structure, client-side filtering of this flattened tree is tricky without an ID reference.
-    // Let's rely on the backend or just hide rows.
-    
-    // Actually, the simplest way for this specific structure is to check if the row belongs to the selected witel.
-    // But child rows only have `witel_old` in `witel_display`. They don't have a `parent_witel` field in the response I designed?
-    // Wait, in my backend controller:
-    // `const witel = row.witel || 'Unknown';` -> this is used for grouping.
-    // The child object pushed to `finalReportData` is the raw row + extra fields.
-    // So the child object DOES have `witel` property from the DB query!
-    // `SELECT witel, witel_old, ...`
-    // So yes, `row.witel` exists on both Parent and Child rows.
-    
     return reportData.filter(row => row.witel === selectedWitel)
   }, [reportData, selectedWitel])
 
   const handleExport = () => {
-    // Implement Excel export download
-    // Since this is a specialized report, we might need a dedicated endpoint or handle it client side.
-    // For now, let's trigger the download using the existing export endpoint pattern if available, 
-    // or just alert if not ready.
-    // The user asked to match old code which used `window.location.href`.
     const params = new URLSearchParams({ 
         start_date: startDate.toISOString(), 
         end_date: endDate.toISOString() 
