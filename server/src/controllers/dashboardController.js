@@ -966,25 +966,20 @@ export const getHSIDashboard = async (req, res, next) => {
     const mapStatusArr = map_status ? map_status.split(',') : []
 
     // Base Filter (Scope RSO2)
-    let whereClause = {
+    let baseWhere = {
       witel: { in: RSO2_WITELS }
     }
 
     if (selectedWitels.length > 0) {
-      whereClause.witel = { in: selectedWitels }
+      baseWhere.witel = { in: selectedWitels }
     }
     if (selectedBranches.length > 0) {
-      whereClause.witelOld = { in: selectedBranches }
+      baseWhere.witelOld = { in: selectedBranches }
     }
-    if (start_date && end_date) {
-      whereClause.orderDate = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
-      }
-    }
-
+    
+    // Search
     if (search) {
-      whereClause.OR = [
+      baseWhere.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
         { customerName: { contains: search, mode: 'insensitive' } },
         { nomor: { contains: search, mode: 'insensitive' } }
@@ -997,10 +992,28 @@ export const getHSIDashboard = async (req, res, next) => {
       dimension = 'witelOld'
     }
 
-    // --- CHART 1: Total Order per Dimensi ---
+    // --- CLAUSE 1: Order Date (For Charts 1, 2, 3, Trend, Table) ---
+    let whereOrderDate = { ...baseWhere }
+    if (start_date && end_date) {
+      whereOrderDate.orderDate = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    // --- CLAUSE 2: PS Date (For Charts 4, 5, 6 - Requested TGL_PS, using lastUpdatedDate as proxy due to nulls) ---
+    let wherePsDate = { ...baseWhere }
+    if (start_date && end_date) {
+      wherePsDate.lastUpdatedDate = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    // --- CHART 1: Total Order per Dimensi (Order Date) ---
     const chart1Raw = await prisma.hsiData.groupBy({
       by: [dimension],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
@@ -1009,12 +1022,10 @@ export const getHSIDashboard = async (req, res, next) => {
       value: i._count.id 
     }))
 
-    // --- CHART 2: Komposisi Status (Mapping manual) ---
-    // Prisma tidak support Case When di GroupBy, jadi tarik dulu lalu grouping di JS
-    // Alternatif: Query Raw jika performa lambat, tapi untuk dashboard overview ini masih aman
+    // --- CHART 2: Komposisi Status (Order Date) ---
     const chart2Raw = await prisma.hsiData.groupBy({
       by: ['kelompokStatus'],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true }
     })
     const statusGroups = { Completed: 0, Cancel: 0, Open: 0 }
@@ -1033,10 +1044,10 @@ export const getHSIDashboard = async (req, res, next) => {
       value: statusGroups[key] 
     }))
 
-    // --- CHART 3: Tren Jenis Layanan ---
+    // --- CHART 3: Tren Jenis Layanan (Order Date) ---
     const chart3Raw = await prisma.hsiData.groupBy({
       by: ['typeLayanan'],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10
@@ -1047,10 +1058,10 @@ export const getHSIDashboard = async (req, res, next) => {
       total_amount: i._count.id 
     }))
 
-    // --- CHART 4: Sebaran PS per Dimensi ---
+    // --- CHART 4: Sebaran PS per Dimensi (PS Date) ---
     const chart4Raw = await prisma.hsiData.groupBy({
       by: [dimension],
-      where: { ...whereClause, kelompokStatus: 'PS' },
+      where: { ...wherePsDate, kelompokStatus: 'PS' },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
@@ -1059,66 +1070,68 @@ export const getHSIDashboard = async (req, res, next) => {
       value: i._count.id 
     }))
 
-    // --- CHART 5: Cancel FCC (Categorized) ---
+    // --- CHART 5: Cancel FCC (Updated: Read directly from suberrorcode) ---
+    // Menggunakan wherePsDate sesuai request filter "TGL_PS"
     const chart5Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'],
-      where: { ...whereClause, kelompokStatus: 'REJECT_FCC' },
+      where: { ...wherePsDate, kelompokStatus: 'REJECT_FCC' },
       _count: { id: true }
     })
-
-    const getFccCategory = (code) => {
-        if (!code) return 'Null';
-        const c = code.toUpperCase();
-        if (c.includes('FULL')) return 'ODP FULL';
-        if (c.includes('JAUH')) return 'ODP JAUH';
-        if (c.includes('TIDAK ADA') || c.includes('NO ODP')) return 'TIDAK ADA ODP';
-        return 'Lainnya';
-    }
 
     const chart5Map = {}
+    // Gunakan Set untuk menampung semua unique error code yang muncul di DB
+    const chart5KeySet = new Set()
+
     chart5Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
-      const category = getFccCategory(i.suberrorcode)
       
-      if (!chart5Map[dim]) chart5Map[dim] = { name: dim }
-      chart5Map[dim][category] = (chart5Map[dim][category] || 0) + i._count.id
+      // AMBIL RAW DATA: Jika null/kosong ganti string 'NULL', lalu uppercase agar seragam
+      const errorCode = i.suberrorcode ? i.suberrorcode.toUpperCase() : 'NULL'
+
+      // Masukkan ke koleksi keys (untuk dikirim ke frontend)
+      chart5KeySet.add(errorCode)
+
+      // Inisialisasi object per wilayah jika belum ada
+      if (!chart5Map[dim]) chart5Map[dim] = { name: dim, total: 0 }
+      
+      // Assign jumlah count langsung ke kode error aslinya
+      chart5Map[dim][errorCode] = (chart5Map[dim][errorCode] || 0) + i._count.id
+      chart5Map[dim].total += i._count.id
     })
     
-    // Fixed keys for consistent legend
-    const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
-    const chart5Data = Object.values(chart5Map)
-
-    // --- CHART 6: Cancel Non-FCC (Special Filter by TGL_PS) ---
-    // Logika khusus: Cancel Non-FCC biasanya difilter berdasarkan tgl_ps, bukan order_date
-    let cancelWhere = { ...whereClause }
-    delete cancelWhere.orderDate
+    // Sort Data: Urutkan wilayah berdasarkan total error terbanyak (Descending)
+    const chart5Data = Object.values(chart5Map).sort((a, b) => b.total - a.total)
     
-    cancelWhere.kelompokStatus = 'CANCEL'
-    if (start_date && end_date) {
-      cancelWhere.tglPs = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
-      }
-    }
+    // Sort Keys: Ubah Set ke Array agar bisa dibaca frontend
+    const chart5Keys = Array.from(chart5KeySet).sort()
 
+    // --- CHART 6: Cancel Non-FCC (PS Date, Sorted) ---
     const chart6Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'], 
-      where: cancelWhere,
+      where: { ...wherePsDate, kelompokStatus: 'CANCEL' },
       _count: { id: true }
     })
-    const chart6Keys = [...new Set(chart6Raw.map(i => i.suberrorcode || 'Null'))]
+    
     const chart6Map = {}
+    const chart6KeySet = new Set()
+    
     chart6Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
       const err = i.suberrorcode || 'Null'
-      if (!chart6Map[dim]) chart6Map[dim] = { name: dim }
+      chart6KeySet.add(err)
+      
+      if (!chart6Map[dim]) chart6Map[dim] = { name: dim, total: 0 }
       chart6Map[dim][err] = (chart6Map[dim][err] || 0) + i._count.id
+      chart6Map[dim].total += i._count.id
     })
-    const chart6Data = Object.values(chart6Map)
+    
+    // Sort Descending by Total Record Count
+    const chart6Data = Object.values(chart6Map).sort((a, b) => b.total - a.total)
+    const chart6Keys = [...chart6KeySet]
 
-    // --- MAP DATA ---
+    // --- MAP DATA (Order Date) ---
     const mapWhere = { 
-      ...whereClause, 
+      ...whereOrderDate, 
       gpsLatitude: { not: null }, 
       gpsLongitude: { not: null } 
     }
@@ -1178,9 +1191,9 @@ export const getHSIDashboard = async (req, res, next) => {
       }
     }).filter(i => i !== null)
 
-    // --- TREND CHART ---
+    // --- TREND CHART (Order Date) ---
     const trendRaw = await prisma.hsiData.findMany({ 
-      where: whereClause, 
+      where: whereOrderDate, 
       select: { orderDate: true, kelompokStatus: true }, 
       orderBy: { orderDate: 'asc' } 
     })
@@ -1197,10 +1210,10 @@ export const getHSIDashboard = async (req, res, next) => {
     })
     const chartTrend = Object.values(trendMap)
 
-    // --- TABLE DATA ---
+    // --- TABLE DATA (Order Date) ---
     const skip = (Number(page) - 1) * Number(limit)
     const tableDataRaw = await prisma.hsiData.findMany({
-      where: whereClause, 
+      where: whereOrderDate, 
       take: Number(limit), 
       skip: skip, 
       orderBy: { orderDate: 'desc' },
@@ -1229,9 +1242,9 @@ export const getHSIDashboard = async (req, res, next) => {
 
     // Stats Cards
     const stats = {
-      total: await prisma.hsiData.count({ where: whereClause }),
-      completed: await prisma.hsiData.count({ where: { ...whereClause, kelompokStatus: 'PS' } }),
-      open: await prisma.hsiData.count({ where: { ...whereClause, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } } })
+      total: await prisma.hsiData.count({ where: whereOrderDate }),
+      completed: await prisma.hsiData.count({ where: { ...whereOrderDate, kelompokStatus: 'PS' } }),
+      open: await prisma.hsiData.count({ where: { ...whereOrderDate, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } } })
     }
 
     // Branch Mapping (Untuk Dropdown)

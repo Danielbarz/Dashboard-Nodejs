@@ -81,7 +81,7 @@ export default function DashboardHSI() {
     const chart6Keys = useMemo(() => {
         if (!chartData.chart6Data) return [];
         const keys = new Set();
-        chartData.chart6Data.forEach(item => Object.keys(item).forEach(k => { if(k !== 'name') keys.add(k) }));
+        chartData.chart6Data.forEach(item => Object.keys(item).forEach(k => { if(k !== 'name' && k !== 'total') keys.add(k) }));
         return Array.from(keys);
     }, [chartData.chart6Data]);
 
@@ -166,7 +166,7 @@ export default function DashboardHSI() {
                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg shadow border h-96 flex flex-col">
-                            <h3 className="text-md font-bold mb-4 text-center">Sebaran PS per {dimensionLabel}</h3>
+                            <h3 className="text-md font-bold mb-4 text-center">TOTAL PS per {dimensionLabel}</h3>
                             <div className="flex-1 w-full min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
@@ -202,7 +202,7 @@ export default function DashboardHSI() {
                                         <YAxis />
                                         <Tooltip />
                                         <Legend />
-                                        {chartData.chart5Data && Object.keys(chartData.chart5Data[0] || {}).filter(k=>k!=='name').map((key, idx) => (
+                                        {chartData.chart5Data && Object.keys(chartData.chart5Data[0] || {}).filter(k=>k!=='name' && k!=='total').map((key, idx) => (
                                             <Bar key={key} dataKey={key} stackId="a" fill={COLORS[idx % COLORS.length]} isAnimationActive={false} />
                                         ))}
                                     </BarChart>
