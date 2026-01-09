@@ -169,13 +169,22 @@ export default function DashboardHSI() {
                             <h3 className="text-md font-bold mb-4 text-center">Sebaran PS per {dimensionLabel}</h3>
                             <div className="flex-1 w-full min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartData.chart4}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="product" fontSize={10} />
-                                        <YAxis />
+                                    <PieChart>
+                                        <Pie 
+                                            data={chartData.chart4} 
+                                            dataKey="value" 
+                                            nameKey="product" 
+                                            cx="50%" cy="50%" 
+                                            outerRadius={80} 
+                                            fill="#82ca9d" 
+                                            label 
+                                            isAnimationActive={false} 
+                                        >
+                                            {chartData.chart4?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                        </Pie>
                                         <Tooltip />
-                                        <Bar dataKey="value" fill="#82ca9d" name="PS" isAnimationActive={false} />
-                                    </BarChart>
+                                        <Legend />
+                                    </PieChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>

@@ -2,21 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const ReportsHSI = () => {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const formatDateLocal = (date) => {
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
-  const [endDate, setEndDate] = useState(formatDateLocal(now))
+  const [startDate, setStartDate] = useState(startOfMonth)
+  const [endDate, setEndDate] = useState(now)
   const [selectedWitel, setSelectedWitel] = useState('')
   const [tableData, setTableData] = useState([])
   const [totals, setTotals] = useState({})
@@ -24,7 +18,7 @@ const ReportsHSI = () => {
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-  // --- Helpers from PHP Version ---
+  // --- Helpers ---
   const formatNumber = (num) => {
     return new Intl.NumberFormat('id-ID').format(num || 0);
   };
@@ -51,10 +45,14 @@ const ReportsHSI = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
         {
-          params: { start_date: startDate, end_date: endDate },
+          params: { 
+            start_date: startDate.toISOString(), 
+            end_date: endDate.toISOString() 
+          },
           headers: { Authorization: `Bearer ${token}` }
         }
       )
+      
       if (response.data?.data) {
         setTableData(response.data.data.tableData || [])
         setTotals(response.data.data.totals || {})
@@ -67,28 +65,20 @@ const ReportsHSI = () => {
   }
 
   useEffect(() => {
-    fetchData()
+    if (startDate && endDate) {
+        fetchData()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate])
 
   const handleExport = () => {
-    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-hsi?${params.toString()}`
+    const params = new URLSearchParams({ 
+        start_date: startDate.toISOString(), 
+        end_date: endDate.toISOString() 
+    })
+    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
   }
 
-  // Filter is done on backend for RSO, but frontend filter for specific view
-  // Note: Since backend returns hierarchical flat list (Parent -> Children), 
-  // simple filter might break the hierarchy visual if not careful.
-  // Ideally, if user selects "BALI", we should show BALI parent and its children.
-  // But for now, let's keep it simple: if selectedWitel, filter by witel (parent) AND its children (witel_old logic not needed if backend grouped nicely, but here we have flat list).
-  // The current backend returns a flat list where children follow their parent.
-  // Row structure: { witel_display, row_type: 'main'|'sub', ... }
-  
-  // Actually, filtering a flat hierarchical list is tricky. 
-  // Let's rely on the fact that if a parent matches, we probably want its children too.
-  // Or, since the backend sends EVERYTHING, we can filter.
-  // Since 'witel' property exists on all rows (parent has it, child has it as parent reference), we can filter by that.
-  
   const displayData = React.useMemo(() => {
     if (!selectedWitel) return tableData
     return tableData.filter(row => row.witel === selectedWitel)
@@ -98,32 +88,48 @@ const ReportsHSI = () => {
     <>
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
           <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
             <option value="">Semua Witel</option>
             {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
           </select>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+          <div className="flex gap-2 items-center relative z-50"> 
+            <div className="relative z-50">
+                <DatePicker 
+                    selected={startDate} 
+                    onChange={(date) => setStartDate(date)} 
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                    placeholderText="Start Date"
+                    className="border border-gray-300 rounded text-xs p-1.5 w-28 cursor-pointer focus:ring-blue-500 focus:border-blue-500"
+                />
             </div>
-            <span className="text-gray-400 font-light">|</span>
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+            <span className="text-gray-400">-</span>
+            <div className="relative z-50">
+                <DatePicker 
+                    selected={endDate} 
+                    onChange={(date) => setEndDate(date)} 
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    placeholderText="End Date"
+                    className="border border-gray-300 rounded text-xs p-1.5 w-28 cursor-pointer focus:ring-blue-500 focus:border-blue-500"
+                />
             </div>
+            
+            <button onClick={fetchData} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded hover:bg-blue-700 font-bold shadow transition">
+                Go
+            </button>
+            
+            <button 
+                onClick={handleExport} 
+                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition ml-2"
+            >
+                <FiDownload size={16}/> Excel
+            </button>
           </div>
-
-          <button onClick={fetchData} className="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 whitespace-nowrap h-10">
-            Refresh
-          </button>
-
-          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
-            <FiDownload className="mr-2" size={16} />
-            Ekspor Report
-          </button>
         </div>
       </div>
 
@@ -131,10 +137,9 @@ const ReportsHSI = () => {
         <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wide mb-4">
             Performance Report HSI Per Witel
         </h3>
-        <div className="overflow-x-auto max-h-[80vh]">
+        <div className="overflow-x-auto max-h-[80vh] relative z-0">
           <table className="w-full text-[10px] border-collapse border border-slate-400 text-center font-sans">
             
-            {/* TABLE HEAD */}
             <thead className="text-white font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
                 <tr>
                     <th className={`border border-slate-300 p-2 min-w-[150px] sticky left-0 z-30 ${colors.blue}`} rowSpan={4}>Witel</th>
@@ -186,7 +191,6 @@ const ReportsHSI = () => {
                 </tr>
             </thead>
 
-            {/* TABLE BODY */}
             <tbody className="bg-white text-gray-700">
                 {loading ? (
                     <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Loading data...</td></tr>
@@ -208,21 +212,21 @@ const ReportsHSI = () => {
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.registered)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.inpro_sc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.inprogress_sc)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.qc1)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fcc)}</td>
-                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.cancel_by_fcc || row.rjct_fcc)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_new_manja || row.survey_manja)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.unsc || row.un_sc)}</td>
+                        <td className="border border-slate-300 p-1 text-red-600 font-bold">{formatNumber(row.cancel_by_fcc)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.survey_new_manja)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.un_sc)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_1_hari || row.pi_under_24)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_1_3_hari || row.pi_24_72)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_3_hari || row.pi_over_72)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_under_1_hari)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_1_3_hari)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_3_hari)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_pi)}</td>
                         
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_plgn || row.fo_wfm_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_teknis || row.fo_wfm_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_sys || row.fo_wfm_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_sys)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_others)}</td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_uim)}</td>
@@ -231,11 +235,11 @@ const ReportsHSI = () => {
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_fallout)}</td>
                         
                         <td className="border border-slate-300 p-1 bg-green-50 font-bold">{formatNumber(row.act_comp)}</td>
-                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.jml_comp_ps || row.ps)}</td>
+                        <td className="border border-slate-300 p-1 bg-green-100 font-bold">{formatNumber(row.jml_comp_ps)}</td>
 
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_plgn || row.cancel_plgn)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_teknis || row.cancel_teknis)}</td>
-                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_sys || row.cancel_system)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_plgn)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_teknis)}</td>
+                        <td className="border border-slate-300 p-1">{formatNumber(row.cancel_kndl_sys)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.cancel_others)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50 font-bold">{formatNumber(row.total_cancel)}</td>
 
@@ -250,7 +254,6 @@ const ReportsHSI = () => {
                 )))}
             </tbody>
 
-            {/* TABLE FOOTER (TOTALS) */}
             <tfoot className="sticky bottom-0 z-20">
                 <tr className={totalRowStyle}>
                     <td className="border border-slate-400 p-2 sticky left-0 z-30 bg-[#cccccc]">GRAND TOTAL</td>
@@ -261,7 +264,7 @@ const ReportsHSI = () => {
                     <td className="border border-slate-400 p-1">{formatNumber(totals.fcc)}</td>
                     <td className="border border-slate-400 p-1 text-red-600">{formatNumber(totals.cancel_by_fcc)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.survey_new_manja)}</td>
-                    <td className="border border-slate-400 p-1">{formatNumber(totals.unsc)}</td>
+                    <td className="border border-slate-400 p-1">{formatNumber(totals.un_sc)}</td>
 
                     <td className="border border-slate-400 p-1">{formatNumber(totals.pi_under_1_hari)}</td>
                     <td className="border border-slate-400 p-1">{formatNumber(totals.pi_1_3_hari)}</td>

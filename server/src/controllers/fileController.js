@@ -668,10 +668,10 @@ export const uploadFile = async (req, res, next) => {
             kelompok_kendala: ['kelompok_kendala'], kelompok_status: ['kelompok_status'], hero: ['hero'], addon: ['addon'],
             tgl_ps: ['tgl_ps', 'tanggal_ps'], status_message: ['status_message'], package_name: ['package_name'],
             group_paket: ['group_paket'], reason_cancel: ['reason_cancel'], keterangan_cancel: ['keterangan_cancel'],
-            tgl_manja: ['tgl_manja'], detail_manja: ['detail_manja'], suberrorcode: ['suberrorcode'], engineermemo: ['engineermemo'],
-            tahun: ['tahun'], bulan: ['bulan'], tanggal: ['tanggal'], ps_1: ['ps 1', 'ps1'], cek: ['cek'], hasil: ['hasil'],
-            telda: ['telda'], data_proses: ['data_proses'], no_order_revoke: ['no_order_revoke', 'no_order_revol'], data_ps_revoke: ['data_ps_revoke'],
-            untuk_ps_pi: ['untuk_ps_pi'], untuk_ps_re: ['untuk_ps_re']
+            tgl_manja: ['tgl_manja', 'tgl manja'], detail_manja: ['detail_manja', 'detail manja'], suberrorcode: ['suberrorcode'], engineermemo: ['engineermemo'],
+            tahun: ['tahun'], bulan: ['bulan'], tanggal: ['tanggal'], cek: ['cek'], hasil: ['hasil'],
+            telda: ['telda'], data_proses: ['data_proses', 'data proses'], no_order_revoke: ['no_order_revoke', 'no_order_revol', 'no order revol'], data_ps_revoke: ['data_ps_revoke', 'data ps revoke'],
+            untuk_ps_pi: ['untuk_ps_pi', 'untuk ps/pi'], untuk_ps_re: ['untuk_ps_re', 'untuk ps/re']
           }
 
           const hsiRow = {}

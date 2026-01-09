@@ -177,9 +177,9 @@ model HsiData {
   detailManja       String?   @map("detail_manja")
   suberrorcode      String?
   engineermemo      String?
-  tahun             Int?
-  bulan             Int?
-  tanggal           Int?
+  tahun             String?
+  bulan             String?
+  tanggal           String?
   ps1               String?   @map("ps_1")
   cek               String?
   hasil             String?
