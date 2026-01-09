@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload } from 'react-icons/fi'
+import { FiDownload, FiRefreshCw } from 'react-icons/fi'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const ReportsHSI = () => {
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const [startDate, setStartDate] = useState(startOfMonth)
-  const [endDate, setEndDate] = useState(now)
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
   const [selectedWitel, setSelectedWitel] = useState('')
   const [reportData, setReportData] = useState([])
   const [totals, setTotals] = useState({})
@@ -42,19 +39,21 @@ const ReportsHSI = () => {
     try {
       setLoading(true)
       const token = localStorage.getItem('accessToken')
+      const params = {}
+      if (startDate) params.start_date = startDate.toISOString()
+      if (endDate) params.end_date = endDate.toISOString()
+
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
         {
-          params: { 
-            start_date: startDate.toISOString(), 
-            end_date: endDate.toISOString() 
-          },
+          params,
           headers: { Authorization: `Bearer ${token}` }
         }
       )
       
       if (response.data?.data) {
-        setReportData(response.data.data.reportData || [])
+        // Backend returns tableData, not reportData
+        setReportData(response.data.data.tableData || response.data.data.reportData || [])
         setTotals(response.data.data.totals || {})
       }
     } catch (error) {
@@ -65,9 +64,7 @@ const ReportsHSI = () => {
   }
 
   useEffect(() => {
-    if (startDate && endDate) {
-        fetchData()
-    }
+    fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate])
 
@@ -77,11 +74,97 @@ const ReportsHSI = () => {
   }, [reportData, selectedWitel])
 
   const handleExport = () => {
-    const params = new URLSearchParams({ 
-        start_date: startDate.toISOString(), 
-        end_date: endDate.toISOString() 
-    })
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate.toISOString())
+    if (endDate) params.append('end_date', endDate.toISOString())
+    
     window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
+  }
+
+  // Reset all filters
+  const handleResetFilter = () => {
+    setStartDate(null)
+    setEndDate(null)
+    setSelectedWitel('')
+  }
+
+  // Export to Excel (CSV format)
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk di-export')
+      return
+    }
+
+    // Define headers
+    const headers = [
+      'Witel', 'PRE PI', 'Registered', 'Inpro SC', 'QC1', 'FCC', 'RJCT FCC', 'Survey Manja', 'UN-SC',
+      'PI < 1 Hari', 'PI 1-3 Hari', 'PI > 3 Hari', 'Total PI',
+      'FO WFM Plgn', 'FO WFM Teknis', 'FO WFM System', 'FO WFM Others',
+      'FO UIM', 'FO ASP', 'FO OSM', 'Total Fallout',
+      'ACT COMP', 'JML COMP (PS)',
+      'Cancel Plgn', 'Cancel Teknis', 'Cancel System', 'Cancel Others', 'Total Cancel',
+      'Revoke', 'PI/RE %', 'PS/RE %', 'PS/PI %'
+    ]
+
+    // Map data rows
+    const rows = filteredData.map(row => [
+      row.witel || row.witel_display || '',
+      row.pre_pi || 0,
+      row.registered || 0,
+      row.inpro_sc || row.inprogress_sc || 0,
+      row.qc1 || 0,
+      row.fcc || 0,
+      row.rjct_fcc || row.cancel_by_fcc || 0,
+      row.survey_manja || row.survey_new_manja || 0,
+      row.un_sc || row.unsc || 0,
+      row.pi_under_24 || row.pi_under_1_hari || 0,
+      row.pi_24_72 || row.pi_1_3_hari || 0,
+      row.pi_over_72 || row.pi_over_3_hari || 0,
+      row.total_pi || 0,
+      row.fo_wfm_plgn || row.fo_wfm_kndl_plgn || 0,
+      row.fo_wfm_teknis || row.fo_wfm_kndl_teknis || 0,
+      row.fo_wfm_system || row.fo_wfm_kndl_sys || 0,
+      row.fo_wfm_others || 0,
+      row.fo_uim || 0,
+      row.fo_asp || 0,
+      row.fo_osm || 0,
+      row.total_fallout || 0,
+      row.act_comp || 0,
+      row.ps || row.jml_comp_ps || 0,
+      row.cancel_plgn || row.cancel_kndl_plgn || 0,
+      row.cancel_teknis || row.cancel_kndl_teknis || 0,
+      row.cancel_system || row.cancel_kndl_sys || 0,
+      row.cancel_others || 0,
+      row.total_cancel || 0,
+      row.revoke || 0,
+      row.perf_pi_re || row.pi_re_percent || 0,
+      row.perf_ps_re || row.ps_re_percent || 0,
+      row.perf_ps_pi || row.ps_pi_percent || 0
+    ])
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Add BOM for Excel UTF-8 compatibility
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    
+    // Create download link
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Generate filename with date
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.download = `Report_HSI_${dateStr}.csv`
+    
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -124,8 +207,17 @@ const ReportsHSI = () => {
             </button>
             
             <button 
-                onClick={handleExport} 
-                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition ml-2"
+                onClick={handleResetFilter} 
+                className="bg-gray-500 text-white text-xs px-3 py-1.5 rounded hover:bg-gray-600 flex items-center gap-1 font-bold shadow transition"
+                title="Reset Filter"
+            >
+                <FiRefreshCw size={14}/> Reset
+            </button>
+            
+            <button 
+                onClick={handleExportExcel} 
+                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition"
+                disabled={filteredData.length === 0}
             >
                 <FiDownload size={16}/> Excel
             </button>
