@@ -13,6 +13,11 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [fileUploaded, setFileUploaded] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Modal State
+  const [showModal, setShowModal] = useState(false) // 'success' | 'error' | false
+  const [modalMessage, setModalMessage] = useState('')
+  const [modalDetails, setModalDetails] = useState('')
+
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
@@ -72,13 +77,13 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const checkJobStatus = async (jobId, batchId) => {
     let attempts = 0
     const maxAttempts = 30 // 30 seconds
-    
+
     while (attempts < maxAttempts) {
       attempts++
       try {
         const statusResponse = await fileService.getJobStatus(jobId)
         const jobData = statusResponse?.data?.data
-        
+
         if (jobData?.state === 'completed' && jobData?.result) {
           console.log('✅ Job completed:', jobData.result)
           return jobData.result
@@ -88,11 +93,11 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       } catch (err) {
         console.error(`Check attempt ${attempts} error:`, err.message)
       }
-      
+
       // Wait 1 second before next attempt
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
-    
+
     // Timeout - return default result
     console.log('Job status check timeout after 30 seconds')
     return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
@@ -133,7 +138,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       if (!uploadData) throw new Error('No response data from upload')
 
       const { jobId, batchId, totalRows, successRows, failedRows } = uploadData
-      
+
       let finalResult = { totalRows: 0, successRows: 0, failedRows: 0, batchId }
 
       if (jobId) {
@@ -143,17 +148,22 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       } else {
         // Direct Mode (Sync/Local)
         setLogLines((prev) => [...prev, '✅ Pemrosesan langsung selesai.'])
-        finalResult = { 
-          totalRows: totalRows || 0, 
-          successRows: successRows || 0, 
-          failedRows: failedRows || 0, 
-          batchId 
+        finalResult = {
+          totalRows: totalRows || 0,
+          successRows: successRows || 0,
+          failedRows: failedRows || 0,
+          batchId
         }
       }
-      
+
       setSuccess(true)
       setFileUploaded(true)
       setUploadProgress(null)
+
+      const successMsg = `Batch: ${finalResult.batchId}. Sukses: ${finalResult.successRows}, Gagal: ${finalResult.failedRows}`
+      setModalMessage(successMsg)
+      setModalDetails('')
+      setShowModal('success')
 
       setLogLines((prev) => [
         ...prev,
@@ -164,15 +174,18 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       if (onSuccess) {
         onSuccess(finalResult)
       }
-
-      setTimeout(() => {
-        setSuccess(false)
-      }, 3000)
     } catch (err) {
       console.error('Upload error:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
+      const errorDetails = err.response?.data?.details || '' // Assuming backend might send details
+
       setError(errorMessage)
       setUploadProgress(null)
+
+      setModalMessage(errorMessage)
+      setModalDetails(errorDetails ? JSON.stringify(errorDetails, null, 2) : '')
+      setShowModal('error')
+
       setLogLines((prev) => [...prev, `Gagal: ${errorMessage}`])
     } finally {
       setLoading(false)
@@ -343,6 +356,50 @@ Tindakan ini tidak dapat dibatalkan. Data database akan dikosongkan.`)) {
           </button>
         </div>
       </form>
+
+      {/* Status Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+            <div className={`p-6 text-center ${showModal === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${
+                showModal === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+              }`}>
+                {showModal === 'success' ? (
+                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${showModal === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                {showModal === 'success' ? 'Upload Berhasil!' : 'Upload Gagal'}
+              </h3>
+              <p className="text-gray-600 font-medium mb-2">{modalMessage}</p>
+              {modalDetails && (
+                <div className="mt-2 p-3 bg-white rounded border text-sm text-left text-gray-700 max-h-32 overflow-y-auto">
+                  {modalDetails}
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 flex justify-center">
+              <button
+                onClick={() => setShowModal(false)}
+                className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors shadow-md ${
+                  showModal === 'success'
+                    ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                    : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                }`}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
