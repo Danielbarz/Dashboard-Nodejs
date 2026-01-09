@@ -5,7 +5,8 @@ import {
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  truncateJT
 } from '../controllers/adminController.js'
 
 const router = express.Router()
@@ -20,5 +21,8 @@ router.get('/users/:id', getUserById)
 router.post('/users', createUser)
 router.put('/users/:id', updateUser)
 router.delete('/users/:id', deleteUser)
+
+// Maintenance: truncate JT data (spmk_mom)
+router.post('/truncate/jt', truncateJT)
 
 export default router

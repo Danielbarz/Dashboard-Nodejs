@@ -1,55 +1,144 @@
 ﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
+import PO_MAPPING from '../utils/poMapping.js'
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = { statusProyek: 'JT' }
+    // Accept all spmk_mom rows (JT import includes all records)
+    // Filter out: SEMARANG, SOLO, YOGYA, PURWOKERTO, MAGELANG, UNKNOWN (both Parent and Child)
+    const excludedWitels = [
+      'WITEL SEMARANG JATENG UTARA',
+      'WITEL SOLO JATENG TIMUR',
+      'WITEL YOGYA JATENG SELATAN',
+      'SEMARANG JATENG UTARA',
+      'SOLO JATENG TIMUR',
+      'YOGYA JATENG SELATAN',
+      'WITEL SEMARANG',
+      'WITEL SOLO',
+      'WITEL YOGYA',
+      'WITEL PURWOKERTO',
+      'WITEL MAGELANG',
+      'SEMARANG',
+      'SOLO',
+      'YOGYA',
+      'PURWOKERTO',
+      'MAGELANG',
+      'Unknown',
+      ''
+    ]
 
-    if (start_date && end_date) {
-      whereClause.createdAt = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
+    const whereClause = {
+      witelBaru: {
+        notIn: excludedWitels,
+        not: null
+      },
+      witelLama: {
+        notIn: excludedWitels,
+        not: null
       }
     }
 
-    // Fetch all raw data to aggregate in memory for complex logic
-    const rawData = await prisma.spmkMom.findMany({
-      where: whereClause,
+    const applyDateFilter = (clause) => {
+      if (start_date && end_date) {
+        return {
+          ...clause,
+          AND: [
+            {
+              OR: [
+                {
+                  tanggalMom: {
+                    gte: new Date(start_date),
+                    lte: new Date(end_date)
+                  }
+                },
+                {
+                  createdAt: {
+                    gte: new Date(start_date),
+                    lte: new Date(end_date)
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+      return clause
+    }
+
+    // Fetch raw data; if empty with date filter, fallback to no date filter
+    let rawData = await prisma.spmkMom.findMany({
+      where: applyDateFilter(whereClause),
       select: {
         witelBaru: true,
+        witelLama: true,
         revenuePlan: true,
         goLive: true,
         populasiNonDrop: true,
         baDrop: true,
         statusTompsLastActivity: true,
-        statusIHld: true
+        statusIHld: true,
+        statusTompsNew: true,
+        poName: true
       }
     })
 
-    // Aggregate data
-    const witelMap = {}
-    
-    // Helper for parent witel
-    const getParentWitel = (witel) => {
-      const w = witel.toUpperCase()
-      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'].includes(w)) return 'BALI'
-      if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].includes(w)) return 'JATIM BARAT'
-      if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].includes(w)) return 'JATIM TIMUR'
-      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'].includes(w)) return 'NUSA TENGGARA'
-      if (['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].includes(w)) return 'SURAMADU'
-      return 'OTHER'
+    if (rawData.length === 0 && start_date && end_date) {
+      rawData = await prisma.spmkMom.findMany({
+        where: whereClause,
+        select: {
+          witelBaru: true,
+          witelLama: true,
+          revenuePlan: true,
+          goLive: true,
+          populasiNonDrop: true,
+          baDrop: true,
+          statusTompsLastActivity: true,
+          statusIHld: true,
+          statusTompsNew: true
+        }
+      })
     }
 
+    // Aggregate data: parent by witelBaru, child by witelLama
+    const witelMap = {}
+    
+    // Helper for parent witel (witelBaru is already parent)
+    const getParentWitel = (witelBaru) => witelBaru || 'OTHER'
+
     rawData.forEach(row => {
-      const witel = row.witelBaru || 'Unknown'
-      if (!witelMap[witel]) {
-        witelMap[witel] = {
-          witel,
-          parentWitel: getParentWitel(witel),
-          isParent: witel === getParentWitel(witel), // Mark as parent if name matches
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const parentKey = parent
+      const childKey = `${parent}|${child}` // unique key for parent+child combo
+
+      // Initialize parent if not exists
+      if (!witelMap[parentKey]) {
+        witelMap[parentKey] = {
+          witel: parent,
+          parentWitel: parent,
+          isParent: true,
+          jumlahLop: 0,
+          revAll: 0,
+          initial: 0,
+          survey: 0,
+          perizinan: 0,
+          instalasi: 0,
+          piOgp: 0,
+          golive_jml: 0,
+          golive_rev: 0,
+          drop: 0
+        }
+      }
+
+      // Initialize child if not exists
+      if (!witelMap[childKey]) {
+        witelMap[childKey] = {
+          witel: child,
+          parentWitel: parent,
+          isParent: false,
           jumlahLop: 0,
           revAll: 0,
           initial: 0,
@@ -64,61 +153,353 @@ export const getReportTambahan = async (req, res, next) => {
       }
 
       const revenue = parseFloat(row.revenuePlan || 0)
-      const isDrop = row.populasiNonDrop === 'N' || row.baDrop !== null
-      const isGoLive = row.goLive === 'Y'
+
+      // Logic "Progress Deploy" (User Source: ReportJTController.php)
+      // 1. Drop: populasiNonDrop='N'
+      // 2. GoLive: goLive='Y' && populasiNonDrop='Y'
+      // 3. Progress: goLive='N' && populasiNonDrop='Y' -> Check status_tomps_new
+
+      const isDrop = row.populasiNonDrop === 'N'
+      // If not drop, assuming populasiNonDrop is 'Y'
+      const isGoLive = row.goLive === 'Y' && !isDrop
 
       if (isDrop) {
-        witelMap[witel].drop++
+        witelMap[parentKey].drop++
+        witelMap[childKey].drop++
+        // Drop excluded from jumlahLop and revAll
       } else {
-        witelMap[witel].jumlahLop++
-        witelMap[witel].revAll += revenue
+        // Non-Drop (Includes GoLive and Progress)
+        witelMap[parentKey].jumlahLop++
+        witelMap[parentKey].revAll += revenue
+        witelMap[childKey].jumlahLop++
+        witelMap[childKey].revAll += revenue
 
         if (isGoLive) {
-          witelMap[witel].golive_jml++
-          witelMap[witel].golive_rev += revenue
-        } else {
-          // Map status to progress columns
-          const status = (row.statusTompsLastActivity || '').toLowerCase()
+          witelMap[parentKey].golive_jml++
+          witelMap[parentKey].golive_rev += revenue
+          witelMap[childKey].golive_jml++
+          witelMap[childKey].golive_rev += revenue
           
-          if (status.includes('survey') || status.includes('drm')) {
-            witelMap[witel].survey++
-          } else if (status.includes('izin') || status.includes('mos')) {
-            witelMap[witel].perizinan++
-          } else if (status.includes('instal') || status.includes('deploy')) {
-            witelMap[witel].instalasi++
-          } else if (status.includes('ogp') || status.includes('live')) {
-            witelMap[witel].piOgp++
+          // ALSO count GoLive projects as "FI-OGP Live" in Progress buckets so the chart isn't empty
+          witelMap[parentKey]['piOgp']++
+          witelMap[childKey]['piOgp']++
+        } else {
+          // Progress Phase (goLive='N' && nonDrop)
+          // Map status using statusIHld (contains phase info like 'Instalasi')
+          // statusTompsNew usually only contains 'INPROGRESS - XX%'
+          const statusText = (row.statusIHld || row.statusTompsNew || '').toUpperCase()
+          let bucket = 'initial'
+
+          if (statusText.includes('SURVEY') || statusText.includes('DRM') || statusText.includes('DESIGN')) {
+            bucket = 'survey'
+          } else if (statusText.includes('PERIZINAN') || statusText.includes('MOS') || statusText.includes('PERMIT') || statusText.includes('SITAC')) {
+            bucket = 'perizinan'
+          } else if (statusText.includes('INSTALASI') || statusText.includes('INSTALLATION') || statusText.includes('COMMTEST') || statusText.includes('UT') || statusText.includes('UJI TERIMA') || statusText.includes('CONSTRUCTION')) {
+            bucket = 'instalasi'
+          } else if (statusText.includes('FI') || statusText.includes('OGP') || statusText.includes('BAST') || statusText.includes('REKON') || statusText.includes('GO LIVE') || statusText.includes('GOLIVE') || statusText.includes('COMPLETED') || statusText.includes('CLOSED') || statusText.includes('LIVE')) {
+            bucket = 'piOgp'
           } else {
-            witelMap[witel].initial++
+            bucket = 'initial' // Default to Initial (including actual 'INITIAL' or unknown)
           }
+
+          witelMap[parentKey][bucket]++
+          witelMap[childKey][bucket]++
         }
       }
     })
 
-    const formattedTableData = Object.values(witelMap).map(row => ({
+    const formattedTableData = Object.values(witelMap)
+      .sort((a, b) => {
+        if (a.parentWitel < b.parentWitel) return -1
+        if (a.parentWitel > b.parentWitel) return 1
+        if (a.isParent && !b.isParent) return -1
+        if (!a.isParent && b.isParent) return 1
+        if (a.witel < b.witel) return -1
+        if (a.witel > b.witel) return 1
+        return 0
+      })
+      .map(row => ({
       ...row,
       persen_close: row.jumlahLop > 0 ? ((row.golive_jml / row.jumlahLop) * 100).toFixed(1) + '%' : '0.0%'
     }))
 
-    // Get project data (belum GO LIVE)
-    const projectData = await prisma.spmkMom.findMany({
+    // Project data (All Non-Drop projects, including Go Live)
+    // Modified to show history of longest projects regardless of status
+    let projectRows = await prisma.spmkMom.findMany({
       where: {
-        ...whereClause,
-        goLive: 'N'
+        ...applyDateFilter(whereClause),
+        populasiNonDrop: { not: 'N' }
       },
       select: {
         witelBaru: true,
+        witelLama: true,
         region: true,
         revenuePlan: true,
-        usia: true
+        usia: true,
+        templateDurasi: true,
+        idIHld: true,
+        uraianKegiatan: true,
+        statusTompsLastActivity: true,
+        tanggalMom: true,
+        poName: true,
+        goLive: true, // Need this to check status
+        statusProyek: true
       }
     })
+
+    if (projectRows.length === 0 && start_date && end_date) {
+      projectRows = await prisma.spmkMom.findMany({
+        where: {
+          ...whereClause,
+          populasiNonDrop: { not: 'N' }
+        },
+        select: {
+          witelBaru: true,
+          witelLama: true,
+          region: true,
+          revenuePlan: true,
+          usia: true,
+          templateDurasi: true,
+          idIHld: true,
+          uraianKegiatan: true,
+          statusTompsLastActivity: true,
+          tanggalMom: true,
+          poName: true,
+          goLive: true,
+          statusProyek: true
+        }
+      })
+    }
+
+    const projectMap = {}
+    projectRows.forEach(row => {
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const parentKey = parent
+      const childKey = `${parent}|${child}`
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      const tocThreshold = row.templateDurasi ? parseInt(row.templateDurasi) : 90
+      const dalamToc = usiaVal !== null && usiaVal <= tocThreshold
+
+      // Initialize parent if not exists
+      if (!projectMap[parentKey]) {
+        projectMap[parentKey] = {
+          witel: parent,
+          parentWitel: parent,
+          isParent: true,
+          dalam_toc: 0,
+          lewat_toc: 0,
+          jumlah_lop_progress: 0,
+          persen_dalam_toc: '0%'
+        }
+      }
+
+      // Initialize child if not exists
+      if (!projectMap[childKey]) {
+        projectMap[childKey] = {
+          witel: child,
+          parentWitel: parent,
+          isParent: false,
+          dalam_toc: 0,
+          lewat_toc: 0,
+          jumlah_lop_progress: 0,
+          persen_dalam_toc: '0%'
+        }
+      }
+
+      // Count in both parent and child
+      if (usiaVal !== null) {
+        if (dalamToc) {
+          projectMap[parentKey].dalam_toc += 1
+          projectMap[childKey].dalam_toc += 1
+        } else {
+          projectMap[parentKey].lewat_toc += 1
+          projectMap[childKey].lewat_toc += 1
+        }
+      }
+
+      projectMap[parentKey].jumlah_lop_progress += 1
+      projectMap[childKey].jumlah_lop_progress += 1
+    })
+
+    const projectData = Object.values(projectMap)
+      .sort((a, b) => {
+        if (a.parentWitel < b.parentWitel) return -1
+        if (a.parentWitel > b.parentWitel) return 1
+        if (a.isParent && !b.isParent) return -1
+        if (!a.isParent && b.isParent) return 1
+        if (a.witel < b.witel) return -1
+        if (a.witel > b.witel) return 1
+        return 0
+      })
+      .map(row => ({
+      ...row,
+      persen_dalam_toc: row.jumlah_lop_progress > 0
+        ? `${((row.dalam_toc / row.jumlah_lop_progress) * 100).toFixed(1)}%`
+        : '0%'
+    }))
+
+    // Top 3 usia per witel baru saja (tanpa witel lama)
+    const topByWitel = {}
+    projectRows.forEach(row => {
+      const witel = row.witelBaru || 'Unknown'
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      if (usiaVal === null) return
+
+      if (!topByWitel[witel]) topByWitel[witel] = []
+      topByWitel[witel].push({
+        witel,
+        ihld: row.idIHld,
+        nama_project: row.uraianKegiatan,
+        tanggal_mom: row.tanggalMom,
+        revenue: row.revenuePlan,
+        status_tomps: row.statusTompsLastActivity,
+        usia: usiaVal
+      })
+    })
+
+    const topUsiaByWitel = Object.entries(topByWitel).map(([witel, items]) => ({
+      witel,
+      items: items.sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 3)
+    }))
+
+    // Top 3 usia per PO dengan parent-child
+    const topByPo = {}
+    projectRows.forEach(row => {
+      const po = row.poName || 'Unknown'
+      const parent = row.witelBaru || 'Unknown'
+      const child = row.witelLama || 'Unknown'
+      const usiaVal = typeof row.usia === 'number' ? row.usia : null
+      if (usiaVal === null) return
+      if (!topByPo[po]) topByPo[po] = []
+      topByPo[po].push({
+        po,
+        witel: parent,
+        parentWitel: parent,
+        childWitel: child,
+        ihld: row.idIHld,
+        nama_project: row.uraianKegiatan,
+        tanggal_mom: row.tanggalMom,
+        revenue: row.revenuePlan,
+        status_tomps: row.statusTompsLastActivity,
+        usia: usiaVal
+      })
+    })
+
+    const topUsiaByPo = Object.entries(topByPo).map(([po, items]) => ({
+      po,
+      items: items.sort((a, b) => (b.usia || 0) - (a.usia || 0)).slice(0, 3)
+    }))
+
+    // --- NEW CHARTS AGGREGATION ---
+
+    // 1. Top 10 Mitra by Revenue
+    const mitraRevenueMap = {}
+    rawData.forEach(row => {
+      const po = (row.poName || '').trim() || 'Unknown'
+      // Skip Unknown POs for the chart to keep it clean
+      if (po === 'Unknown' || po === '#NAME?' || po === '#REF!') return
+
+      const revenue = parseFloat(row.revenuePlan || 0)
+      if (!mitraRevenueMap[po]) {
+        mitraRevenueMap[po] = { poName: po, totalRevenue: 0, projectCount: 0 }
+      }
+      mitraRevenueMap[po].totalRevenue += revenue
+      mitraRevenueMap[po].projectCount += 1
+    })
+    
+    const topMitraRevenue = Object.values(mitraRevenueMap)
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 10)
+
+    // 2. Trend Go-Live (Input vs Output)
+    // Use wider date range if not specified (e.g. 12 months back) to show meaningful trend
+    let trendStartDate = start_date ? new Date(start_date) : new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+    let trendEndDate = end_date ? new Date(end_date) : new Date()
+    
+    const trendMap = {}
+    
+    // RE-FETCHING raw data with dates included (Optimization: could be merged with initial query but let's keep safe)
+    const trendRows = await prisma.spmkMom.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { tanggalMom: { gte: trendStartDate, lte: trendEndDate } },
+              { tanggalGolive: { gte: trendStartDate, lte: trendEndDate } }
+            ]
+          },
+          // Apply same witel exclusions as main report
+          { witelBaru: { notIn: excludedWitels } }
+        ]
+      },
+      select: {
+        tanggalMom: true, // Input
+        tanggalGolive: true, // Output
+        goLive: true // Status needed for proxy logic
+      }
+    })
+
+    trendRows.forEach(row => {
+      // Input Trend (Based on MOM Date)
+      if (row.tanggalMom && row.tanggalMom >= trendStartDate && row.tanggalMom <= trendEndDate) {
+        const monthKey = row.tanggalMom.toISOString().slice(0, 7) // YYYY-MM
+        if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
+        trendMap[monthKey].input++
+      }
+
+      // Output Trend (Based on GoLive Date OR Proxy)
+      let outputDate = row.tanggalGolive
+      
+      // Fallback: If Done but no date, use MOM date as proxy
+      if (!outputDate && row.goLive === 'Y' && row.tanggalMom) {
+        outputDate = row.tanggalMom
+      }
+
+      if (outputDate && outputDate >= trendStartDate && outputDate <= trendEndDate) {
+        const monthKey = outputDate.toISOString().slice(0, 7) // YYYY-MM
+        if (!trendMap[monthKey]) trendMap[monthKey] = { month: monthKey, input: 0, output: 0 }
+        trendMap[monthKey].output++
+      }
+    })
+
+    const trendGolive = Object.values(trendMap).sort((a, b) => a.month.localeCompare(b.month))
+
+    // 3. Distribusi Bucket Usia (Health Check)
+    // Only for NOT GoLive projects
+    const bucketUsia = {
+      under30: 0,
+      between30and60: 0,
+      between60and90: 0,
+      over90: 0
+    }
+
+    projectRows.forEach(row => { // projectRows is already filtered for GoLive='N'
+      const usia = typeof row.usia === 'number' ? row.usia : 0
+      if (usia < 30) bucketUsia.under30++
+      else if (usia <= 60) bucketUsia.between30and60++
+      else if (usia <= 90) bucketUsia.between60and90++
+      else bucketUsia.over90++
+    })
+
+    const bucketUsiaData = [
+      { label: '< 30 Hari', count: bucketUsia.under30, color: '#22c55e' }, // Green
+      { label: '30 - 60 Hari', count: bucketUsia.between30and60, color: '#eab308' }, // Yellow
+      { label: '60 - 90 Hari', count: bucketUsia.between60and90, color: '#f97316' }, // Orange
+      { label: '> 90 Hari', count: bucketUsia.over90, color: '#ef4444' } // Red
+    ]
 
     successResponse(
       res,
       {
         tableData: formattedTableData,
-        projectData
+        projectData,
+        rawProjectRows: projectRows, // Send raw rows for Preview Table
+        topUsiaByWitel,
+        topUsiaByPo,
+        topMitraRevenue,
+        trendGolive,
+        bucketUsiaData
       },
       'Report Tambahan data retrieved successfully'
     )
@@ -340,34 +721,126 @@ export const getReportAnalysis = async (req, res, next) => {
 export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
+    
+    // Default range if not provided
+    const start = start_date ? new Date(start_date) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const end = end_date ? new Date(end_date) : new Date()
 
-    let whereClause = {}
+    // Query Aggregation Logic
+    // Menerjemahkan logic Excel ke SQL Case When
+    
+    const rawData = await prisma.$queryRaw`
+      SELECT 
+        COALESCE(witel, 'UNKNOWN') as witel,
+        COUNT(id) as total_rows,
+        
+        -- PRE PI: Belum masuk order, asumsi
+        SUM(CASE WHEN "status_resume" ILIKE '%PRE PI%' THEN 1 ELSE 0 END) as pre_pi,
 
-    if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
+        -- REGISTERED (RE): Total New Sales / Order Masuk
+        SUM(CASE WHEN "status_resume" IS NOT NULL THEN 1 ELSE 0 END) as registered,
 
-    const tableData = await prisma.hsiData.groupBy({
-      by: ['witel'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        upload: true
-      }
-    })
+        -- INPRO SC
+        SUM(CASE WHEN "status_resume" ILIKE '%SC%' AND "ps_1" != 'UNSC' THEN 1 ELSE 0 END) as inpro_sc,
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witel || 'Unknown',
-      totalHsi: row._count.id,
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-      avgRevenue: 0
+        -- QC1
+        SUM(CASE WHEN "status_resume" ILIKE '%QC%' THEN 1 ELSE 0 END) as qc1,
+
+        -- FCC
+        SUM(CASE WHEN "status_resume" ILIKE '%FCC%' AND "status_resume" NOT ILIKE '%REJECT%' THEN 1 ELSE 0 END) as fcc,
+
+        -- RJCT FCC
+        SUM(CASE WHEN "status_resume" ILIKE '%REJECT%' OR "status_resume" ILIKE '%DECLINE%' THEN 1 ELSE 0 END) as rjct_fcc,
+
+        -- SURVEY MANJA
+        SUM(CASE WHEN "status_resume" ILIKE '%SURVEY%' OR "status_resume" ILIKE '%MANJA%' THEN 1 ELSE 0 END) as survey_manja,
+
+        -- UN-SC
+        SUM(CASE WHEN "ps_1" = 'UNSC' OR "status_resume" ILIKE '%UNSC%' THEN 1 ELSE 0 END) as un_sc,
+
+        -- OGP AGING (PI)
+        -- Asumsi: PI based on date diff (now - order_date), for records that are still open/PI
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) < 24 THEN 1 ELSE 0 END) as pi_under_24,
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) BETWEEN 24 AND 72 THEN 1 ELSE 0 END) as pi_24_72,
+        SUM(CASE WHEN "ps_1" = 'OGP PROVI' AND (EXTRACT(EPOCH FROM (NOW() - "order_date"))/3600) > 72 THEN 1 ELSE 0 END) as pi_over_72,
+
+        -- FALLOUT WFM (Categorized)
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%PLGN%' THEN 1 ELSE 0 END) as fo_wfm_plgn,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%TEKNIS%' THEN 1 ELSE 0 END) as fo_wfm_teknis,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" ILIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_system,
+        SUM(CASE WHEN "ps_1" = 'FALLOUT' AND "status_resume" NOT ILIKE '%PLGN%' AND "status_resume" NOT ILIKE '%TEKNIS%' AND "status_resume" NOT ILIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_others,
+
+        -- FALLOUT OTHERS
+        SUM(CASE WHEN "status_resume" ILIKE '%UIM%' THEN 1 ELSE 0 END) as fo_uim,
+        SUM(CASE WHEN "status_resume" ILIKE '%ASP%' THEN 1 ELSE 0 END) as fo_asp,
+        SUM(CASE WHEN "status_resume" ILIKE '%OSM%' THEN 1 ELSE 0 END) as fo_osm,
+
+        -- ACT COMP / QC2
+        SUM(CASE WHEN "status_resume" ILIKE '%QC2%' OR "status_resume" ILIKE '%ACT COMP%' THEN 1 ELSE 0 END) as act_comp,
+
+        -- PS (COMPLETE)
+        SUM(CASE WHEN "ps_1" = 'PS' OR "status_resume" ILIKE '%Completed (PS)%' THEN 1 ELSE 0 END) as ps,
+
+        -- CANCEL Breakdown
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%PLGN%' OR "reason_cancel" ILIKE '%PLGN%') THEN 1 ELSE 0 END) as cancel_plgn,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%TEKNIS%' OR "reason_cancel" ILIKE '%TEKNI%') THEN 1 ELSE 0 END) as cancel_teknis,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND ("status_resume" ILIKE '%SISTEM%' OR "reason_cancel" ILIKE '%SISTEM%') THEN 1 ELSE 0 END) as cancel_system,
+        SUM(CASE WHEN "ps_1" = 'CANCEL' AND NOT ("status_resume" ILIKE '%PLGN%' OR "status_resume" ILIKE '%TEKNIS%' OR "status_resume" ILIKE '%SISTEM%') THEN 1 ELSE 0 END) as cancel_others,
+
+        -- REVOKE
+        SUM(CASE WHEN "ps_1" = 'REVOKE' OR "status_resume" ILIKE '%REVOKE%' OR "no_order_revoke" IS NOT NULL THEN 1 ELSE 0 END) as revoke
+
+      FROM "hsi_data"
+      WHERE "order_date" >= ${start} AND "order_date" <= ${end}
+      GROUP BY "witel"
+      ORDER BY "witel" ASC
+    `;
+
+    // Process BigInt to Number
+    const formattedTableData = rawData.map(row => ({
+      witel: row.witel,
+      pre_pi: Number(row.pre_pi),
+      registered: Number(row.registered),
+      inpro_sc: Number(row.inpro_sc),
+      qc1: Number(row.qc1),
+      fcc: Number(row.fcc),
+      rjct_fcc: Number(row.rjct_fcc),
+      survey_manja: Number(row.survey_manja),
+      un_sc: Number(row.un_sc),
+      
+      pi_under_24: Number(row.pi_under_24),
+      pi_24_72: Number(row.pi_24_72),
+      pi_over_72: Number(row.pi_over_72),
+      
+      fo_wfm_plgn: Number(row.fo_wfm_plgn),
+      fo_wfm_teknis: Number(row.fo_wfm_teknis),
+      fo_wfm_system: Number(row.fo_wfm_system),
+      fo_wfm_others: Number(row.fo_wfm_others),
+      
+      fo_uim: Number(row.fo_uim),
+      fo_asp: Number(row.fo_asp),
+      fo_osm: Number(row.fo_osm),
+      act_comp: Number(row.act_comp),
+      
+      ps: Number(row.ps),
+      
+      cancel_plgn: Number(row.cancel_plgn),
+      cancel_teknis: Number(row.cancel_teknis),
+      cancel_system: Number(row.cancel_system),
+      cancel_others: Number(row.cancel_others),
+      
+      revoke: Number(row.revoke),
+      
+      // Totals
+      total_pi: Number(row.pi_under_24) + Number(row.pi_24_72) + Number(row.pi_over_72),
+      total_fallout: Number(row.fo_wfm_plgn) + Number(row.fo_wfm_teknis) + Number(row.fo_wfm_system) + Number(row.fo_wfm_others) + Number(row.fo_uim) + Number(row.fo_asp) + Number(row.fo_osm),
+      total_cancel: Number(row.cancel_plgn) + Number(row.cancel_teknis) + Number(row.cancel_system) + Number(row.cancel_others)
+    })).map(row => ({
+      ...row,
+      // Calculate Percentages
+      perf_pi_re: row.registered ? ((row.total_pi / row.registered) * 100).toFixed(1) : 0,
+      perf_ps_re: row.registered ? ((row.ps / row.registered) * 100).toFixed(1) : 0,
+      perf_ps_pi: row.total_pi ? ((row.ps / row.total_pi) * 100).toFixed(1) : 0
     }))
 
     successResponse(
@@ -771,19 +1244,42 @@ export const getReportDatinDetails = async (req, res, next) => {
       segmen: row.segmen,
       subSegmen: row.subSegmen,
       kategori: row.kategori,
+      
+      // Detailed Fields
       kategoriUmur: row.kategoriUmur,
-      umurOrder: row.lamaKontrakHari, 
+      umurOrder: row.umurOrder,
+      lamaKontrak: row.lamaKontrakHari,
+      amortisasi: row.amortisasi,
+      
       billWitel: row.billWitel,
       custWitel: row.custWitel,
       serviceWitel: row.serviceWitel,
+      witelBaru: row.witelBaru || row.custWitel, // Fallback if witelBaru empty
+      
+      billCity: row.billCity,
+      custCity: row.custCity,
+      servCity: row.servCity,
+      
       status: row.liStatus,
       milestone: row.liMilestone,
+      statusDate: row.liStatusDate ? row.liStatusDate.toISOString().split('T')[0] : '-',
+      billDate: row.liBilldate ? row.liBilldate.toISOString().split('T')[0] : '-',
+      
       biayaPasang: parseFloat(row.biayaPasang || 0),
       hargaBulanan: parseFloat(row.hrgBulanan || 0),
-      lamaKontrak: row.lamaKontrakHari,
-      billCity: row.custCity,
-      tipeOrder: row.agreeType,
-      witelBaru: row.custWitel
+      
+      tipeOrder: row.actionCd || row.tipeOrder || row.agreeType, // Prioritize Action CD
+      agreeType: row.agreeType,
+      agreeStartDate: row.agreeStartDate ? row.agreeStartDate.toISOString().split('T')[0] : '-',
+      agreeEndDate: row.agreeEndDate ? row.agreeEndDate.toISOString().split('T')[0] : '-',
+      isTermin: row.isTermin,
+      
+      poName: row.poName,
+      segmenBaru: row.segmenBaru,
+      kategoriBaru: row.kategoriBaru,
+      tipeGrup: row.tipeGrup,
+      scalling1: row.scalling1,
+      scalling2: row.scalling2
     }))
 
     successResponse(res, {
@@ -832,11 +1328,11 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     // Mapping Constants
     const witelMappings = {
-      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'],
-      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
-      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
-      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
-      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+      'BALI': ['DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
     }
 
     const data = await prisma.sosData.findMany({
@@ -844,11 +1340,14 @@ export const getReportDatinSummary = async (req, res, next) => {
       select: {
         segmen: true,
         custWitel: true,
+        custCity: true,
         serviceWitel: true,
         orderCreatedDate: true,
         actionCd: true,
         liStatus: true,
-        revenue: true
+        revenue: true,
+        poName: true,
+        nipnas: true
       }
     })
 
@@ -897,23 +1396,38 @@ export const getReportDatinSummary = async (req, res, next) => {
         return match || 'OTHER'
       }
 
-      // Default: Map to Major Witel
-      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG'].some(k => w.includes(k))) return 'BALI'
+      // Default: Map to Major Witel (Frontend witelList: BALI, JATIM BARAT, JATIM TIMUR, NUSA TENGGARA, SURAMADU)
+      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'].some(k => w.includes(k))) return 'BALI'
       if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].some(k => w.includes(k))) return 'JATIM BARAT'
       if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].some(k => w.includes(k))) return 'JATIM TIMUR'
-      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'].some(k => w.includes(k))) return 'NUSA TENGGARA'
+      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'].some(k => w.includes(k))) return 'NUSA TENGGARA'
       if (['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].some(k => w.includes(k))) return 'SURAMADU'
+      
+      // Fallback: Check if the string itself contains the major region names
+      if (w.includes('BALI')) return 'BALI'
+      if (w.includes('BARAT')) return 'JATIM BARAT'
+      if (w.includes('TIMUR')) return 'JATIM TIMUR'
+      if (w.includes('NUSA') || w.includes('NTB') || w.includes('NTT')) return 'NUSA TENGGARA'
+      if (w.includes('SURAMADU') || w.includes('MADURA') || w.includes('SURABAYA')) return 'SURAMADU'
+
       return 'OTHER'
     }
 
     const getOrderType = (actionCd) => {
       const a = (actionCd || '').toUpperCase()
-      if (a.startsWith('A')) return 'AO'
-      if (a.startsWith('S')) return 'SO'
-      if (a.startsWith('D')) return 'DO'
-      if (a.startsWith('M')) return 'MO'
-      if (a.startsWith('R')) return 'RO'
+      if (a.startsWith('A') || a.startsWith('NEW') || a.startsWith('INST')) return 'AO' // Add -> AO
+      if (a.startsWith('S')) return 'SO' // Suspend -> SO
+      if (a.startsWith('D') || a.startsWith('TERM')) return 'DO' // Delete -> DO
+      if (a.startsWith('M') || a.startsWith('U') || a.startsWith('CH')) return 'MO' // Modify/Move/Update/Change -> MO
+      if (a.startsWith('R')) return 'RO' // Resume -> RO
       return 'OTHER'
+    }
+
+    // Helper to normalize PO name - just uppercase, nothing else
+    const normalizePOName = (poName) => {
+      if (!poName) return null
+      const trimmed = (poName || '').trim()
+      return trimmed.length > 0 ? trimmed.toUpperCase() : null
     }
 
     const getStatusGroup = (status) => {
@@ -935,8 +1449,20 @@ export const getReportDatinSummary = async (req, res, next) => {
       }
       targetWitels.forEach(w => {
         table1Map[cat].witels[w] = {
-          ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-          ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+          ao_3bln: 0, est_ao_3bln: 0,
+          so_3bln: 0, est_so_3bln: 0,
+          do_3bln: 0, est_do_3bln: 0,
+          mo_3bln: 0, est_mo_3bln: 0,
+          ro_3bln: 0, est_ro_3bln: 0,
+          total_3bln: 0, est_3bln: 0,
+
+          ao_3bln2: 0, est_ao_3bln2: 0,
+          so_3bln2: 0, est_so_3bln2: 0,
+          do_3bln2: 0, est_do_3bln2: 0,
+          mo_3bln2: 0, est_mo_3bln2: 0,
+          ro_3bln2: 0, est_ro_3bln2: 0,
+          total_3bln2: 0, est_3bln2: 0,
+
           grand_total: 0
         }
       })
@@ -959,58 +1485,151 @@ export const getReportDatinSummary = async (req, res, next) => {
     })
 
     // Galaksi Structure
-    const galaksiMap = {
-      ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0,
-      ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
-    }
+    const galaksiMap = {}
 
     // Process Data
     const now = new Date()
     
     data.forEach(row => {
       const category = getCategory(row.segmen)
-      const witel = getWitelKey(row.serviceWitel || row.custWitel)
       
-      if (witel === 'OTHER') return // Skip unknown witels or handle them?
-
+      // Process Galaksi FIRST (before witel validation skip)
       const orderDate = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
       const diffTime = Math.abs(now - orderDate)
       const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) 
       const isLessThan3Months = diffMonths <= 3
-
       const orderType = getOrderType(row.actionCd)
+      
+      // Update Galaksi - process this BEFORE witel validation
+      let poKey = row.poName
+
+      // If poName is not available, try to map from NIPNAS
+      if (!poKey && row.nipnas) {
+         const mappedName = PO_MAPPING[row.nipnas]
+         if (mappedName) {
+            poKey = mappedName
+         }
+      }
+
+      // Only process if we have a valid PO name
+      if (poKey) {
+        const poName = normalizePOName(poKey)
+        
+        if (poName) {
+          if (!galaksiMap[poName]) {
+            galaksiMap[poName] = {
+               po: poName,
+               ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0,
+               ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
+            }
+          }
+          
+          const g = galaksiMap[poName]
+          if (isLessThan3Months) {
+            if (orderType === 'AO') g.ao_3bln++
+            else if (orderType === 'SO') g.so_3bln++
+            else if (orderType === 'DO') g.do_3bln++
+            else if (orderType === 'MO') g.mo_3bln++
+            else if (orderType === 'RO') g.ro_3bln++
+            
+            g.total_3bln++
+          } else {
+            if (orderType === 'AO') g.ao_3bln2++
+            else if (orderType === 'SO') g.so_3bln2++
+            else if (orderType === 'DO') g.do_3bln2++
+            else if (orderType === 'MO') g.mo_3bln2++
+            else if (orderType === 'RO') g.ro_3bln2++
+            
+            g.total_3bln2++
+          }
+        }
+      }
+      
+      // ============ NOW do witel validation for tables 1 & 2 ============
+      // Try to resolve Witel/Branch from most specific source (City) to least specific (Region)
+      // Check City first (often contains granular branch data like 'Denpasar', 'Malang')
+      let witel = getWitelKey(row.custCity)
+      
+      if (row.custCity && (row.custCity.includes('MADIUN') || row.custCity.includes('KEDIRI'))) {
+          // console.log(`DEBUG: City=${row.custCity}, ResolvedWitel=${witel}, isBranchMode=${isBranchMode}`)
+      }
+
+      // If City didn't yield a valid branch (returned OTHER) or just returned the generic Region name
+      // Try the Witel columns
+      const isGeneric = (w) => ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'].includes(w)
+      
+      if (witel === 'OTHER') {
+         witel = getWitelKey(row.serviceWitel || row.custWitel)
+      } else if (isBranchMode && isGeneric(witel)) {
+         // If City returned a generic name (unlikely but possible), see if Witel col has something different?
+         // Actually usually if City is generic, Witel is also generic. 
+         // But let's check just in case Witel has a specific override (unlikely).
+         const alt = getWitelKey(row.serviceWitel || row.custWitel)
+         if (alt !== 'OTHER' && !isGeneric(alt)) {
+             witel = alt
+         }
+      }
+      
+      if (witel === 'OTHER') return // Skip unknown witels for table processing
+
+      const orderDate2 = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
+      const diffTime2 = Math.abs(now - orderDate2)
+      const diffMonths2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24 * 30)) 
+      const isLessThan3Months2 = diffMonths2 <= 3
+      const orderType2 = getOrderType(row.actionCd)
+
       const status = getStatusGroup(row.liStatus)
       const revenue = parseFloat(row.revenue || 0)
 
       // Update Table 1
       const t1 = table1Map[category].witels[witel]
       if (t1) {
-        if (isLessThan3Months) {
-          if (orderType === 'AO') t1.ao_3bln++
-          else if (orderType === 'SO') t1.so_3bln++
-          else if (orderType === 'DO') t1.do_3bln++
-          else if (orderType === 'MO') t1.mo_3bln++
-          else if (orderType === 'RO') t1.ro_3bln++
+        if (isLessThan3Months2) {
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln++; t1.est_ao_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln++; t1.est_do_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln++; t1.est_mo_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln++; t1.est_so_3bln += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln++; t1.est_ro_3bln += revenue; }
           
-          t1.est_3bln += revenue
-          t1.total_3bln++
+          // Grand Total should match visible total for consistency
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         } else {
-          if (orderType === 'AO') t1.ao_3bln2++
-          else if (orderType === 'SO') t1.so_3bln2++
-          else if (orderType === 'DO') t1.do_3bln2++
-          else if (orderType === 'MO') t1.mo_3bln2++
-          else if (orderType === 'RO') t1.ro_3bln2++
+          if (orderType2 === 'AO') { 
+            t1.ao_3bln2++; t1.est_ao_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'DO') { 
+            t1.do_3bln2++; t1.est_do_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'MO') { 
+            t1.mo_3bln2++; t1.est_mo_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln2++; t1.est_so_3bln2 += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln2++; t1.est_ro_3bln2 += revenue; }
           
-          t1.est_3bln2 += revenue
-          t1.total_3bln2++
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
         }
-        t1.grand_total++
       }
 
       // Update Table 2
       const t2 = table2Map[category].witels[witel]
       if (t2) {
-        if (isLessThan3Months) {
+        if (isLessThan3Months2) {
           if (status === 'PROVIDE_ORDER') t2.provide_order++
           else if (status === 'IN_PROCESS') t2.in_process++
           else if (status === 'READY_BILL') t2.ready_bill++
@@ -1025,25 +1644,6 @@ export const getReportDatinSummary = async (req, res, next) => {
         }
         t2.grand_total++
       }
-
-      // Update Galaksi
-      if (isLessThan3Months) {
-        if (orderType === 'AO') galaksiMap.ao_3bln++
-        else if (orderType === 'SO') galaksiMap.so_3bln++
-        else if (orderType === 'DO') galaksiMap.do_3bln++
-        else if (orderType === 'MO') galaksiMap.mo_3bln++
-        else if (orderType === 'RO') galaksiMap.ro_3bln++
-        
-        galaksiMap.total_3bln++
-      } else {
-        if (orderType === 'AO') galaksiMap.ao_3bln2++
-        else if (orderType === 'SO') galaksiMap.so_3bln2++
-        else if (orderType === 'DO') galaksiMap.do_3bln2++
-        else if (orderType === 'MO') galaksiMap.mo_3bln2++
-        else if (orderType === 'RO') galaksiMap.ro_3bln2++
-        
-        galaksiMap.total_3bln2++
-      }
     })
 
     // Format Output for Frontend
@@ -1057,8 +1657,8 @@ export const getReportDatinSummary = async (req, res, next) => {
         id: idCounter++,
         category: cat,
         witel: '',
-        ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, est_3bln: 0, total_3bln: 0,
-        ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+        ao_3bln: 0, est_ao_3bln: 0, so_3bln: 0, est_so_3bln: 0, do_3bln: 0, est_do_3bln: 0, mo_3bln: 0, est_mo_3bln: 0, ro_3bln: 0, est_ro_3bln: 0, est_3bln: 0, total_3bln: 0,
+        ao_3bln2: 0, est_ao_3bln2: 0, so_3bln2: 0, est_so_3bln2: 0, do_3bln2: 0, est_do_3bln2: 0, mo_3bln2: 0, est_mo_3bln2: 0, ro_3bln2: 0, est_ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
         grand_total: 0,
         isCategoryHeader: true
       }
@@ -1080,8 +1680,20 @@ export const getReportDatinSummary = async (req, res, next) => {
         const d2 = table2Map[cat].witels[w]
 
         // Add to Category Header Totals
-        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.so_3bln += d1.so_3bln; catHeader1.do_3bln += d1.do_3bln; catHeader1.mo_3bln += d1.mo_3bln; catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
-        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.est_ao_3bln += d1.est_ao_3bln;
+        catHeader1.so_3bln += d1.so_3bln; catHeader1.est_so_3bln += d1.est_so_3bln;
+        catHeader1.do_3bln += d1.do_3bln; catHeader1.est_do_3bln += d1.est_do_3bln;
+        catHeader1.mo_3bln += d1.mo_3bln; catHeader1.est_mo_3bln += d1.est_mo_3bln;
+        catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_ro_3bln += d1.est_ro_3bln;
+        catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
+
+        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.est_ao_3bln2 += d1.est_ao_3bln2;
+        catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.est_so_3bln2 += d1.est_so_3bln2;
+        catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.est_do_3bln2 += d1.est_do_3bln2;
+        catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.est_mo_3bln2 += d1.est_mo_3bln2;
+        catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_ro_3bln2 += d1.est_ro_3bln2;
+        catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+        
         catHeader1.grand_total += d1.grand_total;
 
         catHeader2.provide_order += d2.provide_order; catHeader2.in_process += d2.in_process; catHeader2.ready_bill += d2.ready_bill; catHeader2.total_3bln += d2.total_3bln;
@@ -1093,7 +1705,14 @@ export const getReportDatinSummary = async (req, res, next) => {
           category: '',
           witel: w,
           ...d1,
-          est_3bln: (d1.est_3bln / 1000000).toFixed(2), // Convert to Juta
+          est_ao_3bln: (d1.est_ao_3bln / 1000000).toFixed(2),
+          est_do_3bln: (d1.est_do_3bln / 1000000).toFixed(2),
+          est_mo_3bln: (d1.est_mo_3bln / 1000000).toFixed(2),
+          est_3bln: (d1.est_3bln / 1000000).toFixed(2),
+          
+          est_ao_3bln2: (d1.est_ao_3bln2 / 1000000).toFixed(2),
+          est_do_3bln2: (d1.est_do_3bln2 / 1000000).toFixed(2),
+          est_mo_3bln2: (d1.est_mo_3bln2 / 1000000).toFixed(2),
           est_3bln2: (d1.est_3bln2 / 1000000).toFixed(2),
           isCategoryHeader: false
         })
@@ -1106,19 +1725,25 @@ export const getReportDatinSummary = async (req, res, next) => {
       })
 
       // Format Header Money
+      catHeader1.est_ao_3bln = (catHeader1.est_ao_3bln / 1000000).toFixed(2)
+      catHeader1.est_do_3bln = (catHeader1.est_do_3bln / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln = (catHeader1.est_mo_3bln / 1000000).toFixed(2)
       catHeader1.est_3bln = (catHeader1.est_3bln / 1000000).toFixed(2)
+
+      catHeader1.est_ao_3bln2 = (catHeader1.est_ao_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_do_3bln2 = (catHeader1.est_do_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln2 = (catHeader1.est_mo_3bln2 / 1000000).toFixed(2)
       catHeader1.est_3bln2 = (catHeader1.est_3bln2 / 1000000).toFixed(2)
 
       table1Data.push(catHeader1, ...witelRows1)
       table2Data.push(catHeader2, ...witelRows2)
     })
 
-    const galaksiData = [{
-      id: 1,
-      po: 'Grand Total',
-      ...galaksiMap,
-      achievement: '100%' // Placeholder
-    }]
+    const galaksiData = Object.values(galaksiMap).map((item, index) => ({
+      ...item,
+      id: index + 1,
+      achievement: '0%' // Placeholder
+    })).sort((a, b) => a.po.localeCompare(b.po))
 
     successResponse(res, {
       table1Data,

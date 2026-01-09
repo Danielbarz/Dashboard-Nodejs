@@ -13,19 +13,19 @@ services:
     restart: unless-stopped
 
   # PostgreSQL (Optional - jika tidak pakai Supabase)
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: telkom-postgres
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: telkom
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
+  postgres:
+    image: postgres:15-alpine
+    container_name: telkom-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: telkom
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
 volumes:
   redis_data:
-  # postgres_data:
+  postgres_data:

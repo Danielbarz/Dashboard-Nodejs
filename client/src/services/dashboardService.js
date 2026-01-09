@@ -81,9 +81,6 @@ export const fileService = {
     formData.append('file', file)
     return api.post('/files/upload', formData, {
       params: { type },
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
       onUploadProgress
     })
   },
@@ -98,7 +95,32 @@ export const fileService = {
 
   getImportLogs: () => {
     return api.get('/files/import-logs')
+  },
+
+  truncateData: (type) => {
+    return api.delete('/files/data', { params: { type } })
   }
 }
 
 export default api
+
+
+// ... code existing
+
+export const fetchHSIDashboard = async (params) => {
+  const response = await api.get('/dashboard/hsi/dashboard', { params })
+  return response.data
+}
+
+export const fetchHSIFlowStats = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow', { params })
+  return response.data
+}
+
+
+// ... existing code
+
+export const fetchHSIFlowDetail = async (params) => {
+  const response = await api.get('/dashboard/hsi/flow/detail', { params })
+  return response.data
+}

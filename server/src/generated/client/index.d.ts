@@ -6851,16 +6851,10 @@ export namespace Prisma {
 
   export type HsiDataAvgAggregateOutputType = {
     id: number | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
   }
 
   export type HsiDataSumAggregateOutputType = {
     id: bigint | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
   }
 
   export type HsiDataMinAggregateOutputType = {
@@ -6921,9 +6915,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -6994,9 +6988,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -7086,16 +7080,10 @@ export namespace Prisma {
 
   export type HsiDataAvgAggregateInputType = {
     id?: true
-    tahun?: true
-    bulan?: true
-    tanggal?: true
   }
 
   export type HsiDataSumAggregateInputType = {
     id?: true
-    tahun?: true
-    bulan?: true
-    tanggal?: true
   }
 
   export type HsiDataMinAggregateInputType = {
@@ -7462,9 +7450,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -7851,9 +7839,9 @@ export namespace Prisma {
       detailManja: string | null
       suberrorcode: string | null
       engineermemo: string | null
-      tahun: number | null
-      bulan: number | null
-      tanggal: number | null
+      tahun: string | null
+      bulan: string | null
+      tanggal: string | null
       ps1: string | null
       cek: string | null
       hasil: string | null
@@ -8344,9 +8332,9 @@ export namespace Prisma {
     readonly detailManja: FieldRef<"HsiData", 'String'>
     readonly suberrorcode: FieldRef<"HsiData", 'String'>
     readonly engineermemo: FieldRef<"HsiData", 'String'>
-    readonly tahun: FieldRef<"HsiData", 'Int'>
-    readonly bulan: FieldRef<"HsiData", 'Int'>
-    readonly tanggal: FieldRef<"HsiData", 'Int'>
+    readonly tahun: FieldRef<"HsiData", 'String'>
+    readonly bulan: FieldRef<"HsiData", 'String'>
+    readonly tanggal: FieldRef<"HsiData", 'String'>
     readonly ps1: FieldRef<"HsiData", 'String'>
     readonly cek: FieldRef<"HsiData", 'String'>
     readonly hasil: FieldRef<"HsiData", 'String'>
@@ -17054,9 +17042,9 @@ export namespace Prisma {
     detailManja?: StringNullableFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableFilter<"HsiData"> | string | null
     engineermemo?: StringNullableFilter<"HsiData"> | string | null
-    tahun?: IntNullableFilter<"HsiData"> | number | null
-    bulan?: IntNullableFilter<"HsiData"> | number | null
-    tanggal?: IntNullableFilter<"HsiData"> | number | null
+    tahun?: StringNullableFilter<"HsiData"> | string | null
+    bulan?: StringNullableFilter<"HsiData"> | string | null
+    tanggal?: StringNullableFilter<"HsiData"> | string | null
     ps1?: StringNullableFilter<"HsiData"> | string | null
     cek?: StringNullableFilter<"HsiData"> | string | null
     hasil?: StringNullableFilter<"HsiData"> | string | null
@@ -17203,9 +17191,9 @@ export namespace Prisma {
     detailManja?: StringNullableFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableFilter<"HsiData"> | string | null
     engineermemo?: StringNullableFilter<"HsiData"> | string | null
-    tahun?: IntNullableFilter<"HsiData"> | number | null
-    bulan?: IntNullableFilter<"HsiData"> | number | null
-    tanggal?: IntNullableFilter<"HsiData"> | number | null
+    tahun?: StringNullableFilter<"HsiData"> | string | null
+    bulan?: StringNullableFilter<"HsiData"> | string | null
+    tanggal?: StringNullableFilter<"HsiData"> | string | null
     ps1?: StringNullableFilter<"HsiData"> | string | null
     cek?: StringNullableFilter<"HsiData"> | string | null
     hasil?: StringNullableFilter<"HsiData"> | string | null
@@ -17357,9 +17345,9 @@ export namespace Prisma {
     detailManja?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     engineermemo?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
-    tahun?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
-    bulan?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
-    tanggal?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
+    tahun?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
+    bulan?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
+    tanggal?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     ps1?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     cek?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     hasil?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
@@ -18762,9 +18750,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -18835,9 +18823,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -18908,9 +18896,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18981,9 +18969,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19054,9 +19042,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -19127,9 +19115,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19200,9 +19188,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20583,17 +20571,6 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type HsiDataCountOrderByAggregateInput = {
     id?: SortOrder
     nomor?: SortOrder
@@ -20669,9 +20646,6 @@ export namespace Prisma {
 
   export type HsiDataAvgOrderByAggregateInput = {
     id?: SortOrder
-    tahun?: SortOrder
-    bulan?: SortOrder
-    tanggal?: SortOrder
   }
 
   export type HsiDataMaxOrderByAggregateInput = {
@@ -20822,12 +20796,9 @@ export namespace Prisma {
 
   export type HsiDataSumOrderByAggregateInput = {
     id?: SortOrder
-    tahun?: SortOrder
-    bulan?: SortOrder
-    tanggal?: SortOrder
   }
 
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+  export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
     notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -20835,12 +20806,7 @@ export namespace Prisma {
     lte?: number | IntFieldRefInput<$PrismaModel>
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -21000,6 +20966,22 @@ export namespace Prisma {
     revenuePlan?: SortOrder
     usia?: SortOrder
     rab?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -21786,6 +21768,17 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -21811,17 +21804,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
