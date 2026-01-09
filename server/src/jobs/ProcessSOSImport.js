@@ -47,13 +47,13 @@ export class ProcessSOSImport {
 
   async handle() {
     const { filePath, fileName, batchId, userId } = this.job.data
-    
+
     try {
       // Update progress: Parsing file
       await this.updateProgress(5, 'Parsing file...')
-      
+
       const records = await this.parseFile(filePath, fileName)
-      
+
       if (!records || records.length === 0) {
         throw new Error('File is empty or invalid')
       }
@@ -69,7 +69,7 @@ export class ProcessSOSImport {
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize)
         const result = await this.processChunk(chunk, batchId)
-        
+
         successCount += result.success
         failedCount += result.failed
         errors.push(...result.errors)
@@ -103,7 +103,7 @@ export class ProcessSOSImport {
 
   async parseFile(filePath, fileName) {
     const ext = fileName.toLowerCase().match(/\.(xlsx|xls|csv)$/)?.[1]
-    
+
     if (ext === 'xlsx' || ext === 'xls') {
       const workbook = XLSX.readFile(filePath)
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -118,7 +118,7 @@ export class ProcessSOSImport {
           .on('error', (err) => reject(err))
       })
     }
-    
+
     throw new Error('Unsupported file format')
   }
 
@@ -129,7 +129,7 @@ export class ProcessSOSImport {
 
     for (const record of records) {
       const keyMap = buildKeyMap(record)
-      
+
       try {
         const orderId = getValue(
           record,
@@ -191,7 +191,7 @@ export class ProcessSOSImport {
             batchId
           }
         })
-        
+
         success++
       } catch (error) {
         failed++
@@ -208,7 +208,7 @@ export class ProcessSOSImport {
       message,
       updatedAt: new Date().toISOString()
     }
-    
+
     await redis.setex(this.progressKey, 3600, JSON.stringify(progress))
     await this.job.progress(percent)
   }

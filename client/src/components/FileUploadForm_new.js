@@ -73,13 +73,13 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const checkJobStatus = async (jobId, batchId) => {
     let attempts = 0
     const maxAttempts = 30 // 30 seconds
-    
+
     while (attempts < maxAttempts) {
       attempts++
       try {
         const statusResponse = await fileService.getJobStatus(jobId)
         const jobData = statusResponse?.data?.data
-        
+
         if (jobData?.state === 'completed' && jobData?.result) {
           console.log('✅ Job completed:', jobData.result)
           return jobData.result
@@ -89,11 +89,11 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
       } catch (err) {
         console.error(`Check attempt ${attempts} error:`, err.message)
       }
-      
+
       // Wait 1 second before next attempt
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
-    
+
     // Timeout - return default result
     console.log('Job status check timeout after 30 seconds')
     return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
@@ -138,7 +138,7 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
 
       // Check job status after upload
       const result = await checkJobStatus(jobId, batchId)
-      
+
       setSuccess(true)
       setFileUploaded(true)
       setUploadProgress(null)
