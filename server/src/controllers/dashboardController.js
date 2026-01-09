@@ -1442,19 +1442,11 @@ export const getHSIDashboard = async (req, res, next) => {
       }
     }).filter(i => i !== null)
 
-<<<<<<< HEAD
-    // --- TREND CHART (Order Date) ---
-    const trendRaw = await prisma.hsiData.findMany({ 
-      where: whereOrderDate, 
-      select: { orderDate: true, kelompokStatus: true }, 
-      orderBy: { orderDate: 'asc' } 
-=======
     // --- TREND CHART ---
     const trendRaw = await prisma.hsiData.findMany({
       where: whereClause,
       select: { orderDate: true, kelompokStatus: true },
       orderBy: { orderDate: 'asc' }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     })
 
     const trendMap = {}
