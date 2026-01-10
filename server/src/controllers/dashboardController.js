@@ -1211,18 +1211,8 @@ export const getHSIDashboard = async (req, res, next) => {
     if (selectedBranches.length > 0) {
       baseWhere.witelOld = { in: selectedBranches }
     }
-<<<<<<< HEAD
     
     // Search
-=======
-    if (start_date && end_date) {
-      whereClause.orderDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
-
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     if (search) {
       baseWhere.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
@@ -1344,40 +1334,16 @@ export const getHSIDashboard = async (req, res, next) => {
       chart5Map[dim].total += i._count.id
     })
     
-<<<<<<< HEAD
     // Sort Data: Urutkan wilayah berdasarkan total error terbanyak (Descending)
     const chart5Data = Object.values(chart5Map).sort((a, b) => b.total - a.total)
     
     // Sort Keys: Ubah Set ke Array agar bisa dibaca frontend
     const chart5Keys = Array.from(chart5KeySet).sort()
-=======
-    // Fixed keys for consistent legend
-    const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
-    const chart5Data = Object.values(chart5Map)
-
-    // --- CHART 6: Cancel Non-FCC (Special Filter by TGL_PS) ---
-    // Logika khusus: Cancel Non-FCC biasanya difilter berdasarkan tgl_ps, bukan order_date
-    let cancelWhere = { ...whereClause }
-    delete cancelWhere.orderDate
-
-    cancelWhere.kelompokStatus = 'CANCEL'
-    if (start_date && end_date) {
-      cancelWhere.tglPs = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
-    }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
 
     // --- CHART 6: Cancel Non-FCC (PS Date, Sorted) ---
     const chart6Raw = await prisma.hsiData.groupBy({
-<<<<<<< HEAD
       by: [dimension, 'suberrorcode'], 
       where: { ...wherePsDate, kelompokStatus: 'CANCEL' },
-=======
-      by: [dimension, 'suberrorcode'],
-      where: cancelWhere,
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
       _count: { id: true }
     })
     
@@ -1398,19 +1364,11 @@ export const getHSIDashboard = async (req, res, next) => {
     const chart6Data = Object.values(chart6Map).sort((a, b) => b.total - a.total)
     const chart6Keys = [...chart6KeySet]
 
-<<<<<<< HEAD
     // --- MAP DATA (Order Date) ---
     const mapWhere = { 
       ...whereOrderDate, 
       gpsLatitude: { not: null }, 
       gpsLongitude: { not: null } 
-=======
-    // --- MAP DATA ---
-    const mapWhere = {
-      ...whereClause,
-      gpsLatitude: { not: null },
-      gpsLongitude: { not: null }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     }
 
     if (mapStatusArr.length > 0) {
@@ -1468,19 +1426,11 @@ export const getHSIDashboard = async (req, res, next) => {
       }
     }).filter(i => i !== null)
 
-<<<<<<< HEAD
     // --- TREND CHART (Order Date) ---
     const trendRaw = await prisma.hsiData.findMany({ 
       where: whereOrderDate, 
       select: { orderDate: true, kelompokStatus: true }, 
       orderBy: { orderDate: 'asc' } 
-=======
-    // --- TREND CHART ---
-    const trendRaw = await prisma.hsiData.findMany({
-      where: whereClause,
-      select: { orderDate: true, kelompokStatus: true },
-      orderBy: { orderDate: 'asc' }
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
     })
 
     const trendMap = {}
@@ -1498,15 +1448,9 @@ export const getHSIDashboard = async (req, res, next) => {
     // --- TABLE DATA (Order Date) ---
     const skip = (Number(page) - 1) * Number(limit)
     const tableDataRaw = await prisma.hsiData.findMany({
-<<<<<<< HEAD
       where: whereOrderDate, 
       take: Number(limit), 
       skip: skip, 
-=======
-      where: whereClause,
-      take: Number(limit),
-      skip: skip,
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
       orderBy: { orderDate: 'desc' },
       select: {
         orderId: true,
@@ -1983,4 +1927,200 @@ export const getSOSDatinDashboard = async (req, res, next) => {
   }
 }
 
-// WOIIIIIIIIIIII
+// =================================================================
+// DIGITAL PRODUCT DASHBOARD CHARTS
+// =================================================================
+
+/**
+ * Get chart data for Digital Product Dashboard
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+ */
+/**
+ * Get chart data for Digital Product Dashboard
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+ */
+export const getDigitalProductCharts = async (req, res, next) => {
+  try {
+    const { start_date, end_date, witel } = req.query
+
+    // Define Date Filter
+    let dateFilter = ''
+    const params = []
+    let pIdx = 1
+
+    if (start_date && end_date) {
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      params.push(start_date, end_date)
+      pIdx += 2
+    }
+
+    // Common CTEs for normalization
+    // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
+    const normalizedDataCTE = `
+      WITH normalized_data AS (
+        SELECT
+          *,
+          CASE
+            WHEN witel IN ('BALI') THEN 'BALI'
+            WHEN witel IN ('SURAMADU') THEN 'SURAMADU'
+            WHEN witel IN ('NTT', 'NTB') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('MADIUN', 'KEDIRI', 'MALANG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JEMBER', 'PASURUAN', 'SIDOARJO') THEN 'JATIM TIMUR'
+            ELSE 'OTHER'
+          END as region_norm,
+          CASE
+            WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+            WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+            WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+            WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+            ELSE 'OTHER'
+          END as product_norm,
+          CASE
+            WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
+            ELSE 'SME'
+          END as segment_norm,
+          CASE
+            WHEN UPPER(category) LIKE '%NCX%' OR UPPER(witel) LIKE '%NCX%' OR UPPER(branch) LIKE '%NCX%' THEN 'NCX'
+            ELSE 'SC-ONE'
+          END as channel_norm
+        FROM digital_products
+        WHERE 1=1
+        ${dateFilter}
+      )
+    `
+
+    // Filter Condition based on Normalized Columns
+    const filterCondition = `
+      WHERE region_norm != 'OTHER' 
+      AND product_norm != 'OTHER'
+      ${witel && witel !== 'ALL' ? `AND region_norm = $${pIdx}` : ''}
+    `
+    
+    if (witel && witel !== 'ALL') params.push(witel)
+
+    // Run queries in parallel
+    const [
+      revenueByWitel,
+      amountByWitel,
+      productBySegment,
+      productByChannel,
+      productShare
+    ] = await Promise.all([
+      // 1. Revenue by Witel - Stacked Bar (Vertical)
+      // Extract revenue from product_name text if column is 0
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          region_norm as witel, 
+          product_norm as product, 
+          SUM(
+            COALESCE(revenue, 0) + 
+            COALESCE(substring(product_name from 'Total \\(Sebelum PPN\\) : ([0-9]+)')::numeric, 0)
+          )::numeric as revenue
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY region_norm, product_norm
+        ORDER BY region_norm, product_norm
+      `, ...params),
+
+      // 2. Amount by Witel - Stacked Bar (Vertical)
+      // Use COUNT(*) as proxy for amount since column is often 0
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT region_norm as witel, product_norm as product, COUNT(*)::int as amount
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY region_norm, product_norm
+        ORDER BY region_norm, product_norm
+      `, ...params),
+
+      // 3. Product by Segment - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          segment_norm as segment,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, segment_norm
+        ORDER BY product_norm, segment_norm
+      `, ...params),
+
+      // 4. Product by Channel - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          channel_norm as channel,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, channel_norm
+        ORDER BY product_norm, channel_norm
+      `, ...params),
+
+      // 5. Product Share - Pie Chart
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          COUNT(*)::int as value
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm
+        ORDER BY value DESC
+      `, ...params)
+    ])
+
+    // Transform data for frontend charts
+    // 1 & 2: Transform to stacked bar format {witel: 'X', Antares: 10, Netmonk: 20, ...}
+    const transformStackedByWitel = (data, valueKey) => {
+      const result = {}
+      data.forEach(row => {
+        const witelName = row.witel || 'Unknown'
+        if (!result[witelName]) {
+          result[witelName] = { witel: witelName }
+        }
+        result[witelName][row.product] = Number(row[valueKey] || 0)
+      })
+      return Object.values(result)
+    }
+
+    // 3 & 4: Transform to horizontal stacked bar format {product: 'X', SME: 10, LEGS: 20, ...}
+    const transformStackedByProduct = (data, categoryKey) => {
+      const result = {}
+      data.forEach(row => {
+        const productName = row.product || 'Unknown'
+        if (!result[productName]) {
+          result[productName] = { product: productName }
+        }
+        result[productName][row[categoryKey]] = Number(row.total || 0)
+      })
+      return Object.values(result)
+    }
+
+    // Get unique products for color mapping
+    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
+    const segments = [...new Set(productBySegment.map(p => p.segment))]
+    const channels = [...new Set(productByChannel.map(p => p.channel))]
+
+    successResponse(res, {
+      revenueByWitel: transformStackedByWitel(revenueByWitel, 'revenue'),
+      amountByWitel: transformStackedByWitel(amountByWitel, 'amount'),
+      productBySegment: transformStackedByProduct(productBySegment, 'segment'),
+      productByChannel: transformStackedByProduct(productByChannel, 'channel'),
+      productShare: productShare.map(p => ({ name: p.product, value: Number(p.value) })),
+      // Metadata for chart rendering
+      products,
+      segments,
+      channels
+    }, 'Digital product charts data retrieved')
+
+  } catch (error) {
+    console.error('Error in getDigitalProductCharts:', error)
+    next(error)
+  }
+}

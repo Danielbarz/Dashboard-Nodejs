@@ -160,95 +160,6 @@ export default function DashboardHSI() {
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Order</p>
                         <p className="text-3xl font-black mt-1">{stats.total.toLocaleString()}</p>
                     </div>
-<<<<<<< HEAD
-
-                    {/* CHART ROW 1 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white p-4 rounded-lg shadow border h-96 flex flex-col">
-                            <h3 className="text-md font-bold mb-4 text-center">Total Order per {dimensionLabel}</h3>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie 
-                                            data={chartData.chart1} 
-                                            dataKey="value" 
-                                            nameKey="product" 
-                                            cx="50%" cy="50%" 
-                                            outerRadius={80} 
-                                            fill="#8884d8" 
-                                            label 
-                                            isAnimationActive={false} // MATIKAN ANIMASI (Fix Double)
-                                        >
-                                            {chartData.chart1?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                        </Pie>
-                                        <Tooltip />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow border h-96 flex flex-col">
-                            <h3 className="text-md font-bold mb-4 text-center">TOTAL PS per {dimensionLabel}</h3>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie 
-                                            data={chartData.chart4} 
-                                            dataKey="value" 
-                                            nameKey="product" 
-                                            cx="50%" cy="50%" 
-                                            outerRadius={80} 
-                                            fill="#82ca9d" 
-                                            label 
-                                            isAnimationActive={false} 
-                                        >
-                                            {chartData.chart4?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                        </Pie>
-                                        <Tooltip />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* CHART ROW 2: CANCEL */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white p-4 rounded-lg shadow border h-96 flex flex-col">
-                            <h3 className="text-md font-bold mb-4 text-center">CANCEL BY FCC</h3>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartData.chart5Data}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" fontSize={10} />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        {chartData.chart5Data && Object.keys(chartData.chart5Data[0] || {}).filter(k=>k!=='name' && k!=='total').map((key, idx) => (
-                                            <Bar key={key} dataKey={key} stackId="a" fill={COLORS[idx % COLORS.length]} isAnimationActive={false} />
-                                        ))}
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow border h-96 flex flex-col">
-                            <h3 className="text-md font-bold mb-4 text-center">CANCEL NON-FCC</h3>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartData.chart6Data}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" fontSize={10} />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        {chart6Keys.map((key, idx) => (
-                                            <Bar key={key} dataKey={key} stackId="a" fill={COLORS[(idx + 3) % COLORS.length]} isAnimationActive={false} />
-                                        ))}
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-=======
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-green-500">
                         <p className="text-green-600 text-xs font-bold uppercase tracking-wider">Completed / PS</p>
                         <p className="text-3xl font-black text-green-700 mt-1">{stats.completed.toLocaleString()}</p>
@@ -256,7 +167,6 @@ export default function DashboardHSI() {
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-500">
                         <p className="text-yellow-600 text-xs font-bold uppercase tracking-wider">Open / Progress</p>
                         <p className="text-3xl font-black text-yellow-700 mt-1">{stats.open.toLocaleString()}</p>
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
                     </div>
                 </div>
 

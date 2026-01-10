@@ -162,8 +162,8 @@ export const uploadFile = async (req, res, next) => {
     let type = (req.query.type || 'sos').toString().toLowerCase()
 
     // Normalize aliases
-    if (['digital', 'dp'].includes(type)) type = 'digital_product'
-    if (type === 'datin') type = 'sos'
+    if (['digital', 'dp', 'analysis'].includes(type)) type = 'digital_product'
+    if (['datin', 'sos'].includes(type)) type = 'sos'
 
     console.log(`📂 Processing Upload - Original Type: ${req.query.type}, Resolved Type: ${type}`)
 
@@ -905,8 +905,8 @@ export const truncateData = async (req, res, next) => {
     let type = (req.query.type || '').toString().toLowerCase()
 
     // Normalize aliases
-    if (['digital', 'dp'].includes(type)) type = 'digital_product'
-    if (type === 'datin') type = 'sos'
+    if (['digital', 'dp', 'analysis'].includes(type)) type = 'digital_product'
+    if (['datin', 'sos'].includes(type)) type = 'sos'
 
     let tableName = ''
     let label = ''
