@@ -9,26 +9,51 @@ datasource db {
 }
 
 model DigitalProduct {
-  id           BigInt    @id @default(autoincrement())
-  orderNumber  String?   @unique @map("order_number")
-  productName  String?   @map("product_name")
-  customerName String?   @map("customer_name")
-  poName       String?   @map("po_name")
-  witel        String?
-  branch       String?
-  revenue      Decimal   @default(0) @db.Decimal(18, 2)
-  amount       Decimal   @default(0) @db.Decimal(18, 2)
-  status       String?
-  milestone    String?
-  segment      String?
-  category     String?
-  subType      String?   @map("sub_type")
-  orderDate    DateTime? @map("order_date")
-  batchId      String?   @map("batch_id")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id                  BigInt    @id @default(autoincrement())
+  orderNumber         String?   @unique @map("order_number")
+  productName         String?   @map("product_name")
+  customerName        String?   @map("customer_name")
+  poName              String?   @map("po_name")
+  witel               String?
+  regional            String?
+  channel             String?
+  branch              String?
+  revenue             Decimal   @default(0) @db.Decimal(18, 2)
+  amount              Decimal   @default(0) @db.Decimal(18, 2)
+  netPrice            Decimal   @default(0) @map("net_price") @db.Decimal(18, 2)
+  status              String?
+  milestone           String?
+  segment             String?
+  category            String?
+  subType             String?   @map("sub_type")
+  orderDate           DateTime? @map("order_date")
+  orderCreatedDate    DateTime? @map("order_created_date")
+  billcompDate        DateTime? @map("billcomp_date")
+  lastUpdate          DateTime? @map("last_update")
+  batchId             String?   @map("batch_id")
+  filterProduct       String?   @map("filter_product")
+  productOrderId      String?   @map("product_order_id")
+  ach                 String?
+  activeUser          String?   @map("active_user")
+  joinNamaTarget      String?   @map("join_nama_target")
+  layanan             String?
+  orderStatusN        String?   @map("order_status_n")
+  productNameGroup    String?   @map("product_name_group")
+  produkDetails       String?   @map("produk_details")
+  regionalAntaresEazy String?   @map("regional_antares_eazy")
+  regionalJoin        String?   @map("regional_join")
+  segmenN             String?   @map("segmen_n")
+  sto                 String?
+  tahun               Int?
+  week                Int?
+  targetOperational   String?   @map("target_operational")
+  telda               String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   @@index([witel])
+  @@index([regional])
+  @@index([channel])
   @@index([branch])
   @@index([status])
   @@index([orderDate])

@@ -698,96 +698,153 @@ export const getReportDatin = async (req, res, next) => {
 }
 
 // Get Report Analysis - from SOS data segmentation
+// Get Report Analysis - from Digital Product data segmentation
 export const getReportAnalysis = async (req, res, next) => {
   try {
-    const { start_date, end_date } = req.query
+    const { start_date, end_date, witel } = req.query
 
     let whereClause = {}
-
     if (start_date && end_date) {
-      whereClause.orderCreatedDate = {
+      whereClause.orderDate = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
     }
 
-    // Get SME data
-    const smeData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'SME' }
-      }
-    })
+    // Region Mapping
+    const regionMapping = {
+      'BALI': ['BALI', 'DENPASAR', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'Non-Telda (NCX)', 'SANUR', 'SINGARAJA', 'TABANAN', 'UBUNG'],
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'Non-Telda (NCX)', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'INNER - JATIM TIMUR', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'Non-Telda (NCX)', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'INNER - NUSA TENGGARA', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'Non-Telda (NCX)', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
+      'SURAMADU': ['SURAMADU', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'Non-Telda (NCX)', 'PAMEKASAN', 'TANDES']
+    }
 
-    const smeBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'SME' }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+    let selectedRegion = null
+    let targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-    // Get Government data
-    const govData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'GOV' }
+    if (witel) {
+      const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
+      if (witelList.length === 1 && regionMapping[witelList[0]]) {
+        selectedRegion = witelList[0]
+        targetRows = regionMapping[selectedRegion]
+      } else if (witelList.length > 0) {
+        targetRows = targetRows.filter(r => witelList.includes(r))
       }
-    })
+    }
 
-    const govBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'GOV' }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+    // Helper to get data for a segment
+    const getSegmentData = async (segmentKeywords) => {
+      const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
+      
+      const data = await prisma.digitalProduct.findMany({
+        where: {
+          ...whereClause,
+          OR: keywords.map(k => ({ segment: { contains: k, mode: 'insensitive' } }))
+        },
+        select: {
+          witel: true,
+          productName: true,
+          status: true,
+          revenue: true,
+          netPrice: true
+        }
+      })
 
-    // Get Private data
-    const privateData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { notIn: ['SME', 'GOVERNMENT', 'GOV', 'SOE'] }
-      }
-    })
+      // Process data
+      const witelMap = {}
+      
+      targetRows.forEach(w => {
+        witelMap[w] = {
+          witel: w, // Standardize key for frontend
+          nama_witel: w,
+          in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0,
+          prov_comp_n_realisasi: 0, prov_comp_o_realisasi: 0, prov_comp_ae_realisasi: 0, prov_comp_ps_realisasi: 0,
+          revenue_n_ach: 0, revenue_o_ach: 0, revenue_ae_ach: 0, revenue_ps_ach: 0
+        }
+      })
 
-    const privateBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { notIn: ['SME', 'GOVERNMENT', 'GOV', 'SOE'] }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+      let totalOgp = 0
+      let totalClosed = 0
 
-    const tableData = [
-      {
-        kategori: 'SME',
-        jumlah: smeData,
-        totalRevenue: parseFloat(smeBillAmount._sum.revenue || 0)
-      },
-      {
-        kategori: 'GOVERNMENT',
-        jumlah: govData,
-        totalRevenue: parseFloat(govBillAmount._sum.revenue || 0)
-      },
-      {
-        kategori: 'PRIVATE',
-        jumlah: privateData,
-        totalRevenue: parseFloat(privateBillAmount._sum.revenue || 0)
+      data.forEach(row => {
+        let rawWitel = (row.witel || '').toUpperCase()
+        let mappedName = null
+
+        if (selectedRegion) {
+          const branches = regionMapping[selectedRegion] || []
+          const foundBranch = branches.find(b => rawWitel.includes(b))
+          if (foundBranch) mappedName = foundBranch
+        } else {
+          for (const [region, branches] of Object.entries(regionMapping)) {
+            if (branches.some(b => rawWitel.includes(b))) {
+              mappedName = region
+              break
+            }
+          }
+          if (!mappedName) {
+             if (rawWitel.includes('BALI') || rawWitel.includes('DENPASAR') || rawWitel.includes('SINGARAJA') || rawWitel.includes('BADUNG')) mappedName = 'BALI'
+             else if (rawWitel.includes('BARAT') || rawWitel.includes('KEDIRI') || rawWitel.includes('MADIUN') || rawWitel.includes('MALANG')) mappedName = 'JATIM BARAT'
+             else if (rawWitel.includes('TIMUR') || rawWitel.includes('JEMBER') || rawWitel.includes('PASURUAN') || rawWitel.includes('SIDOARJO')) mappedName = 'JATIM TIMUR'
+             else if (rawWitel.includes('NUSA') || rawWitel.includes('NTB') || rawWitel.includes('NTT') || rawWitel.includes('KUPANG') || rawWitel.includes('MATARAM')) mappedName = 'NUSA TENGGARA'
+             else if (rawWitel.includes('SURAMADU') || rawWitel.includes('MADURA') || rawWitel.includes('SURABAYA') || rawWitel.includes('GRESIK')) mappedName = 'SURAMADU'
+          }
+        }
+        
+        if (!mappedName) {
+           mappedName = targetRows.find(t => rawWitel.includes(t))
+        }
+
+        if (!mappedName || !witelMap[mappedName]) return 
+
+        let productCode = ''
+        const pName = (row.productName || '').toLowerCase()
+        if (pName.includes('netmonk')) productCode = 'n'
+        else if (pName.includes('oca')) productCode = 'o'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording') || pName.includes('eazy')) productCode = 'ae'
+        else if (pName.includes('pijar')) productCode = 'ps'
+        
+        if (!productCode) return
+
+        const status = (row.status || '').toLowerCase()
+        const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isInProgress = !isCompleted
+
+        if (isInProgress) {
+          witelMap[mappedName][`in_progress_${productCode}`]++
+          totalOgp++
+        } else {
+          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
+          // Use netPrice if available, otherwise revenue. 
+          // Handle Prisma Decimal/Object by converting to Number explicitly
+          const np = row.netPrice
+          const rev = row.revenue
+          const amount = (np !== null && np !== undefined) ? Number(np) : (rev !== null && rev !== undefined ? Number(rev) : 0)
+          
+          witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta
+          totalClosed++
+        }
+      })
+
+      return {
+        data: Object.values(witelMap),
+        details: { total: totalOgp + totalClosed, ogp: totalOgp, closed: totalClosed }
       }
-    ]
+    }
+
+    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT']) 
+    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'ERM', 'MEDIA'])
 
     successResponse(
       res,
-      { tableData },
-      'Report Analysis data retrieved successfully'
-    )
+      {
+        legs: legsData.data,
+        sme: smeData.data,
+        detailsLegs: legsData.details,
+        detailsSme: smeData.details,
+        // For legacy frontend support if needed
+        tableData: [...legsData.data, ...smeData.data] 
+      }, 'Report Analysis data retrieved successfully')
   } catch (error) {
     next(error)
   }
@@ -1928,77 +1985,304 @@ export const getSOSDatinDashboard = async (req, res, next) => {
 }
 
 // =================================================================
+
 // DIGITAL PRODUCT DASHBOARD CHARTS
+
 // =================================================================
 
+
+
 /**
- * Get chart data for Digital Product Dashboard
- * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
- * NOTE: Using digital_products table (has data) instead of document_data (empty)
+
+ * Get filter options for Digital Product Dashboard
+
  */
-/**
- * Get chart data for Digital Product Dashboard
- * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
- * NOTE: Using digital_products table (has data) instead of document_data (empty)
- */
-export const getDigitalProductCharts = async (req, res, next) => {
+
+export const getDigitalProductFilters = async (req, res, next) => {
+
   try {
-    const { start_date, end_date, witel } = req.query
+
+    const [witelsRaw, branchesRaw, productsRaw] = await Promise.all([
+
+      prisma.digitalProduct.findMany({
+
+        distinct: ['witel'],
+
+        select: { witel: true },
+
+        where: { witel: { not: null } },
+
+        orderBy: { witel: 'asc' }
+
+      }),
+
+      prisma.digitalProduct.findMany({
+
+        distinct: ['witel', 'branch'],
+
+        select: { witel: true, branch: true },
+
+        where: { branch: { not: null } },
+
+        orderBy: { branch: 'asc' }
+
+      }),
+
+      prisma.digitalProduct.findMany({
+
+        distinct: ['productName'],
+
+        select: { productName: true },
+
+        where: { productName: { not: null } },
+
+        orderBy: { productName: 'asc' }
+
+      })
+
+    ])
+
+
+
+    const witels = witelsRaw.map(w => w.witel)
+
+    
+
+    // Group branches by witel
+
+    const branchMap = {}
+
+    branchesRaw.forEach(item => {
+
+      if (!branchMap[item.witel]) {
+
+        branchMap[item.witel] = []
+
+      }
+
+      if (item.branch && !branchMap[item.witel].includes(item.branch)) {
+
+        branchMap[item.witel].push(item.branch)
+
+      }
+
+    })
+
+
+
+    // Get unique normalized products
+
+    const products = [...new Set(productsRaw.map(p => {
+
+      const name = p.productName
+
+      if (name.match(/Netmonk/i)) return 'Netmonk'
+
+      if (name.match(/OCA/i)) return 'OCA'
+
+      if (name.match(/Pijar/i)) return 'Pijar'
+
+      if (name.match(/Antares|IOT|CCTV/i)) return 'Antares'
+
+      return name // Return original if not matched, or maybe categorize as 'Other'
+
+    }))].sort()
+
+
+
+    successResponse(res, {
+
+      witels,
+
+      branchMap,
+
+      products
+
+    }, 'Digital product filter options retrieved')
+
+  } catch (error) {
+
+    next(error)
+
+  }
+
+}
+
+
+
+/**
+
+ * Get chart data for Digital Product Dashboard
+
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+
+ */
+
+export const getDigitalProductCharts = async (req, res, next) => {
+
+  try {
+
+    const { start_date, end_date, witel, branch, product } = req.query
+
+
 
     // Define Date Filter
+
     let dateFilter = ''
+
     const params = []
+
     let pIdx = 1
 
+
+
     if (start_date && end_date) {
-      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+
+      dateFilter = `AND order_date >= ${pIdx}::date AND order_date <= ${pIdx + 1}::date`
+
       params.push(start_date, end_date)
+
       pIdx += 2
+
     }
 
+
+
     // Common CTEs for normalization
+
     // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
+
     const normalizedDataCTE = `
+
       WITH normalized_data AS (
+
         SELECT
+
           *,
+
           CASE
+
             WHEN witel IN ('BALI') THEN 'BALI'
+
             WHEN witel IN ('SURAMADU') THEN 'SURAMADU'
+
             WHEN witel IN ('NTT', 'NTB') THEN 'NUSA TENGGARA'
+
             WHEN witel IN ('MADIUN', 'KEDIRI', 'MALANG') THEN 'JATIM BARAT'
+
             WHEN witel IN ('JEMBER', 'PASURUAN', 'SIDOARJO') THEN 'JATIM TIMUR'
-            ELSE 'OTHER'
+
+            ELSE witel 
+
           END as region_norm,
+
           CASE
+
             WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+
             WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+
             WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+
             WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+
             ELSE 'OTHER'
+
           END as product_norm,
+
           CASE
+
             WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
+
             ELSE 'SME'
+
           END as segment_norm,
-          CASE
-            WHEN UPPER(category) LIKE '%NCX%' OR UPPER(witel) LIKE '%NCX%' OR UPPER(branch) LIKE '%NCX%' THEN 'NCX'
-            ELSE 'SC-ONE'
-          END as channel_norm
+
+                              channel as channel_norm
+
         FROM digital_products
+
         WHERE 1=1
+
         ${dateFilter}
+
       )
+
     `
 
-    // Filter Condition based on Normalized Columns
-    const filterCondition = `
-      WHERE region_norm != 'OTHER' 
-      AND product_norm != 'OTHER'
-      ${witel && witel !== 'ALL' ? `AND region_norm = $${pIdx}` : ''}
-    `
-    
-    if (witel && witel !== 'ALL') params.push(witel)
+
+
+    // Build dynamic filters
+
+    let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
+
+
+
+    // 1. Witel Filter (Multiselect)
+
+    // If witel param exists and is not 'ALL', add condition
+
+    if (witel && witel !== 'ALL') {
+
+      const witelArr = witel.split(',').filter(w => w)
+
+      if (witelArr.length > 0) {
+
+        // Create placeholders $3, $4, etc.
+
+        const placeholders = witelArr.map(() => `${pIdx++}`).join(',')
+
+        filterCondition += ` AND region_norm IN (${placeholders})`
+
+        params.push(...witelArr)
+
+      }
+
+    }
+
+
+
+    // 2. Branch Filter (Multiselect)
+
+    if (branch) {
+
+      const branchArr = branch.split(',').filter(b => b)
+
+      if (branchArr.length > 0) {
+
+        const placeholders = branchArr.map(() => `${pIdx++}`).join(',')
+
+        filterCondition += ` AND branch IN (${placeholders})`
+
+        params.push(...branchArr)
+
+      }
+
+    }
+
+
+
+    // 3. Product Filter (Multiselect)
+
+    if (product) {
+
+      const productArr = product.split(',').filter(p => p)
+
+      if (productArr.length > 0) {
+
+        const placeholders = productArr.map(() => `${pIdx++}`).join(',')
+
+        filterCondition += ` AND product_norm IN (${placeholders})`
+
+        params.push(...productArr)
+
+      }
+
+    }
+
+
 
     // Run queries in parallel
     const [
@@ -2009,16 +2293,13 @@ export const getDigitalProductCharts = async (req, res, next) => {
       productShare
     ] = await Promise.all([
       // 1. Revenue by Witel - Stacked Bar (Vertical)
-      // Extract revenue from product_name text if column is 0
+      // Use net_price as it contains the correct revenue data
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
         SELECT 
           region_norm as witel, 
           product_norm as product, 
-          SUM(
-            COALESCE(revenue, 0) + 
-            COALESCE(substring(product_name from 'Total \\(Sebelum PPN\\) : ([0-9]+)')::numeric, 0)
-          )::numeric as revenue
+          SUM(COALESCE(net_price, 0))::numeric as revenue
         FROM normalized_data
         ${filterCondition}
         GROUP BY region_norm, product_norm

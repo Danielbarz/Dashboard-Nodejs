@@ -39,8 +39,8 @@ export const getDigitalProductStats = async ({ witel, branch, status }) => {
 
   // Calculate summary
   const summary = {
-    total_revenue: products.reduce((sum, p) => sum + (p.revenue || 0), 0),
-    total_amount: products.reduce((sum, p) => sum + (p.amount || 0), 0)
+    total_revenue: products.reduce((sum, p) => sum + Number(p.netPrice || 0), 0),
+    total_amount: products.reduce((sum, p) => sum + Number(p.amount || 0), 0)
   }
 
   // Group by witel
@@ -49,8 +49,8 @@ export const getDigitalProductStats = async ({ witel, branch, status }) => {
     if (!byWitelMap[p.witel]) {
       byWitelMap[p.witel] = { witel: p.witel, revenue: 0, amount: 0 }
     }
-    byWitelMap[p.witel].revenue += p.revenue || 0
-    byWitelMap[p.witel].amount += p.amount || 0
+    byWitelMap[p.witel].revenue += Number(p.netPrice || 0)
+    byWitelMap[p.witel].amount += Number(p.amount || 0)
   })
   const byWitel = Object.values(byWitelMap).sort((a, b) => b.revenue - a.revenue)
 
@@ -60,8 +60,8 @@ export const getDigitalProductStats = async ({ witel, branch, status }) => {
     if (!byBranchMap[p.branch]) {
       byBranchMap[p.branch] = { branch: p.branch, revenue: 0, amount: 0 }
     }
-    byBranchMap[p.branch].revenue += p.revenue || 0
-    byBranchMap[p.branch].amount += p.amount || 0
+    byBranchMap[p.branch].revenue += Number(p.netPrice || 0)
+    byBranchMap[p.branch].amount += Number(p.amount || 0)
   })
   const byBranch = Object.values(byBranchMap).sort((a, b) => b.revenue - a.revenue)
 
@@ -91,7 +91,7 @@ export const exportDigitalProductsExcel = async ({ search, witel, branch, status
     { header: 'Product Name', key: 'product_name', width: 30 },
     { header: 'Witel', key: 'witel', width: 20 },
     { header: 'Branch', key: 'branch', width: 20 },
-    { header: 'Revenue', key: 'revenue', width: 15 },
+    { header: 'Revenue', key: 'netPrice', width: 15 },
     { header: 'Amount', key: 'amount', width: 15 },
     { header: 'Status', key: 'status', width: 15 },
     { header: 'Custom Target', key: 'custom_target', width: 15 },
