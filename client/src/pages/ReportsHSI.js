@@ -6,15 +6,14 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const ReportsHSI = () => {
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const [startDate, setStartDate] = useState(startOfMonth)
-  const [endDate, setEndDate] = useState(now)
+  // State tanggal akan di-set setelah fetch date range dari backend
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
   const [selectedWitel, setSelectedWitel] = useState('')
   const [reportData, setReportData] = useState([])
   const [totals, setTotals] = useState({})
   const [loading, setLoading] = useState(false)
+  const [loadingDates, setLoadingDates] = useState(true)
 
   const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
@@ -38,7 +37,35 @@ const ReportsHSI = () => {
 
   const totalRowStyle = "bg-[#cccccc] text-[#464647] font-bold border-slate-400";
 
+  // Fetch date range dari backend
+  const fetchDateRange = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi/date-range`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      
+      if (response.data?.data) {
+        setStartDate(new Date(response.data.data.min_date))
+        setEndDate(new Date(response.data.data.max_date))
+      }
+    } catch (error) {
+      console.error('Failed to fetch date range:', error)
+      // Fallback ke default jika error
+      setStartDate(new Date('2000-01-01'))
+      setEndDate(new Date())
+    } finally {
+      setLoadingDates(false)
+    }
+  }
+
   const fetchData = async () => {
+    if (!startDate || !endDate) {
+      alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
+      return
+    }
+    
     try {
       setLoading(true)
       const token = localStorage.getItem('accessToken')
@@ -64,12 +91,19 @@ const ReportsHSI = () => {
     }
   }
 
+  // Auto-load date range dan data saat pertama kali buka halaman
   useEffect(() => {
-    if (startDate && endDate) {
-        fetchData()
+    fetchDateRange()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch data setelah dates ter-set
+  useEffect(() => {
+    if (startDate && endDate && !loadingDates) {
+      fetchData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate])
+  }, [startDate, endDate, loadingDates])
 
   const filteredData = useMemo(() => {
     if (!selectedWitel) return reportData
@@ -77,6 +111,11 @@ const ReportsHSI = () => {
   }, [reportData, selectedWitel])
 
   const handleExport = () => {
+    if (!startDate || !endDate) {
+      alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
+      return
+    }
+    
     const params = new URLSearchParams({ 
         start_date: startDate.toISOString(), 
         end_date: endDate.toISOString() 
@@ -196,8 +235,10 @@ const ReportsHSI = () => {
             <tbody className="bg-white text-gray-700">
                 {loading ? (
                     <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Loading data...</td></tr>
-                ) : filteredData.length === 0 ? (
-                    <tr><td colSpan="30" className="py-4 text-sm text-gray-500">Tidak ada data untuk periode ini.</td></tr>
+                ) : reportData.length === 0 ? (
+                    <tr><td colSpan="30" className="py-4 text-sm text-gray-500">
+                        {startDate && endDate ? 'Tidak ada data untuk periode ini.' : 'Silakan pilih tanggal dan klik Go untuk menampilkan data'}
+                    </td></tr>
                 ) : (
                     filteredData.map((row, index) => (
                     <tr 
