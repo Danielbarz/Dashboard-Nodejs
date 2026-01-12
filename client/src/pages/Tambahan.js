@@ -97,12 +97,14 @@ const Tambahan = () => {
     rawTopWitel.forEach(item => {
       const key = item.region || 'Unknown'
       if (!groups[key]) groups[key] = []
-      groups[key].push({
-        nama_project: item.uraian_kegiatan,
-        ihld: item.id_i_hld,
-        usia: item.usia,
-        status_tomps: item.status_tomps_new
-      })
+      if (groups[key].length < 3) {
+        groups[key].push({
+          nama_project: item.uraian_kegiatan,
+          ihld: item.id_i_hld,
+          usia: item.usia,
+          status_tomps: item.status_tomps_new
+        })
+      }
     })
     return Object.entries(groups).map(([witel, items]) => ({ witel, items }))
   }, [rawTopWitel])
@@ -112,13 +114,15 @@ const Tambahan = () => {
     rawTopPo.forEach(item => {
       const key = item.po_name || 'Unknown'
       if (!groups[key]) groups[key] = []
-      groups[key].push({
-        nama_project: item.uraian_kegiatan,
-        witel: item.region, // Use region as witel label
-        childWitel: item.witel_norm, // Use witel_norm as child witel
-        usia: item.usia,
-        status_tomps: item.status_tomps_new
-      })
+      if (groups[key].length < 3) {
+        groups[key].push({
+          nama_project: item.uraian_kegiatan,
+          witel: item.region, // Use region as witel label
+          childWitel: item.witel_norm, // Use witel_norm as child witel
+          usia: item.usia,
+          status_tomps: item.status_tomps_new
+        })
+      }
     })
     return Object.entries(groups).map(([po, items]) => ({ po, items }))
   }, [rawTopPo])

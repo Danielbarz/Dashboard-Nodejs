@@ -369,7 +369,7 @@ const getReportTambahan = async (req, res, next) => {
       orderBy: { name: 'asc' }
     })
 
-    // Sort AOs: Specific filters first to ensure they catch specific segments before general ones
+    // Sort AOs: Specific filters first
     const sortedAOs = [...accountOfficers].sort((a, b) => {
       const aHasSpecial = !!a.specialFilterColumn
       const bHasSpecial = !!b.specialFilterColumn
@@ -378,16 +378,26 @@ const getReportTambahan = async (req, res, next) => {
       return 0
     })
 
-    // Improved Matcher: Checks both specific Witel and Parent Region
+    // Segment Normalizer
+    const normalizeSegment = (seg) => {
+       const s = (seg || '').toUpperCase()
+       // Enterprise / Government Group
+       if (['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT', 'KORPORAT', 'EBIS'].includes(s)) return 'LEGS'
+       // Everything else defaults to SME for mapping purposes if not explicit
+       if (['DBS', 'SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'WIB'].includes(s)) return 'SME'
+
+       return 'SME'
+    }
+
+    // Improved Matcher: Checks both specific Witel and Parent Region, and Normalizes Segment
     const findAO = (cleanWitel, parentWitel, segment) => {
       const witelNorm = (cleanWitel || '').toUpperCase()
       const parentNorm = (parentWitel || '').toUpperCase()
-      const segmentNorm = (segment || '').toUpperCase()
+      const segmentNorm = normalizeSegment(segment)
 
       for (const ao of sortedAOs) {
         const wFilters = (ao.filterWitelLama || '').toUpperCase().split(',').map(s=>s.trim()).filter(s=>s)
 
-        // Check match on either specific witel OR parent region
         const witelMatch = wFilters.some(f => witelNorm.includes(f) || parentNorm.includes(f))
 
         if (!witelMatch) continue
@@ -396,7 +406,7 @@ const getReportTambahan = async (req, res, next) => {
            const col = ao.specialFilterColumn.toLowerCase()
            const val = ao.specialFilterValue.toUpperCase()
            if (col === 'segment' || col === 'segmen') {
-              if (segmentNorm.includes(val)) return ao
+              if (segmentNorm === val || segmentNorm.includes(val)) return ao
            }
         } else {
            return ao
@@ -596,73 +606,77 @@ const getReportTambahan = async (req, res, next) => {
       finalProjects.push(...(groupedProject.get(key) || []))
     })
 
-    // --- TOP 3 AGING WITEL ---
-    const top3WitelRaw = await prisma.$queryRawUnsafe(
-      `WITH Ranked AS (
-         SELECT
-           TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) as witel_norm,
-           id_i_hld,
-           tanggal_mom,
-           revenue_plan,
-           status_tomps_new,
-           usia,
-           uraian_kegiatan,
-           ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) ORDER BY usia DESC) as rn
-         FROM spmk_mom
-         WHERE go_live = 'N' AND populasi_non_drop = 'Y'
-       )
-       SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`
-    )
-
-    // --- TOP 3 PO MAPPING ---
-    const rawActiveProjects = await prisma.spmkMom.findMany({
+    // --- TOP 3 AGING WITEL & PO (Unified Logic) ---
+    const activeProjects = await prisma.spmkMom.findMany({
       where: {
         goLive: 'N',
-        populasiNonDrop: 'Y'
-      },
-      select: {
-        witelLama: true,
-        witelBaru: true,
-        segmen: true,
-        poName: true,
-        idIHld: true,
-        tanggalMom: true,
-        revenuePlan: true,
-        statusTompsNew: true,
-        usia: true,
-        uraianKegiatan: true
+        populasiNonDrop: 'Y',
+        ...(start_date && end_date ? {
+          tanggalMom: {
+            gte: new Date(start_date),
+            lte: new Date(end_date)
+          }
+        } : {})
       },
       orderBy: { usia: 'desc' }
     })
 
+    const witelGroups = {}
     const poGroups = {}
-    rawActiveProjects.forEach(proj => {
+
+    activeProjects.forEach(proj => {
       const rawWitel = cleanWitelName(proj.witelLama || proj.witelBaru)
       const parent = findParent(rawWitel)
-      const ao = findAO(rawWitel, parent, proj.segmen) // PASS BOTH
+
+      // Witel Grouping (Top 3 per Parent Region)
+      if (!witelGroups[parent]) witelGroups[parent] = []
+      if (witelGroups[parent].length < 3) {
+        witelGroups[parent].push({
+          region: parent,
+          witel_norm: rawWitel,
+          id_i_hld: proj.idIHld,
+          usia: proj.usia,
+          status_tomps_new: proj.statusTompsNew,
+          uraian_kegiatan: proj.uraianKegiatan,
+          revenue_plan: Number(proj.revenuePlan || 0),
+          rn: witelGroups[parent].length + 1
+        })
+      }
+
+      // PO Grouping (Top 3 per Account Officer)
+      const ao = findAO(rawWitel, parent, proj.segmen)
       const aoName = ao ? ao.name : (proj.poName || 'UNMAPPED PO')
-
       if (!poGroups[aoName]) poGroups[aoName] = []
-
       if (poGroups[aoName].length < 3) {
         poGroups[aoName].push({
           po_name: aoName,
+          region: parent,
           witel_norm: rawWitel,
           id_i_hld: proj.idIHld,
-          tanggal_mom: proj.tanggalMom,
-          revenue_plan: Number(proj.revenuePlan || 0),
-          status_tomps_new: proj.statusTompsNew,
           usia: proj.usia,
-          uraian_kegiatan: proj.uraianKegiatan
+          status_tomps_new: proj.statusTompsNew,
+          uraian_kegiatan: proj.uraianKegiatan,
+          revenue_plan: Number(proj.revenuePlan || 0),
+          rn: poGroups[aoName].length + 1
         })
       }
     })
 
+    const top3WitelMapped = []
+    const sortedWitelKeys = Object.keys(witelGroups).sort() // Alphabetical regions
+    sortedWitelKeys.forEach(key => {
+      top3WitelMapped.push(...witelGroups[key])
+    })
+
     const top3PoMapped = []
-    Object.keys(poGroups).sort().forEach(key => {
-      poGroups[key].forEach((item, idx) => {
-        top3PoMapped.push({ ...item, rn: idx + 1 })
-      })
+    // Sort POs by the age of their oldest project
+    const sortedPoKeys = Object.keys(poGroups).sort((a, b) => {
+        const ageA = poGroups[a][0]?.usia || 0
+        const ageB = poGroups[b][0]?.usia || 0
+        return ageB - ageA
+    })
+    sortedPoKeys.forEach(key => {
+      top3PoMapped.push(...poGroups[key])
     })
 
     // --- TOP MITRA REVENUE MAPPING ---
@@ -708,9 +722,10 @@ const getReportTambahan = async (req, res, next) => {
         END as range,
         COUNT(*)::int as count
       FROM spmk_mom
-      WHERE go_live = 'N' AND populasi_non_drop = 'Y'
+      ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}
       GROUP BY range
-      ORDER BY range`
+      ORDER BY range`,
+      ...params
     )
 
     const trendRaw = await prisma.$queryRawUnsafe(
@@ -725,20 +740,12 @@ const getReportTambahan = async (req, res, next) => {
       ...params
     )
 
-    const formatRaw = (rows) => rows.map(r => ({
-      ...r,
-      region: findParent(r.witel_norm || r.witel || ''),
-      revenue_plan: Number(r.revenue_plan || 0),
-      usia: Number(r.usia || 0),
-      rn: Number(r.rn)
-    }))
-
     successResponse(
       res,
       {
         tableData: finalTable,
         projectData: finalProjects,
-        top3Witel: formatRaw(top3WitelRaw),
+        top3Witel: top3WitelMapped,
         top3Po: top3PoMapped,
         bucketUsiaData: bucketUsiaRaw,
         trendGolive: trendRaw,
