@@ -12,7 +12,8 @@ import {
   MdKeyboardArrowDown,
   MdPeople,
   MdHistory,
-  MdMerge
+  MdMerge,
+  MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
@@ -538,6 +539,16 @@ const AppLayout = ({ children, pageTitle }) => {
             )}
           </div>
           )}
+
+          {/* Master Data Link */}
+          <NavLink
+            href="/master-data-po"
+            active={isActive('/master-data-po')}
+            icon={MdStorage}
+            isSidebarOpen={isExpanded}
+          >
+            Master Data PO
+          </NavLink>
 
           {/* Admin Section - Only for superadmin */}
           {isSuperAdmin && (

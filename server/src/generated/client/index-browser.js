@@ -461,15 +461,15 @@ exports.Prisma.JobsScalarFieldEnum = {
   created_at: 'created_at'
 };
 
-exports.Prisma.List_poScalarFieldEnum = {
+exports.Prisma.ListPoScalarFieldEnum = {
   id: 'id',
   nipnas: 'nipnas',
   po: 'po',
   segment: 'segment',
-  bill_city: 'bill_city',
+  billCity: 'billCity',
   witel: 'witel',
-  created_at: 'created_at',
-  updated_at: 'updated_at'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MigrationsScalarFieldEnum = {
@@ -691,7 +691,7 @@ exports.Prisma.ModelName = {
   failed_jobs: 'failed_jobs',
   job_batches: 'job_batches',
   jobs: 'jobs',
-  list_po: 'list_po',
+  ListPo: 'ListPo',
   migrations: 'migrations',
   order_status_logs: 'order_status_logs',
   password_reset_tokens: 'password_reset_tokens',

@@ -392,15 +392,17 @@ model jobs {
   @@index([queue], map: "idx_jobs_queue")
 }
 
-model list_po {
-  id         BigInt    @id @default(autoincrement())
-  nipnas     String?   @db.VarChar(255)
-  po         String    @db.VarChar(255)
-  segment    String?   @db.VarChar(255)
-  bill_city  String?   @db.VarChar(255)
-  witel      String?   @db.VarChar(255)
-  created_at DateTime? @db.Timestamp(6)
-  updated_at DateTime? @db.Timestamp(6)
+model ListPo {
+  id        BigInt    @id @default(autoincrement())
+  nipnas    String    @unique @db.VarChar(255)
+  po        String    @db.VarChar(255)
+  segment   String?   @db.VarChar(255)
+  billCity  String?   @map("bill_city") @db.VarChar(255)
+  witel     String?   @db.VarChar(255)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("list_po")
 }
 
 model migrations {
