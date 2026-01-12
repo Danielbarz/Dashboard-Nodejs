@@ -539,6 +539,17 @@ const AppLayout = ({ children, pageTitle }) => {
           </div>
           )}
 
+          {isAdminMode && (
+            <NavLink
+              href="/admin/master-data-po"
+              active={isActive('/admin/master-data-po')}
+              icon={MdStorage} // Pastikan sudah di-import di atas
+              isSidebarOpen={isExpanded}
+            >
+              Master Data PO
+            </NavLink>
+          )}
+
           {/* Admin Section - Only for superadmin */}
           {isSuperAdmin && (
             <>
