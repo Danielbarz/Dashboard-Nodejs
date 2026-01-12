@@ -590,7 +590,7 @@ export const getReportAnalysis = async (req, res, next) => {
         targetRows = regionMapping[selectedRegion]
       } 
       // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
-      else if (selectedWitels.length > 0) {
+      else if (witelList.length > 0) {
         targetRows = targetRows.filter(r => witelList.includes(r))
       }
     }
@@ -609,7 +609,7 @@ export const getReportAnalysis = async (req, res, next) => {
           witel: true,
           productName: true,
           status: true,
-          revenue: true
+          netPrice: true
         }
       })
 
@@ -659,7 +659,7 @@ export const getReportAnalysis = async (req, res, next) => {
              if (rawWitel.includes('BALI')) mappedName = 'BALI'
              else if (rawWitel.includes('JATIM BARAT')) mappedName = 'JATIM BARAT'
              else if (rawWitel.includes('JATIM TIMUR')) mappedName = 'JATIM TIMUR'
-             else if (rawWitel.includes('NUSA TENGGARA')) mappedName = 'NUSA TENGGARA'
+             else if (rawWitel.includes('NUSA') || rawWitel.includes('NTB') || rawWitel.includes('NTT')) return mappedName = 'NUSA TENGGARA'
              else if (rawWitel.includes('SURAMADU')) mappedName = 'SURAMADU'
           }
         }
@@ -684,7 +684,19 @@ export const getReportAnalysis = async (req, res, next) => {
           totalOgp++
         } else {
           witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
-          witelMap[mappedName][`revenue_${productCode}_ach`] += parseFloat(row.revenue || 0) / 1000000 // Convert to Juta
+          
+          // Use netPrice if available, otherwise fallback to extraction from productName (for AE products)
+          let amount = 0
+          const np = row.netPrice
+          if (np !== null && np !== undefined && Number(np) > 0) {
+             amount = Number(np)
+          } else if (row.productName) {
+             // Fallback: Extract from "Total (Sebelum PPN) : 35000" (flexible spacing)
+             const match = row.productName.match(/Total \(Sebelum PPN\)\s*:\s*([0-9]+)/i)
+             if (match) amount = parseInt(match[1])
+          }
+
+          witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta
           totalClosed++
         }
       })
@@ -994,8 +1006,9 @@ export const getReportDetails = async (req, res, next) => {
         batchId: true,
         subType: true,
         status: true,
-        revenue: true,
+        netPrice: true,
         category: true,
+        channel: true
       },
       orderBy: {
         orderDate: 'desc'
@@ -1022,10 +1035,7 @@ export const getReportDetails = async (req, res, next) => {
       else if (pNameLower.includes('antares') || pNameLower.includes('iot') || pNameLower.includes('camera') || pNameLower.includes('cctv') || pNameLower.includes('recording')) shortProductName = 'Antares'
       
       // Channel Logic
-      let channel = 'SC-ONE'
-      if ((row.witel && row.witel.includes('NCX')) || (row.branch && row.branch.includes('NCX'))) {
-        channel = 'NCX'
-      }
+      let channel = row.channel || ''
 
       return {
         order_id: row.orderNumber,
@@ -1039,7 +1049,7 @@ export const getReportDetails = async (req, res, next) => {
         batch_id: row.batchId,
         order_subtype: row.subType,
         order_status: row.status,
-        net_price: parseFloat(row.revenue || 0),
+        net_price: parseFloat(row.netPrice || 0),
         week: getWeekNumber(row.orderDate),
         channel: channel, 
         layanan: row.category
@@ -1101,7 +1111,8 @@ export const getKPIPOData = async (req, res, next) => {
         witel: true,
         status: true,
         productName: true,
-        segment: true // Needed for special filter
+        segment: true, // Needed for special filter
+        channel: true
       }
     })
 
@@ -1123,18 +1134,31 @@ export const getKPIPOData = async (req, res, next) => {
         let specialMatch = true
         if (ao.specialFilterColumn && ao.specialFilterValue) {
            const col = ao.specialFilterColumn // e.g. 'segment'
-           const val = ao.specialFilterValue // e.g. 'SME'
+           const val = ao.specialFilterValue.toUpperCase() // e.g. 'SME' or 'LEGS'
            
-           // Check if row has this column
-           // Note: In Prisma result, 'segment' is the property name for segment
            const rowCol = col === 'segment' ? 'segment' : col
-
            if (row[rowCol] === undefined) {
              specialMatch = false
            } else {
-             const rowVal = (row[rowCol] || '').toLowerCase()
-             if (!rowVal.includes(val.toLowerCase())) {
-               specialMatch = false
+             const rowVal = (row[rowCol] || '').toUpperCase()
+             
+             // --- LOGIC GROUPING SEGMENT ---
+             if (col === 'segment') {
+                if (val === 'SME') {
+                   // SME Group
+                   const smeKeywords = ['SME', 'RBS', 'DSS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'ERM']
+                   specialMatch = smeKeywords.some(k => rowVal.includes(k))
+                } else if (val === 'LEGS') {
+                   // LEGS Group (Assuming REG falls here based on distribution, verify if needed)
+                   // Added 'REG' to LEGS based on implicit requirement usually found in Telkom projects
+                   const legsKeywords = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT']
+                   specialMatch = legsKeywords.some(k => rowVal.includes(k))
+                } else {
+                   // Default: exact/partial match
+                   specialMatch = rowVal.includes(val)
+                }
+             } else {
+                specialMatch = rowVal.includes(val)
              }
            }
         }
@@ -1149,16 +1173,20 @@ export const getKPIPOData = async (req, res, next) => {
       let ogp_scone = 0
 
       relevantData.forEach(row => {
-        const isNcx = row.witel && row.witel.toUpperCase().includes('NCX')
+        const channelRaw = (row.channel || '').toUpperCase().trim()
+        const isNcx = (channelRaw === 'NCX')
+        // Match SC-ONE, SC ONE, SCONE, SC-One, etc.
+        const isScOne = (channelRaw === 'SC-ONE' || channelRaw === 'SC ONE' || channelRaw === 'SCONE')
+        
         const statusLower = (row.status || '').toLowerCase()
-        const isDone = ['completed', 'activated', 'live', 'closed', 'done'].some(s => statusLower.includes(s))
+        const isDone = ['completed', 'activated', 'live', 'closed', 'done', 'complete'].some(s => statusLower.includes(s))
 
         if (isDone) {
           if (isNcx) done_ncx++
-          else done_scone++
+          else if (isScOne) done_scone++
         } else {
           if (isNcx) ogp_ncx++
-          else ogp_scone++
+          else if (isScOne) ogp_scone++
         }
       })
 

@@ -425,8 +425,18 @@ const DigitalProduct = () => {
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
   const [chartStartDate, setChartStartDate] = useState(firstDay.toISOString().split('T')[0])
   const [chartEndDate, setChartEndDate] = useState(now.toISOString().split('T')[0])
-  const [chartWitel, setChartWitel] = useState('ALL')
   const [chartLoading, setChartLoading] = useState(false)
+  
+  // Filters State
+  const [selectedWitels, setSelectedWitels] = useState([])
+  const [selectedBranches, setSelectedBranches] = useState([])
+  const [selectedProducts, setSelectedProducts] = useState([])
+  const [filterOptions, setFilterOptions] = useState({
+    witels: [],
+    products: [],
+    branchMap: {}
+  })
+
   const [chartData, setChartData] = useState({
     revenueByWitel: [],
     amountByWitel: [],
@@ -438,12 +448,54 @@ const DigitalProduct = () => {
     channels: []
   })
 
+  // Fetch Filter Options
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await api.get('/dashboard/digital-product/filters')
+        if (response.data.success) {
+          setFilterOptions(response.data.data)
+        }
+      } catch (error) {
+        console.error('Error fetching filters:', error)
+      }
+    }
+    fetchFilters()
+  }, [])
+
+  // Derived Branch Options based on Selected Witels
+  const availableBranchOptions = useMemo(() => {
+    if (selectedWitels.length === 0) {
+      // If no witel selected, show all branches or none? Usually all or none. 
+      // Let's show all available branches if needed, or better, dependent on witel.
+      // If no witel selected, maybe show nothing or all. Let's show all.
+      return Object.values(filterOptions.branchMap).flat().sort()
+    }
+    return selectedWitels.flatMap(witel => filterOptions.branchMap[witel] || []).sort()
+  }, [selectedWitels, filterOptions.branchMap])
+
+  // Reset branches if selected witel changes and selected branch is no longer valid
+  useEffect(() => {
+    const validBranches = selectedBranches.filter(b => availableBranchOptions.includes(b))
+    if (validBranches.length !== selectedBranches.length) {
+      setSelectedBranches(validBranches)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWitels])
+
   // Fetch chart data
   const fetchChartData = async () => {
     setChartLoading(true)
     try {
-      const params = { start_date: chartStartDate, end_date: chartEndDate }
-      if (chartWitel !== 'ALL') params.witel = chartWitel
+      const params = { 
+        start_date: chartStartDate, 
+        end_date: chartEndDate 
+      }
+      
+      if (selectedWitels.length > 0) params.witel = selectedWitels.join(',')
+      if (selectedBranches.length > 0) params.branch = selectedBranches.join(',')
+      if (selectedProducts.length > 0) params.product = selectedProducts.join(',')
+
       const response = await api.get('/dashboard/digital-product/charts', { params })
       if (response.data.success) {
         setChartData(response.data.data)
@@ -458,7 +510,7 @@ const DigitalProduct = () => {
   useEffect(() => {
     fetchChartData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartStartDate, chartEndDate, chartWitel])
+  }, [chartStartDate, chartEndDate, selectedWitels, selectedBranches, selectedProducts])
 
   // Mock data - all empty
   const reportData = []
@@ -466,9 +518,6 @@ const DigitalProduct = () => {
   const historyData = []
   const qcData = []
   const kpiData = []
-
-  // Witel options for chart filter
-  const witelOptions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
   const detailsTotals = useMemo(
     () => ({
@@ -545,20 +594,42 @@ const DigitalProduct = () => {
           {/* Chart Filters */}
           <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
             <div className="flex flex-wrap items-center gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Witel</label>
-                <select
-                  value={chartWitel}
-                  onChange={(e) => setChartWitel(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="ALL">Semua Witel</option>
-                  {witelOptions.map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
+              
+              {/* Product Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Product</label>
+                <MultiSelectDropdown
+                  options={filterOptions.products}
+                  selected={selectedProducts}
+                  onChange={setSelectedProducts}
+                  placeholder="Semua Produk"
+                />
               </div>
-              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+
+              {/* Witel Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Witel</label>
+                <MultiSelectDropdown
+                  options={filterOptions.witels}
+                  selected={selectedWitels}
+                  onChange={setSelectedWitels}
+                  placeholder="Semua Witel"
+                />
+              </div>
+
+              {/* Branch Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
+                <MultiSelectDropdown
+                  options={availableBranchOptions}
+                  selected={selectedBranches}
+                  onChange={setSelectedBranches}
+                  placeholder="Semua Branch"
+                />
+              </div>
+
+              {/* Date Filter */}
+              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border mt-5">
                 <div className="flex flex-col">
                   <label className="text-[10px] font-medium text-gray-400 uppercase">Dari</label>
                   <input
@@ -582,7 +653,7 @@ const DigitalProduct = () => {
               <button
                 onClick={fetchChartData}
                 disabled={chartLoading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 mt-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
                 {chartLoading ? 'Loading...' : 'Refresh'}
               </button>

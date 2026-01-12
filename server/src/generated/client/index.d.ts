@@ -3373,12 +3373,18 @@ export namespace Prisma {
     id: number | null
     revenue: Decimal | null
     amount: Decimal | null
+    netPrice: Decimal | null
+    tahun: number | null
+    week: number | null
   }
 
   export type DigitalProductSumAggregateOutputType = {
     id: bigint | null
     revenue: Decimal | null
     amount: Decimal | null
+    netPrice: Decimal | null
+    tahun: number | null
+    week: number | null
   }
 
   export type DigitalProductMinAggregateOutputType = {
@@ -3388,16 +3394,39 @@ export namespace Prisma {
     customerName: string | null
     poName: string | null
     witel: string | null
+    regional: string | null
+    channel: string | null
     branch: string | null
     revenue: Decimal | null
     amount: Decimal | null
+    netPrice: Decimal | null
     status: string | null
     milestone: string | null
     segment: string | null
     category: string | null
     subType: string | null
     orderDate: Date | null
+    orderCreatedDate: Date | null
+    billcompDate: Date | null
+    lastUpdate: Date | null
     batchId: string | null
+    filterProduct: string | null
+    productOrderId: string | null
+    ach: string | null
+    activeUser: string | null
+    joinNamaTarget: string | null
+    layanan: string | null
+    orderStatusN: string | null
+    productNameGroup: string | null
+    produkDetails: string | null
+    regionalAntaresEazy: string | null
+    regionalJoin: string | null
+    segmenN: string | null
+    sto: string | null
+    tahun: number | null
+    week: number | null
+    targetOperational: string | null
+    telda: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3409,16 +3438,39 @@ export namespace Prisma {
     customerName: string | null
     poName: string | null
     witel: string | null
+    regional: string | null
+    channel: string | null
     branch: string | null
     revenue: Decimal | null
     amount: Decimal | null
+    netPrice: Decimal | null
     status: string | null
     milestone: string | null
     segment: string | null
     category: string | null
     subType: string | null
     orderDate: Date | null
+    orderCreatedDate: Date | null
+    billcompDate: Date | null
+    lastUpdate: Date | null
     batchId: string | null
+    filterProduct: string | null
+    productOrderId: string | null
+    ach: string | null
+    activeUser: string | null
+    joinNamaTarget: string | null
+    layanan: string | null
+    orderStatusN: string | null
+    productNameGroup: string | null
+    produkDetails: string | null
+    regionalAntaresEazy: string | null
+    regionalJoin: string | null
+    segmenN: string | null
+    sto: string | null
+    tahun: number | null
+    week: number | null
+    targetOperational: string | null
+    telda: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3430,16 +3482,39 @@ export namespace Prisma {
     customerName: number
     poName: number
     witel: number
+    regional: number
+    channel: number
     branch: number
     revenue: number
     amount: number
+    netPrice: number
     status: number
     milestone: number
     segment: number
     category: number
     subType: number
     orderDate: number
+    orderCreatedDate: number
+    billcompDate: number
+    lastUpdate: number
     batchId: number
+    filterProduct: number
+    productOrderId: number
+    ach: number
+    activeUser: number
+    joinNamaTarget: number
+    layanan: number
+    orderStatusN: number
+    productNameGroup: number
+    produkDetails: number
+    regionalAntaresEazy: number
+    regionalJoin: number
+    segmenN: number
+    sto: number
+    tahun: number
+    week: number
+    targetOperational: number
+    telda: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -3450,12 +3525,18 @@ export namespace Prisma {
     id?: true
     revenue?: true
     amount?: true
+    netPrice?: true
+    tahun?: true
+    week?: true
   }
 
   export type DigitalProductSumAggregateInputType = {
     id?: true
     revenue?: true
     amount?: true
+    netPrice?: true
+    tahun?: true
+    week?: true
   }
 
   export type DigitalProductMinAggregateInputType = {
@@ -3465,16 +3546,39 @@ export namespace Prisma {
     customerName?: true
     poName?: true
     witel?: true
+    regional?: true
+    channel?: true
     branch?: true
     revenue?: true
     amount?: true
+    netPrice?: true
     status?: true
     milestone?: true
     segment?: true
     category?: true
     subType?: true
     orderDate?: true
+    orderCreatedDate?: true
+    billcompDate?: true
+    lastUpdate?: true
     batchId?: true
+    filterProduct?: true
+    productOrderId?: true
+    ach?: true
+    activeUser?: true
+    joinNamaTarget?: true
+    layanan?: true
+    orderStatusN?: true
+    productNameGroup?: true
+    produkDetails?: true
+    regionalAntaresEazy?: true
+    regionalJoin?: true
+    segmenN?: true
+    sto?: true
+    tahun?: true
+    week?: true
+    targetOperational?: true
+    telda?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3486,16 +3590,39 @@ export namespace Prisma {
     customerName?: true
     poName?: true
     witel?: true
+    regional?: true
+    channel?: true
     branch?: true
     revenue?: true
     amount?: true
+    netPrice?: true
     status?: true
     milestone?: true
     segment?: true
     category?: true
     subType?: true
     orderDate?: true
+    orderCreatedDate?: true
+    billcompDate?: true
+    lastUpdate?: true
     batchId?: true
+    filterProduct?: true
+    productOrderId?: true
+    ach?: true
+    activeUser?: true
+    joinNamaTarget?: true
+    layanan?: true
+    orderStatusN?: true
+    productNameGroup?: true
+    produkDetails?: true
+    regionalAntaresEazy?: true
+    regionalJoin?: true
+    segmenN?: true
+    sto?: true
+    tahun?: true
+    week?: true
+    targetOperational?: true
+    telda?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3507,16 +3634,39 @@ export namespace Prisma {
     customerName?: true
     poName?: true
     witel?: true
+    regional?: true
+    channel?: true
     branch?: true
     revenue?: true
     amount?: true
+    netPrice?: true
     status?: true
     milestone?: true
     segment?: true
     category?: true
     subType?: true
     orderDate?: true
+    orderCreatedDate?: true
+    billcompDate?: true
+    lastUpdate?: true
     batchId?: true
+    filterProduct?: true
+    productOrderId?: true
+    ach?: true
+    activeUser?: true
+    joinNamaTarget?: true
+    layanan?: true
+    orderStatusN?: true
+    productNameGroup?: true
+    produkDetails?: true
+    regionalAntaresEazy?: true
+    regionalJoin?: true
+    segmenN?: true
+    sto?: true
+    tahun?: true
+    week?: true
+    targetOperational?: true
+    telda?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -3615,16 +3765,39 @@ export namespace Prisma {
     customerName: string | null
     poName: string | null
     witel: string | null
+    regional: string | null
+    channel: string | null
     branch: string | null
     revenue: Decimal
     amount: Decimal
+    netPrice: Decimal
     status: string | null
     milestone: string | null
     segment: string | null
     category: string | null
     subType: string | null
     orderDate: Date | null
+    orderCreatedDate: Date | null
+    billcompDate: Date | null
+    lastUpdate: Date | null
     batchId: string | null
+    filterProduct: string | null
+    productOrderId: string | null
+    ach: string | null
+    activeUser: string | null
+    joinNamaTarget: string | null
+    layanan: string | null
+    orderStatusN: string | null
+    productNameGroup: string | null
+    produkDetails: string | null
+    regionalAntaresEazy: string | null
+    regionalJoin: string | null
+    segmenN: string | null
+    sto: string | null
+    tahun: number | null
+    week: number | null
+    targetOperational: string | null
+    telda: string | null
     createdAt: Date
     updatedAt: Date
     _count: DigitalProductCountAggregateOutputType | null
@@ -3655,16 +3828,39 @@ export namespace Prisma {
     customerName?: boolean
     poName?: boolean
     witel?: boolean
+    regional?: boolean
+    channel?: boolean
     branch?: boolean
     revenue?: boolean
     amount?: boolean
+    netPrice?: boolean
     status?: boolean
     milestone?: boolean
     segment?: boolean
     category?: boolean
     subType?: boolean
     orderDate?: boolean
+    orderCreatedDate?: boolean
+    billcompDate?: boolean
+    lastUpdate?: boolean
     batchId?: boolean
+    filterProduct?: boolean
+    productOrderId?: boolean
+    ach?: boolean
+    activeUser?: boolean
+    joinNamaTarget?: boolean
+    layanan?: boolean
+    orderStatusN?: boolean
+    productNameGroup?: boolean
+    produkDetails?: boolean
+    regionalAntaresEazy?: boolean
+    regionalJoin?: boolean
+    segmenN?: boolean
+    sto?: boolean
+    tahun?: boolean
+    week?: boolean
+    targetOperational?: boolean
+    telda?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["digitalProduct"]>
@@ -3676,16 +3872,39 @@ export namespace Prisma {
     customerName?: boolean
     poName?: boolean
     witel?: boolean
+    regional?: boolean
+    channel?: boolean
     branch?: boolean
     revenue?: boolean
     amount?: boolean
+    netPrice?: boolean
     status?: boolean
     milestone?: boolean
     segment?: boolean
     category?: boolean
     subType?: boolean
     orderDate?: boolean
+    orderCreatedDate?: boolean
+    billcompDate?: boolean
+    lastUpdate?: boolean
     batchId?: boolean
+    filterProduct?: boolean
+    productOrderId?: boolean
+    ach?: boolean
+    activeUser?: boolean
+    joinNamaTarget?: boolean
+    layanan?: boolean
+    orderStatusN?: boolean
+    productNameGroup?: boolean
+    produkDetails?: boolean
+    regionalAntaresEazy?: boolean
+    regionalJoin?: boolean
+    segmenN?: boolean
+    sto?: boolean
+    tahun?: boolean
+    week?: boolean
+    targetOperational?: boolean
+    telda?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["digitalProduct"]>
@@ -3697,16 +3916,39 @@ export namespace Prisma {
     customerName?: boolean
     poName?: boolean
     witel?: boolean
+    regional?: boolean
+    channel?: boolean
     branch?: boolean
     revenue?: boolean
     amount?: boolean
+    netPrice?: boolean
     status?: boolean
     milestone?: boolean
     segment?: boolean
     category?: boolean
     subType?: boolean
     orderDate?: boolean
+    orderCreatedDate?: boolean
+    billcompDate?: boolean
+    lastUpdate?: boolean
     batchId?: boolean
+    filterProduct?: boolean
+    productOrderId?: boolean
+    ach?: boolean
+    activeUser?: boolean
+    joinNamaTarget?: boolean
+    layanan?: boolean
+    orderStatusN?: boolean
+    productNameGroup?: boolean
+    produkDetails?: boolean
+    regionalAntaresEazy?: boolean
+    regionalJoin?: boolean
+    segmenN?: boolean
+    sto?: boolean
+    tahun?: boolean
+    week?: boolean
+    targetOperational?: boolean
+    telda?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["digitalProduct"]>
@@ -3718,21 +3960,44 @@ export namespace Prisma {
     customerName?: boolean
     poName?: boolean
     witel?: boolean
+    regional?: boolean
+    channel?: boolean
     branch?: boolean
     revenue?: boolean
     amount?: boolean
+    netPrice?: boolean
     status?: boolean
     milestone?: boolean
     segment?: boolean
     category?: boolean
     subType?: boolean
     orderDate?: boolean
+    orderCreatedDate?: boolean
+    billcompDate?: boolean
+    lastUpdate?: boolean
     batchId?: boolean
+    filterProduct?: boolean
+    productOrderId?: boolean
+    ach?: boolean
+    activeUser?: boolean
+    joinNamaTarget?: boolean
+    layanan?: boolean
+    orderStatusN?: boolean
+    productNameGroup?: boolean
+    produkDetails?: boolean
+    regionalAntaresEazy?: boolean
+    regionalJoin?: boolean
+    segmenN?: boolean
+    sto?: boolean
+    tahun?: boolean
+    week?: boolean
+    targetOperational?: boolean
+    telda?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type DigitalProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "productName" | "customerName" | "poName" | "witel" | "branch" | "revenue" | "amount" | "status" | "milestone" | "segment" | "category" | "subType" | "orderDate" | "batchId" | "createdAt" | "updatedAt", ExtArgs["result"]["digitalProduct"]>
+  export type DigitalProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "productName" | "customerName" | "poName" | "witel" | "regional" | "channel" | "branch" | "revenue" | "amount" | "netPrice" | "status" | "milestone" | "segment" | "category" | "subType" | "orderDate" | "orderCreatedDate" | "billcompDate" | "lastUpdate" | "batchId" | "filterProduct" | "productOrderId" | "ach" | "activeUser" | "joinNamaTarget" | "layanan" | "orderStatusN" | "productNameGroup" | "produkDetails" | "regionalAntaresEazy" | "regionalJoin" | "segmenN" | "sto" | "tahun" | "week" | "targetOperational" | "telda" | "createdAt" | "updatedAt", ExtArgs["result"]["digitalProduct"]>
 
   export type $DigitalProductPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "DigitalProduct"
@@ -3744,16 +4009,39 @@ export namespace Prisma {
       customerName: string | null
       poName: string | null
       witel: string | null
+      regional: string | null
+      channel: string | null
       branch: string | null
       revenue: Prisma.Decimal
       amount: Prisma.Decimal
+      netPrice: Prisma.Decimal
       status: string | null
       milestone: string | null
       segment: string | null
       category: string | null
       subType: string | null
       orderDate: Date | null
+      orderCreatedDate: Date | null
+      billcompDate: Date | null
+      lastUpdate: Date | null
       batchId: string | null
+      filterProduct: string | null
+      productOrderId: string | null
+      ach: string | null
+      activeUser: string | null
+      joinNamaTarget: string | null
+      layanan: string | null
+      orderStatusN: string | null
+      productNameGroup: string | null
+      produkDetails: string | null
+      regionalAntaresEazy: string | null
+      regionalJoin: string | null
+      segmenN: string | null
+      sto: string | null
+      tahun: number | null
+      week: number | null
+      targetOperational: string | null
+      telda: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["digitalProduct"]>
@@ -4185,16 +4473,39 @@ export namespace Prisma {
     readonly customerName: FieldRef<"DigitalProduct", 'String'>
     readonly poName: FieldRef<"DigitalProduct", 'String'>
     readonly witel: FieldRef<"DigitalProduct", 'String'>
+    readonly regional: FieldRef<"DigitalProduct", 'String'>
+    readonly channel: FieldRef<"DigitalProduct", 'String'>
     readonly branch: FieldRef<"DigitalProduct", 'String'>
     readonly revenue: FieldRef<"DigitalProduct", 'Decimal'>
     readonly amount: FieldRef<"DigitalProduct", 'Decimal'>
+    readonly netPrice: FieldRef<"DigitalProduct", 'Decimal'>
     readonly status: FieldRef<"DigitalProduct", 'String'>
     readonly milestone: FieldRef<"DigitalProduct", 'String'>
     readonly segment: FieldRef<"DigitalProduct", 'String'>
     readonly category: FieldRef<"DigitalProduct", 'String'>
     readonly subType: FieldRef<"DigitalProduct", 'String'>
     readonly orderDate: FieldRef<"DigitalProduct", 'DateTime'>
+    readonly orderCreatedDate: FieldRef<"DigitalProduct", 'DateTime'>
+    readonly billcompDate: FieldRef<"DigitalProduct", 'DateTime'>
+    readonly lastUpdate: FieldRef<"DigitalProduct", 'DateTime'>
     readonly batchId: FieldRef<"DigitalProduct", 'String'>
+    readonly filterProduct: FieldRef<"DigitalProduct", 'String'>
+    readonly productOrderId: FieldRef<"DigitalProduct", 'String'>
+    readonly ach: FieldRef<"DigitalProduct", 'String'>
+    readonly activeUser: FieldRef<"DigitalProduct", 'String'>
+    readonly joinNamaTarget: FieldRef<"DigitalProduct", 'String'>
+    readonly layanan: FieldRef<"DigitalProduct", 'String'>
+    readonly orderStatusN: FieldRef<"DigitalProduct", 'String'>
+    readonly productNameGroup: FieldRef<"DigitalProduct", 'String'>
+    readonly produkDetails: FieldRef<"DigitalProduct", 'String'>
+    readonly regionalAntaresEazy: FieldRef<"DigitalProduct", 'String'>
+    readonly regionalJoin: FieldRef<"DigitalProduct", 'String'>
+    readonly segmenN: FieldRef<"DigitalProduct", 'String'>
+    readonly sto: FieldRef<"DigitalProduct", 'String'>
+    readonly tahun: FieldRef<"DigitalProduct", 'Int'>
+    readonly week: FieldRef<"DigitalProduct", 'Int'>
+    readonly targetOperational: FieldRef<"DigitalProduct", 'String'>
+    readonly telda: FieldRef<"DigitalProduct", 'String'>
     readonly createdAt: FieldRef<"DigitalProduct", 'DateTime'>
     readonly updatedAt: FieldRef<"DigitalProduct", 'DateTime'>
   }
@@ -36436,16 +36747,39 @@ export namespace Prisma {
     customerName: 'customerName',
     poName: 'poName',
     witel: 'witel',
+    regional: 'regional',
+    channel: 'channel',
     branch: 'branch',
     revenue: 'revenue',
     amount: 'amount',
+    netPrice: 'netPrice',
     status: 'status',
     milestone: 'milestone',
     segment: 'segment',
     category: 'category',
     subType: 'subType',
     orderDate: 'orderDate',
+    orderCreatedDate: 'orderCreatedDate',
+    billcompDate: 'billcompDate',
+    lastUpdate: 'lastUpdate',
     batchId: 'batchId',
+    filterProduct: 'filterProduct',
+    productOrderId: 'productOrderId',
+    ach: 'ach',
+    activeUser: 'activeUser',
+    joinNamaTarget: 'joinNamaTarget',
+    layanan: 'layanan',
+    orderStatusN: 'orderStatusN',
+    productNameGroup: 'productNameGroup',
+    produkDetails: 'produkDetails',
+    regionalAntaresEazy: 'regionalAntaresEazy',
+    regionalJoin: 'regionalJoin',
+    segmenN: 'segmenN',
+    sto: 'sto',
+    tahun: 'tahun',
+    week: 'week',
+    targetOperational: 'targetOperational',
+    telda: 'telda',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -37202,16 +37536,39 @@ export namespace Prisma {
     customerName?: StringNullableFilter<"DigitalProduct"> | string | null
     poName?: StringNullableFilter<"DigitalProduct"> | string | null
     witel?: StringNullableFilter<"DigitalProduct"> | string | null
+    regional?: StringNullableFilter<"DigitalProduct"> | string | null
+    channel?: StringNullableFilter<"DigitalProduct"> | string | null
     branch?: StringNullableFilter<"DigitalProduct"> | string | null
     revenue?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     amount?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     status?: StringNullableFilter<"DigitalProduct"> | string | null
     milestone?: StringNullableFilter<"DigitalProduct"> | string | null
     segment?: StringNullableFilter<"DigitalProduct"> | string | null
     category?: StringNullableFilter<"DigitalProduct"> | string | null
     subType?: StringNullableFilter<"DigitalProduct"> | string | null
     orderDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    orderCreatedDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    billcompDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    lastUpdate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
     batchId?: StringNullableFilter<"DigitalProduct"> | string | null
+    filterProduct?: StringNullableFilter<"DigitalProduct"> | string | null
+    productOrderId?: StringNullableFilter<"DigitalProduct"> | string | null
+    ach?: StringNullableFilter<"DigitalProduct"> | string | null
+    activeUser?: StringNullableFilter<"DigitalProduct"> | string | null
+    joinNamaTarget?: StringNullableFilter<"DigitalProduct"> | string | null
+    layanan?: StringNullableFilter<"DigitalProduct"> | string | null
+    orderStatusN?: StringNullableFilter<"DigitalProduct"> | string | null
+    productNameGroup?: StringNullableFilter<"DigitalProduct"> | string | null
+    produkDetails?: StringNullableFilter<"DigitalProduct"> | string | null
+    regionalAntaresEazy?: StringNullableFilter<"DigitalProduct"> | string | null
+    regionalJoin?: StringNullableFilter<"DigitalProduct"> | string | null
+    segmenN?: StringNullableFilter<"DigitalProduct"> | string | null
+    sto?: StringNullableFilter<"DigitalProduct"> | string | null
+    tahun?: IntNullableFilter<"DigitalProduct"> | number | null
+    week?: IntNullableFilter<"DigitalProduct"> | number | null
+    targetOperational?: StringNullableFilter<"DigitalProduct"> | string | null
+    telda?: StringNullableFilter<"DigitalProduct"> | string | null
     createdAt?: DateTimeFilter<"DigitalProduct"> | Date | string
     updatedAt?: DateTimeFilter<"DigitalProduct"> | Date | string
   }
@@ -37223,16 +37580,39 @@ export namespace Prisma {
     customerName?: SortOrderInput | SortOrder
     poName?: SortOrderInput | SortOrder
     witel?: SortOrderInput | SortOrder
+    regional?: SortOrderInput | SortOrder
+    channel?: SortOrderInput | SortOrder
     branch?: SortOrderInput | SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
     status?: SortOrderInput | SortOrder
     milestone?: SortOrderInput | SortOrder
     segment?: SortOrderInput | SortOrder
     category?: SortOrderInput | SortOrder
     subType?: SortOrderInput | SortOrder
     orderDate?: SortOrderInput | SortOrder
+    orderCreatedDate?: SortOrderInput | SortOrder
+    billcompDate?: SortOrderInput | SortOrder
+    lastUpdate?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    filterProduct?: SortOrderInput | SortOrder
+    productOrderId?: SortOrderInput | SortOrder
+    ach?: SortOrderInput | SortOrder
+    activeUser?: SortOrderInput | SortOrder
+    joinNamaTarget?: SortOrderInput | SortOrder
+    layanan?: SortOrderInput | SortOrder
+    orderStatusN?: SortOrderInput | SortOrder
+    productNameGroup?: SortOrderInput | SortOrder
+    produkDetails?: SortOrderInput | SortOrder
+    regionalAntaresEazy?: SortOrderInput | SortOrder
+    regionalJoin?: SortOrderInput | SortOrder
+    segmenN?: SortOrderInput | SortOrder
+    sto?: SortOrderInput | SortOrder
+    tahun?: SortOrderInput | SortOrder
+    week?: SortOrderInput | SortOrder
+    targetOperational?: SortOrderInput | SortOrder
+    telda?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -37247,16 +37627,39 @@ export namespace Prisma {
     customerName?: StringNullableFilter<"DigitalProduct"> | string | null
     poName?: StringNullableFilter<"DigitalProduct"> | string | null
     witel?: StringNullableFilter<"DigitalProduct"> | string | null
+    regional?: StringNullableFilter<"DigitalProduct"> | string | null
+    channel?: StringNullableFilter<"DigitalProduct"> | string | null
     branch?: StringNullableFilter<"DigitalProduct"> | string | null
     revenue?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     amount?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     status?: StringNullableFilter<"DigitalProduct"> | string | null
     milestone?: StringNullableFilter<"DigitalProduct"> | string | null
     segment?: StringNullableFilter<"DigitalProduct"> | string | null
     category?: StringNullableFilter<"DigitalProduct"> | string | null
     subType?: StringNullableFilter<"DigitalProduct"> | string | null
     orderDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    orderCreatedDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    billcompDate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
+    lastUpdate?: DateTimeNullableFilter<"DigitalProduct"> | Date | string | null
     batchId?: StringNullableFilter<"DigitalProduct"> | string | null
+    filterProduct?: StringNullableFilter<"DigitalProduct"> | string | null
+    productOrderId?: StringNullableFilter<"DigitalProduct"> | string | null
+    ach?: StringNullableFilter<"DigitalProduct"> | string | null
+    activeUser?: StringNullableFilter<"DigitalProduct"> | string | null
+    joinNamaTarget?: StringNullableFilter<"DigitalProduct"> | string | null
+    layanan?: StringNullableFilter<"DigitalProduct"> | string | null
+    orderStatusN?: StringNullableFilter<"DigitalProduct"> | string | null
+    productNameGroup?: StringNullableFilter<"DigitalProduct"> | string | null
+    produkDetails?: StringNullableFilter<"DigitalProduct"> | string | null
+    regionalAntaresEazy?: StringNullableFilter<"DigitalProduct"> | string | null
+    regionalJoin?: StringNullableFilter<"DigitalProduct"> | string | null
+    segmenN?: StringNullableFilter<"DigitalProduct"> | string | null
+    sto?: StringNullableFilter<"DigitalProduct"> | string | null
+    tahun?: IntNullableFilter<"DigitalProduct"> | number | null
+    week?: IntNullableFilter<"DigitalProduct"> | number | null
+    targetOperational?: StringNullableFilter<"DigitalProduct"> | string | null
+    telda?: StringNullableFilter<"DigitalProduct"> | string | null
     createdAt?: DateTimeFilter<"DigitalProduct"> | Date | string
     updatedAt?: DateTimeFilter<"DigitalProduct"> | Date | string
   }, "id" | "orderNumber">
@@ -37268,16 +37671,39 @@ export namespace Prisma {
     customerName?: SortOrderInput | SortOrder
     poName?: SortOrderInput | SortOrder
     witel?: SortOrderInput | SortOrder
+    regional?: SortOrderInput | SortOrder
+    channel?: SortOrderInput | SortOrder
     branch?: SortOrderInput | SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
     status?: SortOrderInput | SortOrder
     milestone?: SortOrderInput | SortOrder
     segment?: SortOrderInput | SortOrder
     category?: SortOrderInput | SortOrder
     subType?: SortOrderInput | SortOrder
     orderDate?: SortOrderInput | SortOrder
+    orderCreatedDate?: SortOrderInput | SortOrder
+    billcompDate?: SortOrderInput | SortOrder
+    lastUpdate?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    filterProduct?: SortOrderInput | SortOrder
+    productOrderId?: SortOrderInput | SortOrder
+    ach?: SortOrderInput | SortOrder
+    activeUser?: SortOrderInput | SortOrder
+    joinNamaTarget?: SortOrderInput | SortOrder
+    layanan?: SortOrderInput | SortOrder
+    orderStatusN?: SortOrderInput | SortOrder
+    productNameGroup?: SortOrderInput | SortOrder
+    produkDetails?: SortOrderInput | SortOrder
+    regionalAntaresEazy?: SortOrderInput | SortOrder
+    regionalJoin?: SortOrderInput | SortOrder
+    segmenN?: SortOrderInput | SortOrder
+    sto?: SortOrderInput | SortOrder
+    tahun?: SortOrderInput | SortOrder
+    week?: SortOrderInput | SortOrder
+    targetOperational?: SortOrderInput | SortOrder
+    telda?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: DigitalProductCountOrderByAggregateInput
@@ -37297,16 +37723,39 @@ export namespace Prisma {
     customerName?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     poName?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     witel?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    regional?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    channel?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     branch?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     revenue?: DecimalWithAggregatesFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     amount?: DecimalWithAggregatesFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalWithAggregatesFilter<"DigitalProduct"> | Decimal | DecimalJsLike | number | string
     status?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     milestone?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     segment?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     category?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     subType?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     orderDate?: DateTimeNullableWithAggregatesFilter<"DigitalProduct"> | Date | string | null
+    orderCreatedDate?: DateTimeNullableWithAggregatesFilter<"DigitalProduct"> | Date | string | null
+    billcompDate?: DateTimeNullableWithAggregatesFilter<"DigitalProduct"> | Date | string | null
+    lastUpdate?: DateTimeNullableWithAggregatesFilter<"DigitalProduct"> | Date | string | null
     batchId?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    filterProduct?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    productOrderId?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    ach?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    activeUser?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    joinNamaTarget?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    layanan?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    orderStatusN?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    productNameGroup?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    produkDetails?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    regionalAntaresEazy?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    regionalJoin?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    segmenN?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    sto?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    tahun?: IntNullableWithAggregatesFilter<"DigitalProduct"> | number | null
+    week?: IntNullableWithAggregatesFilter<"DigitalProduct"> | number | null
+    targetOperational?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
+    telda?: StringNullableWithAggregatesFilter<"DigitalProduct"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"DigitalProduct"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"DigitalProduct"> | Date | string
   }
@@ -40229,16 +40678,39 @@ export namespace Prisma {
     customerName?: string | null
     poName?: string | null
     witel?: string | null
+    regional?: string | null
+    channel?: string | null
     branch?: string | null
     revenue?: Decimal | DecimalJsLike | number | string
     amount?: Decimal | DecimalJsLike | number | string
+    netPrice?: Decimal | DecimalJsLike | number | string
     status?: string | null
     milestone?: string | null
     segment?: string | null
     category?: string | null
     subType?: string | null
     orderDate?: Date | string | null
+    orderCreatedDate?: Date | string | null
+    billcompDate?: Date | string | null
+    lastUpdate?: Date | string | null
     batchId?: string | null
+    filterProduct?: string | null
+    productOrderId?: string | null
+    ach?: string | null
+    activeUser?: string | null
+    joinNamaTarget?: string | null
+    layanan?: string | null
+    orderStatusN?: string | null
+    productNameGroup?: string | null
+    produkDetails?: string | null
+    regionalAntaresEazy?: string | null
+    regionalJoin?: string | null
+    segmenN?: string | null
+    sto?: string | null
+    tahun?: number | null
+    week?: number | null
+    targetOperational?: string | null
+    telda?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -40250,16 +40722,39 @@ export namespace Prisma {
     customerName?: string | null
     poName?: string | null
     witel?: string | null
+    regional?: string | null
+    channel?: string | null
     branch?: string | null
     revenue?: Decimal | DecimalJsLike | number | string
     amount?: Decimal | DecimalJsLike | number | string
+    netPrice?: Decimal | DecimalJsLike | number | string
     status?: string | null
     milestone?: string | null
     segment?: string | null
     category?: string | null
     subType?: string | null
     orderDate?: Date | string | null
+    orderCreatedDate?: Date | string | null
+    billcompDate?: Date | string | null
+    lastUpdate?: Date | string | null
     batchId?: string | null
+    filterProduct?: string | null
+    productOrderId?: string | null
+    ach?: string | null
+    activeUser?: string | null
+    joinNamaTarget?: string | null
+    layanan?: string | null
+    orderStatusN?: string | null
+    productNameGroup?: string | null
+    produkDetails?: string | null
+    regionalAntaresEazy?: string | null
+    regionalJoin?: string | null
+    segmenN?: string | null
+    sto?: string | null
+    tahun?: number | null
+    week?: number | null
+    targetOperational?: string | null
+    telda?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -40271,16 +40766,39 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     poName?: NullableStringFieldUpdateOperationsInput | string | null
     witel?: NullableStringFieldUpdateOperationsInput | string | null
+    regional?: NullableStringFieldUpdateOperationsInput | string | null
+    channel?: NullableStringFieldUpdateOperationsInput | string | null
     branch?: NullableStringFieldUpdateOperationsInput | string | null
     revenue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: NullableStringFieldUpdateOperationsInput | string | null
     milestone?: NullableStringFieldUpdateOperationsInput | string | null
     segment?: NullableStringFieldUpdateOperationsInput | string | null
     category?: NullableStringFieldUpdateOperationsInput | string | null
     subType?: NullableStringFieldUpdateOperationsInput | string | null
     orderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billcompDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastUpdate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    filterProduct?: NullableStringFieldUpdateOperationsInput | string | null
+    productOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    ach?: NullableStringFieldUpdateOperationsInput | string | null
+    activeUser?: NullableStringFieldUpdateOperationsInput | string | null
+    joinNamaTarget?: NullableStringFieldUpdateOperationsInput | string | null
+    layanan?: NullableStringFieldUpdateOperationsInput | string | null
+    orderStatusN?: NullableStringFieldUpdateOperationsInput | string | null
+    productNameGroup?: NullableStringFieldUpdateOperationsInput | string | null
+    produkDetails?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalAntaresEazy?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalJoin?: NullableStringFieldUpdateOperationsInput | string | null
+    segmenN?: NullableStringFieldUpdateOperationsInput | string | null
+    sto?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    week?: NullableIntFieldUpdateOperationsInput | number | null
+    targetOperational?: NullableStringFieldUpdateOperationsInput | string | null
+    telda?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -40292,16 +40810,39 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     poName?: NullableStringFieldUpdateOperationsInput | string | null
     witel?: NullableStringFieldUpdateOperationsInput | string | null
+    regional?: NullableStringFieldUpdateOperationsInput | string | null
+    channel?: NullableStringFieldUpdateOperationsInput | string | null
     branch?: NullableStringFieldUpdateOperationsInput | string | null
     revenue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: NullableStringFieldUpdateOperationsInput | string | null
     milestone?: NullableStringFieldUpdateOperationsInput | string | null
     segment?: NullableStringFieldUpdateOperationsInput | string | null
     category?: NullableStringFieldUpdateOperationsInput | string | null
     subType?: NullableStringFieldUpdateOperationsInput | string | null
     orderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billcompDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastUpdate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    filterProduct?: NullableStringFieldUpdateOperationsInput | string | null
+    productOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    ach?: NullableStringFieldUpdateOperationsInput | string | null
+    activeUser?: NullableStringFieldUpdateOperationsInput | string | null
+    joinNamaTarget?: NullableStringFieldUpdateOperationsInput | string | null
+    layanan?: NullableStringFieldUpdateOperationsInput | string | null
+    orderStatusN?: NullableStringFieldUpdateOperationsInput | string | null
+    productNameGroup?: NullableStringFieldUpdateOperationsInput | string | null
+    produkDetails?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalAntaresEazy?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalJoin?: NullableStringFieldUpdateOperationsInput | string | null
+    segmenN?: NullableStringFieldUpdateOperationsInput | string | null
+    sto?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    week?: NullableIntFieldUpdateOperationsInput | number | null
+    targetOperational?: NullableStringFieldUpdateOperationsInput | string | null
+    telda?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -40313,16 +40854,39 @@ export namespace Prisma {
     customerName?: string | null
     poName?: string | null
     witel?: string | null
+    regional?: string | null
+    channel?: string | null
     branch?: string | null
     revenue?: Decimal | DecimalJsLike | number | string
     amount?: Decimal | DecimalJsLike | number | string
+    netPrice?: Decimal | DecimalJsLike | number | string
     status?: string | null
     milestone?: string | null
     segment?: string | null
     category?: string | null
     subType?: string | null
     orderDate?: Date | string | null
+    orderCreatedDate?: Date | string | null
+    billcompDate?: Date | string | null
+    lastUpdate?: Date | string | null
     batchId?: string | null
+    filterProduct?: string | null
+    productOrderId?: string | null
+    ach?: string | null
+    activeUser?: string | null
+    joinNamaTarget?: string | null
+    layanan?: string | null
+    orderStatusN?: string | null
+    productNameGroup?: string | null
+    produkDetails?: string | null
+    regionalAntaresEazy?: string | null
+    regionalJoin?: string | null
+    segmenN?: string | null
+    sto?: string | null
+    tahun?: number | null
+    week?: number | null
+    targetOperational?: string | null
+    telda?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -40334,16 +40898,39 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     poName?: NullableStringFieldUpdateOperationsInput | string | null
     witel?: NullableStringFieldUpdateOperationsInput | string | null
+    regional?: NullableStringFieldUpdateOperationsInput | string | null
+    channel?: NullableStringFieldUpdateOperationsInput | string | null
     branch?: NullableStringFieldUpdateOperationsInput | string | null
     revenue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: NullableStringFieldUpdateOperationsInput | string | null
     milestone?: NullableStringFieldUpdateOperationsInput | string | null
     segment?: NullableStringFieldUpdateOperationsInput | string | null
     category?: NullableStringFieldUpdateOperationsInput | string | null
     subType?: NullableStringFieldUpdateOperationsInput | string | null
     orderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billcompDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastUpdate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    filterProduct?: NullableStringFieldUpdateOperationsInput | string | null
+    productOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    ach?: NullableStringFieldUpdateOperationsInput | string | null
+    activeUser?: NullableStringFieldUpdateOperationsInput | string | null
+    joinNamaTarget?: NullableStringFieldUpdateOperationsInput | string | null
+    layanan?: NullableStringFieldUpdateOperationsInput | string | null
+    orderStatusN?: NullableStringFieldUpdateOperationsInput | string | null
+    productNameGroup?: NullableStringFieldUpdateOperationsInput | string | null
+    produkDetails?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalAntaresEazy?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalJoin?: NullableStringFieldUpdateOperationsInput | string | null
+    segmenN?: NullableStringFieldUpdateOperationsInput | string | null
+    sto?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    week?: NullableIntFieldUpdateOperationsInput | number | null
+    targetOperational?: NullableStringFieldUpdateOperationsInput | string | null
+    telda?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -40355,16 +40942,39 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     poName?: NullableStringFieldUpdateOperationsInput | string | null
     witel?: NullableStringFieldUpdateOperationsInput | string | null
+    regional?: NullableStringFieldUpdateOperationsInput | string | null
+    channel?: NullableStringFieldUpdateOperationsInput | string | null
     branch?: NullableStringFieldUpdateOperationsInput | string | null
     revenue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: NullableStringFieldUpdateOperationsInput | string | null
     milestone?: NullableStringFieldUpdateOperationsInput | string | null
     segment?: NullableStringFieldUpdateOperationsInput | string | null
     category?: NullableStringFieldUpdateOperationsInput | string | null
     subType?: NullableStringFieldUpdateOperationsInput | string | null
     orderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billcompDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastUpdate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    filterProduct?: NullableStringFieldUpdateOperationsInput | string | null
+    productOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    ach?: NullableStringFieldUpdateOperationsInput | string | null
+    activeUser?: NullableStringFieldUpdateOperationsInput | string | null
+    joinNamaTarget?: NullableStringFieldUpdateOperationsInput | string | null
+    layanan?: NullableStringFieldUpdateOperationsInput | string | null
+    orderStatusN?: NullableStringFieldUpdateOperationsInput | string | null
+    productNameGroup?: NullableStringFieldUpdateOperationsInput | string | null
+    produkDetails?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalAntaresEazy?: NullableStringFieldUpdateOperationsInput | string | null
+    regionalJoin?: NullableStringFieldUpdateOperationsInput | string | null
+    segmenN?: NullableStringFieldUpdateOperationsInput | string | null
+    sto?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    week?: NullableIntFieldUpdateOperationsInput | number | null
+    targetOperational?: NullableStringFieldUpdateOperationsInput | string | null
+    telda?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -43955,6 +44565,17 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -43978,16 +44599,39 @@ export namespace Prisma {
     customerName?: SortOrder
     poName?: SortOrder
     witel?: SortOrder
+    regional?: SortOrder
+    channel?: SortOrder
     branch?: SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
     status?: SortOrder
     milestone?: SortOrder
     segment?: SortOrder
     category?: SortOrder
     subType?: SortOrder
     orderDate?: SortOrder
+    orderCreatedDate?: SortOrder
+    billcompDate?: SortOrder
+    lastUpdate?: SortOrder
     batchId?: SortOrder
+    filterProduct?: SortOrder
+    productOrderId?: SortOrder
+    ach?: SortOrder
+    activeUser?: SortOrder
+    joinNamaTarget?: SortOrder
+    layanan?: SortOrder
+    orderStatusN?: SortOrder
+    productNameGroup?: SortOrder
+    produkDetails?: SortOrder
+    regionalAntaresEazy?: SortOrder
+    regionalJoin?: SortOrder
+    segmenN?: SortOrder
+    sto?: SortOrder
+    tahun?: SortOrder
+    week?: SortOrder
+    targetOperational?: SortOrder
+    telda?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -43996,6 +44640,9 @@ export namespace Prisma {
     id?: SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
+    tahun?: SortOrder
+    week?: SortOrder
   }
 
   export type DigitalProductMaxOrderByAggregateInput = {
@@ -44005,16 +44652,39 @@ export namespace Prisma {
     customerName?: SortOrder
     poName?: SortOrder
     witel?: SortOrder
+    regional?: SortOrder
+    channel?: SortOrder
     branch?: SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
     status?: SortOrder
     milestone?: SortOrder
     segment?: SortOrder
     category?: SortOrder
     subType?: SortOrder
     orderDate?: SortOrder
+    orderCreatedDate?: SortOrder
+    billcompDate?: SortOrder
+    lastUpdate?: SortOrder
     batchId?: SortOrder
+    filterProduct?: SortOrder
+    productOrderId?: SortOrder
+    ach?: SortOrder
+    activeUser?: SortOrder
+    joinNamaTarget?: SortOrder
+    layanan?: SortOrder
+    orderStatusN?: SortOrder
+    productNameGroup?: SortOrder
+    produkDetails?: SortOrder
+    regionalAntaresEazy?: SortOrder
+    regionalJoin?: SortOrder
+    segmenN?: SortOrder
+    sto?: SortOrder
+    tahun?: SortOrder
+    week?: SortOrder
+    targetOperational?: SortOrder
+    telda?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -44026,16 +44696,39 @@ export namespace Prisma {
     customerName?: SortOrder
     poName?: SortOrder
     witel?: SortOrder
+    regional?: SortOrder
+    channel?: SortOrder
     branch?: SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
     status?: SortOrder
     milestone?: SortOrder
     segment?: SortOrder
     category?: SortOrder
     subType?: SortOrder
     orderDate?: SortOrder
+    orderCreatedDate?: SortOrder
+    billcompDate?: SortOrder
+    lastUpdate?: SortOrder
     batchId?: SortOrder
+    filterProduct?: SortOrder
+    productOrderId?: SortOrder
+    ach?: SortOrder
+    activeUser?: SortOrder
+    joinNamaTarget?: SortOrder
+    layanan?: SortOrder
+    orderStatusN?: SortOrder
+    productNameGroup?: SortOrder
+    produkDetails?: SortOrder
+    regionalAntaresEazy?: SortOrder
+    regionalJoin?: SortOrder
+    segmenN?: SortOrder
+    sto?: SortOrder
+    tahun?: SortOrder
+    week?: SortOrder
+    targetOperational?: SortOrder
+    telda?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -44044,6 +44737,9 @@ export namespace Prisma {
     id?: SortOrder
     revenue?: SortOrder
     amount?: SortOrder
+    netPrice?: SortOrder
+    tahun?: SortOrder
+    week?: SortOrder
   }
 
   export type BigIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -44108,6 +44804,22 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -44451,17 +45163,6 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type HsiDataCountOrderByAggregateInput = {
     id?: SortOrder
     nomor?: SortOrder
@@ -44693,22 +45394,6 @@ export namespace Prisma {
     tahun?: SortOrder
     bulan?: SortOrder
     tanggal?: SortOrder
-  }
-
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -46162,6 +46847,14 @@ export namespace Prisma {
     set?: Date | string | null
   }
 
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -46256,14 +46949,6 @@ export namespace Prisma {
 
   export type IntFieldUpdateOperationsInput = {
     set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
-  export type NullableIntFieldUpdateOperationsInput = {
-    set?: number | null
     increment?: number
     decrement?: number
     multiply?: number
@@ -46367,6 +47052,17 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -46433,17 +47129,6 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -46472,6 +47157,33 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -46533,33 +47245,6 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDecimalNullableFilter<$PrismaModel = never> = {
