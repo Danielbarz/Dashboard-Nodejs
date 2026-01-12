@@ -54,7 +54,7 @@ const ReportsHSI = () => {
       )
       
       if (response.data?.data) {
-        setReportData(response.data.data.reportData || [])
+        setReportData(response.data.data.reportData || response.data.data.tableData || [])
         setTotals(response.data.data.totals || {})
       }
     } catch (error) {
@@ -211,7 +211,7 @@ const ReportsHSI = () => {
                         <td className={`border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 
                             ${row.row_type === 'main' ? 'bg-slate-100 font-extrabold uppercase' : 'bg-inherit pl-6'}
                         `}>
-                            {row.witel_display}
+                            {row.witel_display || row.witel}
                         </td>
                         
                         <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
