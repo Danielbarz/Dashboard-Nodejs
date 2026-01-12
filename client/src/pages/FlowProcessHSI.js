@@ -195,14 +195,12 @@ export default function FlowProcessHSI() {
 
     const handleCardClick = (categoryName) => {
         setActiveCategory(categoryName);
-        setActiveSection(section);
         setCurrentPage(1);
         loadDetail(categoryName, 1);
 
         // Scroll ke section yang relevan
         setTimeout(() => {
-            const elementId = section === 'main' ? 'detail-section-main' : 'detail-section-revoke';
-            document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('detail-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 300);
     };
 
