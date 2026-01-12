@@ -122,13 +122,6 @@ const ReportsHSI = () => {
                 </div>
             </div>
 
-            {/* UPLOAD SECTION (ADMIN ONLY) */}
-            {isAdmin && (
-                <div className="mb-6">
-                    <FileUploadForm type="hsi" onSuccess={fetchData} />
-                </div>
-            )}
-
             {/* TABLE CONTAINER */}
             <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto max-h-[75vh]">
@@ -296,6 +289,13 @@ const ReportsHSI = () => {
                     </table>
                 </div>
             </div>
+
+            {/* UPLOAD SECTION (ADMIN ONLY) */}
+            {isAdmin && (
+                <div className="mt-6">
+                    <FileUploadForm type="hsi" onSuccess={fetchData} />
+                </div>
+            )}
         </div>
     );
 };
