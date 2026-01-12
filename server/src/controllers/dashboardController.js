@@ -368,7 +368,7 @@ export const getReportTambahan = async (req, res, next) => {
     // Aggregate per witel + region
     const rows = await prisma.$queryRawUnsafe(
       `SELECT
-        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
+        TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel,
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
         SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS jumlah_lop,
         SUM(COALESCE(revenue_plan,0)) AS rev_all,
@@ -492,7 +492,7 @@ export const getReportTambahan = async (req, res, next) => {
     // Project data (belum GO LIVE)
     const projectRows = await prisma.$queryRawUnsafe(
       `SELECT
-        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
+        TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel,
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
         SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
         SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
