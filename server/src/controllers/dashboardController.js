@@ -350,7 +350,8 @@ export const getFilterOptions = async (req, res, next) => {
 }
 
 // Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
-export const getReportTambahan = async (req, res, next) => {
+export
+const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
@@ -363,9 +364,70 @@ export const getReportTambahan = async (req, res, next) => {
       params.push(new Date(end_date))
     }
 
+    // 1. Fetch Master Data PO (Account Officers)
+    const accountOfficers = await prisma.accountOfficer.findMany({
+      orderBy: { name: 'asc' }
+    })
 
+    // Sort AOs: Specific filters first to ensure they catch specific segments before general ones
+    const sortedAOs = [...accountOfficers].sort((a, b) => {
+      const aHasSpecial = !!a.specialFilterColumn
+      const bHasSpecial = !!b.specialFilterColumn
+      if (aHasSpecial && !bHasSpecial) return -1
+      if (!aHasSpecial && bHasSpecial) return 1
+      return 0
+    })
 
-    // Aggregate per witel + region
+    // Improved Matcher: Checks both specific Witel and Parent Region
+    const findAO = (cleanWitel, parentWitel, segment) => {
+      const witelNorm = (cleanWitel || '').toUpperCase()
+      const parentNorm = (parentWitel || '').toUpperCase()
+      const segmentNorm = (segment || '').toUpperCase()
+
+      for (const ao of sortedAOs) {
+        const wFilters = (ao.filterWitelLama || '').toUpperCase().split(',').map(s=>s.trim()).filter(s=>s)
+
+        // Check match on either specific witel OR parent region
+        const witelMatch = wFilters.some(f => witelNorm.includes(f) || parentNorm.includes(f))
+
+        if (!witelMatch) continue
+
+        if (ao.specialFilterColumn && ao.specialFilterValue) {
+           const col = ao.specialFilterColumn.toLowerCase()
+           const val = ao.specialFilterValue.toUpperCase()
+           if (col === 'segment' || col === 'segmen') {
+              if (segmentNorm.includes(val)) return ao
+           }
+        } else {
+           return ao
+        }
+      }
+      return null
+    }
+
+    // Constants & Helpers
+    const WITEL_HIERARCHY = {
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'TABANAN', 'KLUNGKUNG', 'BANGLI', 'KARANGASEM', 'JEMBRANA', 'BADUNG'],
+      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'MOJOKERTO', 'TULUNGAGUNG', 'BLITAR', 'JOMBANG', 'NGANJUK', 'PONOROGO', 'TRENGGALEK', 'PACITAN', 'NGAWI', 'MAGETAN', 'BOJONEGORO', 'TUBAN', 'LAMONGAN', 'BATU'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'PROBOLINGGO', 'LUMAJANG', 'BONDOWOSO', 'SITUBONDO', 'BANYUWANGI'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB', 'KUPANG', 'MATARAM', 'SUMBAWA', 'BIMA', 'MAUMERE', 'ENDE', 'FLORES', 'LOMBOK'],
+      'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA', 'PAMEKASAN', 'SUMENEP', 'BANGKALAN', 'SAMPANG', 'GRESIK', 'SIDOARJO']
+    }
+
+    const cleanWitelName = (w) => (w || '').toUpperCase().replace('WITEL ', '').trim()
+
+    const findParent = (w) => {
+      const wClean = cleanWitelName(w)
+      if (WITEL_HIERARCHY[wClean]) return wClean
+
+      for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
+        if (children.includes(wClean)) return p
+        if (children.some(c => wClean.includes(c))) return p
+      }
+      return wClean
+    }
+
+    // 2. Fetch Aggregated Data for Table
     const rows = await prisma.$queryRawUnsafe(
       `SELECT
         TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel,
@@ -389,22 +451,7 @@ export const getReportTambahan = async (req, res, next) => {
       ...params
     )
 
-    const WITEL_HIERARCHY = {
-      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA'],
-      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG'],
-      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO'],
-      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB'],
-      'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA']
-    }
-
-    const findParent = (w) => {
-      for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
-        if (children.includes(w)) return p
-      }
-      return w
-    }
-
-    // Build table data with parent (region) rows
+    // Build table data
     const parents = new Map()
     const tableData = []
 
@@ -424,7 +471,6 @@ export const getReportTambahan = async (req, res, next) => {
       const cntInstalasi = Number(row.cnt_instalasi || 0)
       const cntFi = Number(row.cnt_fi || 0)
 
-      // child row
       tableData.push({
         isParent: false,
         parentWitel: parentKey,
@@ -442,7 +488,6 @@ export const getReportTambahan = async (req, res, next) => {
         persen_close: jumlahLop > 0 ? ((goliveJml / jumlahLop) * 100).toFixed(2) : '0.00'
       })
 
-      // accumulate parent
       if (!parents.has(parentKey)) {
         parents.set(parentKey, {
           isParent: true,
@@ -473,7 +518,6 @@ export const getReportTambahan = async (req, res, next) => {
       p.piOgp += cntFi
     })
 
-    // finalize parent rows and interleave
     const groupedByParent = new Map()
     tableData.forEach(row => {
       if (!groupedByParent.has(row.parentWitel)) {
@@ -489,7 +533,7 @@ export const getReportTambahan = async (req, res, next) => {
       finalTable.push(...(groupedByParent.get(key) || []))
     })
 
-    // Project data (belum GO LIVE)
+    // Project data
     const projectRows = await prisma.$queryRawUnsafe(
       `SELECT
         TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel,
@@ -499,8 +543,7 @@ export const getReportTambahan = async (req, res, next) => {
         SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
       FROM spmk_mom
       ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}
-      GROUP BY witel_baru, witel_lama
-      ORDER BY witel_baru, witel_lama`,
+      GROUP BY witel_baru, witel_lama`,
       ...params
     )
 
@@ -553,7 +596,7 @@ export const getReportTambahan = async (req, res, next) => {
       finalProjects.push(...(groupedProject.get(key) || []))
     })
 
-    // --- TOP 3 AGING (Tanpa batasan dateFilter agar project lama tetap muncul) ---
+    // --- TOP 3 AGING WITEL ---
     const top3WitelRaw = await prisma.$queryRawUnsafe(
       `WITH Ranked AS (
          SELECT
@@ -571,24 +614,90 @@ export const getReportTambahan = async (req, res, next) => {
        SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`
     )
 
-    const top3PoRaw = await prisma.$queryRawUnsafe(
-      `WITH Ranked AS (
-         SELECT
-           po_name,
-           uraian_kegiatan,
-           id_i_hld,
-           tanggal_mom,
-           revenue_plan,
-           status_tomps_new,
-           usia,
-           ROW_NUMBER() OVER (PARTITION BY po_name ORDER BY usia DESC) as rn
-         FROM spmk_mom
-         WHERE go_live = 'N' AND populasi_non_drop = 'Y'
-       )
-       SELECT * FROM Ranked WHERE rn <= 3 ORDER BY po_name, rn`
+    // --- TOP 3 PO MAPPING ---
+    const rawActiveProjects = await prisma.spmkMom.findMany({
+      where: {
+        goLive: 'N',
+        populasiNonDrop: 'Y'
+      },
+      select: {
+        witelLama: true,
+        witelBaru: true,
+        segmen: true,
+        poName: true,
+        idIHld: true,
+        tanggalMom: true,
+        revenuePlan: true,
+        statusTompsNew: true,
+        usia: true,
+        uraianKegiatan: true
+      },
+      orderBy: { usia: 'desc' }
+    })
+
+    const poGroups = {}
+    rawActiveProjects.forEach(proj => {
+      const rawWitel = cleanWitelName(proj.witelLama || proj.witelBaru)
+      const parent = findParent(rawWitel)
+      const ao = findAO(rawWitel, parent, proj.segmen) // PASS BOTH
+      const aoName = ao ? ao.name : (proj.poName || 'UNMAPPED PO')
+
+      if (!poGroups[aoName]) poGroups[aoName] = []
+
+      if (poGroups[aoName].length < 3) {
+        poGroups[aoName].push({
+          po_name: aoName,
+          witel_norm: rawWitel,
+          id_i_hld: proj.idIHld,
+          tanggal_mom: proj.tanggalMom,
+          revenue_plan: Number(proj.revenuePlan || 0),
+          status_tomps_new: proj.statusTompsNew,
+          usia: proj.usia,
+          uraian_kegiatan: proj.uraianKegiatan
+        })
+      }
+    })
+
+    const top3PoMapped = []
+    Object.keys(poGroups).sort().forEach(key => {
+      poGroups[key].forEach((item, idx) => {
+        top3PoMapped.push({ ...item, rn: idx + 1 })
+      })
+    })
+
+    // --- TOP MITRA REVENUE MAPPING ---
+    const rawRevenueData = await prisma.$queryRawUnsafe(
+      `SELECT
+        TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) as witel,
+        segmen,
+        po_name,
+        SUM(COALESCE(revenue_plan,0)) as total_revenue,
+        COUNT(*)::int as project_count
+       FROM spmk_mom
+       ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"}
+       GROUP BY witel_lama, witel_baru, segmen, po_name`
+       , ...params
     )
 
-    // --- NEW: Distribution of Project Age (Bucket Usia) ---
+    const revenueMap = {}
+    rawRevenueData.forEach(row => {
+      const witelClean = row.witel
+      const parent = findParent(witelClean)
+      const ao = findAO(witelClean, parent, row.segmen) // PASS BOTH
+      const aoName = ao ? ao.name : (row.po_name || 'UNMAPPED PO')
+
+      if (!revenueMap[aoName]) {
+        revenueMap[aoName] = { poName: aoName, totalRevenue: 0, projectCount: 0 }
+      }
+      revenueMap[aoName].totalRevenue += Number(row.total_revenue || 0)
+      revenueMap[aoName].projectCount += Number(row.project_count || 0)
+    })
+
+    const topMitraRevenue = Object.values(revenueMap)
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 10)
+
+    // --- OTHER CHARTS ---
     const bucketUsiaRaw = await prisma.$queryRawUnsafe(
       `SELECT
         CASE
@@ -604,7 +713,6 @@ export const getReportTambahan = async (req, res, next) => {
       ORDER BY range`
     )
 
-    // --- NEW: Trend Order vs Go-Live (Monthly) ---
     const trendRaw = await prisma.$queryRawUnsafe(
       `SELECT
         TO_CHAR(tanggal_mom, 'YYYY-MM') as month,
@@ -617,30 +725,9 @@ export const getReportTambahan = async (req, res, next) => {
       ...params
     )
 
-    // --- NEW: Top Mitra Revenue ---
-    const topMitraRaw = await prisma.$queryRawUnsafe(
-      `SELECT
-        po_name,
-        SUM(COALESCE(revenue_plan,0)) as total_revenue,
-        COUNT(*)::int as project_count
-       FROM spmk_mom
-       ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"}
-       GROUP BY po_name
-       ORDER BY total_revenue DESC
-       LIMIT 10`,
-       ...params
-    )
-
-    const topMitraRevenue = topMitraRaw.map(r => ({
-      poName: r.po_name || 'Unknown',
-      totalRevenue: Number(r.total_revenue || 0),
-      projectCount: Number(r.project_count || 0)
-    }))
-
-    // Helper formatting
     const formatRaw = (rows) => rows.map(r => ({
       ...r,
-      region: findParent(r.witel_norm || ''), // Untuk Top 3 Witel, gunakan parent
+      region: findParent(r.witel_norm || r.witel || ''),
       revenue_plan: Number(r.revenue_plan || 0),
       usia: Number(r.usia || 0),
       rn: Number(r.rn)
@@ -652,7 +739,7 @@ export const getReportTambahan = async (req, res, next) => {
         tableData: finalTable,
         projectData: finalProjects,
         top3Witel: formatRaw(top3WitelRaw),
-        top3Po: formatRaw(top3PoRaw),
+        top3Po: top3PoMapped,
         bucketUsiaData: bucketUsiaRaw,
         trendGolive: trendRaw,
         topMitraRevenue
@@ -668,6 +755,7 @@ export const getReportTambahan = async (req, res, next) => {
     })
   }
 }
+
 
 // Get Report Datin - from SPMK MOM data
 export const getReportDatin = async (req, res, next) => {
