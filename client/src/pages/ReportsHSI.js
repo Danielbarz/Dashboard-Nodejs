@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { FiDownload, FiFilter, FiRefreshCw } from 'react-icons/fi';
+import { useCurrentRole } from '../hooks/useCurrentRole';
+import FileUploadForm from '../components/FileUploadForm';
 
 const ReportsHSI = () => {
+    const currentRole = useCurrentRole();
+    const isAdmin = ['admin', 'superadmin'].includes(currentRole);
+
     // 1. STATE INITIALIZATION
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -115,7 +120,16 @@ const ReportsHSI = () => {
                         <FiDownload className="mr-2" /> Export
                     </a>
                 </div>
-            </div>            {/* TABLE CONTAINER */}
+            </div>
+
+            {/* UPLOAD SECTION (ADMIN ONLY) */}
+            {isAdmin && (
+                <div className="mb-6">
+                    <FileUploadForm type="hsi" onSuccess={fetchData} />
+                </div>
+            )}
+
+            {/* TABLE CONTAINER */}
             <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto max-h-[75vh]">
                     <table className="min-w-full border-collapse text-center text-[10px]">
