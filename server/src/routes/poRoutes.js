@@ -10,11 +10,11 @@ import {
   deleteAccountOfficer
 } from '../controllers/poController.js'
 import { validate, paginationValidation } from '../middleware/validator.js'
-import { protect } from '../middleware/auth.js'
+import { authenticate } from '../middleware/auth.js'
 
 const router = express.Router()
 
-router.use(protect) // All routes protected
+router.use(authenticate) // All routes protected
 
 // Master Data
 router.get('/master', validate(paginationValidation), getMasterData)

@@ -51,7 +51,7 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        window.location.href = '/login'
+        window.location.href = `/login?returnUrl=${encodeURIComponent(window.location.pathname)}`
         return Promise.reject(refreshError)
       }
     }

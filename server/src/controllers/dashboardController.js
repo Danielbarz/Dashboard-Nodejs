@@ -617,6 +617,26 @@ export const getReportTambahan = async (req, res, next) => {
       ...params
     )
 
+    // --- NEW: Top Mitra Revenue ---
+    const topMitraRaw = await prisma.$queryRawUnsafe(
+      `SELECT
+        po_name,
+        SUM(COALESCE(revenue_plan,0)) as total_revenue,
+        COUNT(*)::int as project_count
+       FROM spmk_mom
+       ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"}
+       GROUP BY po_name
+       ORDER BY total_revenue DESC
+       LIMIT 10`,
+       ...params
+    )
+
+    const topMitraRevenue = topMitraRaw.map(r => ({
+      poName: r.po_name || 'Unknown',
+      totalRevenue: Number(r.total_revenue || 0),
+      projectCount: Number(r.project_count || 0)
+    }))
+
     // Helper formatting
     const formatRaw = (rows) => rows.map(r => ({
       ...r,
@@ -635,7 +655,7 @@ export const getReportTambahan = async (req, res, next) => {
         top3Po: formatRaw(top3PoRaw),
         bucketUsiaData: bucketUsiaRaw,
         trendGolive: trendRaw,
-        topMitraRevenue: []
+        topMitraRevenue
       },
       'Report Tambahan data retrieved successfully'
     )

@@ -270,14 +270,26 @@ const Tambahan = () => {
         </div>
       </div>
 
-      {/* Charts Row 3: Trend Go-Live */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 h-[400px]">
-        <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-          <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
-          Trend Order Masuk vs Go-Live
-        </h3>
-        <div className="h-[320px]">
-          <LineChartTrendGolive data={trendGolive} />
+      {/* Charts Row 3: Trend Go-Live & Top Mitra Revenue */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 h-[400px]">
+          <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
+            Trend Order Masuk vs Go-Live
+          </h3>
+          <div className="h-[320px]">
+            <LineChartTrendGolive data={trendGolive} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 h-[400px]">
+          <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+            Top 10 Mitra by Revenue
+          </h3>
+          <div className="h-[320px]">
+            <BarChartTopMitraRevenue data={topMitraRevenue} />
+          </div>
         </div>
       </div>
 

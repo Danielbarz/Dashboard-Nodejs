@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const Login = () => {
@@ -11,6 +11,7 @@ const Login = () => {
 
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -29,13 +30,22 @@ const Login = () => {
       console.log('User from localStorage:', userData)
       console.log('User role:', userRole)
 
-      // Redirect based on role
-      if (userRole === 'superadmin') {
-        console.log('✅ Redirecting Super Admin to /admin/users')
-        navigate('/admin/users', { replace: true })
+      // Determine redirect path
+      const params = new URLSearchParams(location.search)
+      const returnUrl = params.get('returnUrl') || location.state?.from?.pathname
+
+      if (returnUrl) {
+        console.log(`✅ Redirecting to return URL: ${returnUrl}`)
+        navigate(returnUrl, { replace: true })
       } else {
-        console.log('✅ Redirecting User/Admin to /dashboard')
-        navigate('/dashboard', { replace: true })
+        // Default redirect based on role
+        if (userRole === 'superadmin') {
+          console.log('✅ Redirecting Super Admin to /admin/users')
+          navigate('/admin/users', { replace: true })
+        } else {
+          console.log('✅ Redirecting User/Admin to /dashboard')
+          navigate('/dashboard', { replace: true })
+        }
       }
     } catch (err) {
       console.error('Login error:', err)
