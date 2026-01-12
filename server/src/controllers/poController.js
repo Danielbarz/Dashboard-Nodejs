@@ -198,3 +198,62 @@ export const manualStoreMaster = async (req, res) => {
     return errorResponse(res, 'Failed to save master data', error.message)
   }
 }
+
+// 6. Get Account Officers
+export const getAccountOfficers = async (req, res) => {
+  try {
+    const data = await prisma.accountOfficer.findMany({
+      orderBy: { name: 'asc' }
+    })
+
+    // Convert BigInt to String for JSON response
+    const formatted = data.map(item => ({
+      ...item,
+      id: item.id.toString()
+    }))
+
+    return successResponse(res, formatted, 'Account Officers retrieved')
+  } catch (error) {
+    return errorResponse(res, 'Failed to fetch account officers', error.message)
+  }
+}
+
+// 7. Add Account Officer
+export const addAccountOfficer = async (req, res) => {
+  const { name, displayWitel, filterWitelLama, specialFilterColumn, specialFilterValue } = req.body
+
+  if (!name || !displayWitel || !filterWitelLama) {
+    return errorResponse(res, 'Validation Error', 'Name, Display Witel, and Filter Source are required', 400)
+  }
+
+  try {
+    const result = await prisma.accountOfficer.create({
+      data: {
+        name,
+        displayWitel,
+        filterWitelLama,
+        specialFilterColumn,
+        specialFilterValue
+      }
+    })
+
+    const formatted = { ...result, id: result.id.toString() }
+    return successResponse(res, formatted, 'Account Officer created successfully')
+  } catch (error) {
+    return errorResponse(res, 'Failed to create account officer', error.message)
+  }
+}
+
+// 8. Delete Account Officer
+export const deleteAccountOfficer = async (req, res) => {
+  const { id } = req.params
+
+  try {
+    await prisma.accountOfficer.delete({
+      where: { id: BigInt(id) }
+    })
+    return successResponse(res, null, 'Account Officer deleted successfully')
+  } catch (error) {
+    return errorResponse(res, 'Failed to delete account officer', error.message)
+  }
+}

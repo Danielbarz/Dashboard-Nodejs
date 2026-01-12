@@ -4,7 +4,10 @@ import {
   getUnmappedOrders,
   getPoOptions,
   mapOrder,
-  manualStoreMaster
+  manualStoreMaster,
+  getAccountOfficers,
+  addAccountOfficer,
+  deleteAccountOfficer
 } from '../controllers/poController.js'
 import { validate, paginationValidation } from '../middleware/validator.js'
 import { protect } from '../middleware/auth.js'
@@ -20,6 +23,11 @@ router.post('/master', manualStoreMaster)
 // Unmapped Orders
 router.get('/unmapped', validate(paginationValidation), getUnmappedOrders)
 router.post('/map', mapOrder)
+
+// Account Officers
+router.get('/ao', getAccountOfficers)
+router.post('/ao', addAccountOfficer)
+router.delete('/ao/:id', deleteAccountOfficer)
 
 // Options
 router.get('/options', getPoOptions)
