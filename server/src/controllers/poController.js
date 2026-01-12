@@ -49,15 +49,30 @@ export const getUnmappedOrders = async (req, res) => {
     const witel = req.query.witel || ''
     const offset = (page - 1) * limit
 
+    // Base filter: PO Name undefined (case insensitive & contains to handle whitespace)
     const where = {
-      poName: 'PO_TIDAK_TERDEFINISI',
-      billWitel: {
-        in: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+      poName: {
+        contains: 'PO_TIDAK_TERDEFINISI',
+        mode: 'insensitive'
       }
     }
 
+    // Witel Filter Logic
     if (witel) {
-      where.billWitel = witel
+      // Specific witel filter (insensitive)
+      where.billWitel = {
+        equals: witel,
+        mode: 'insensitive'
+      }
+    } else {
+      // Default list filter (insensitive OR condition)
+      const targetWitels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+      where.OR = targetWitels.map(w => ({
+        billWitel: {
+          equals: w,
+          mode: 'insensitive'
+        }
+      }))
     }
 
     const [data, total] = await Promise.all([
