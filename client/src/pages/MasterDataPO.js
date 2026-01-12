@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { FiPlus, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi'
+import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import axios from 'axios'
 
 const MasterDataPO = () => {
   const [accountOfficers, setAccountOfficers] = useState([])
   const [poMaster, setPoMaster] = useState([])
   const [unmappedOrders, setUnmappedOrders] = useState([])
+
+  // UI States
   const [showAOForm, setShowAOForm] = useState(false)
   const [showPOForm, setShowPOForm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+
+  // Pagination State untuk PO Master
+  const [currentPagePO, setCurrentPagePO] = useState(1)
+  const [itemsPerPagePO] = useState(10)
 
   const [aoForm, setAoForm] = useState({
     name: '',
@@ -72,7 +78,6 @@ const MasterDataPO = () => {
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/unmapped-orders`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      // Robust handling for both Array (standard) and Object (paginated/stale) responses
       const data = response.data.data
       if (Array.isArray(data)) {
         setUnmappedOrders(data)
@@ -187,6 +192,12 @@ const MasterDataPO = () => {
     }
   }
 
+  // Logic Pagination PO
+  const indexOfLastPO = currentPagePO * itemsPerPagePO
+  const indexOfFirstPO = indexOfLastPO - itemsPerPagePO
+  const currentPOs = poMaster.slice(indexOfFirstPO, indexOfLastPO)
+  const totalPagesPO = Math.ceil(poMaster.length / itemsPerPagePO)
+
   return (
     <div className="space-y-6">
       {/* Section 1: Master Account Officer */}
@@ -203,6 +214,7 @@ const MasterDataPO = () => {
 
         {showAOForm && (
           <div className="mb-4 p-4 border border-gray-300 rounded-md bg-gray-50">
+            {/* Form Tambah AO tetap sama */}
             <h3 className="font-semibold mb-3">Tambah Account Officer Baru</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -310,7 +322,7 @@ const MasterDataPO = () => {
         </div>
       </div>
 
-      {/* Section 2: Master Data PO */}
+      {/* Section 2: Master Data PO (Dengan Pagination) */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-gray-900">Master Data PO (Datin/SOS)</h2>
@@ -324,6 +336,7 @@ const MasterDataPO = () => {
 
         {showPOForm && (
           <div className="mb-4 p-4 border border-gray-300 rounded-md bg-gray-50">
+            {/* Form Tambah PO */}
             <h3 className="font-semibold mb-3">Tambah PO Baru</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -380,7 +393,7 @@ const MasterDataPO = () => {
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px]"> {/* Min height biar gak jumping saat ganti page */}
           <table className="min-w-full divide-y divide-gray-200 border text-sm">
             <thead className="bg-gray-800">
               <tr>
@@ -393,26 +406,89 @@ const MasterDataPO = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {poMaster.map((po) => (
-                <tr key={po.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{po.namaPo}</td>
-                  <td className="px-4 py-2 border">{po.nipnas}</td>
-                  <td className="px-4 py-2 border">{po.segment}</td>
-                  <td className="px-4 py-2 border">{po.billCity || '-'}</td>
-                  <td className="px-4 py-2 border">{po.witel}</td>
-                  <td className="px-4 py-2 border text-center">
-                    <button
-                      onClick={() => handleDeletePO(po.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <FiTrash2 />
-                    </button>
+              {currentPOs.length > 0 ? (
+                currentPOs.map((po) => (
+                  <tr key={po.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 border">{po.namaPo}</td>
+                    <td className="px-4 py-2 border">{po.nipnas}</td>
+                    <td className="px-4 py-2 border">{po.segment}</td>
+                    <td className="px-4 py-2 border">{po.billCity || '-'}</td>
+                    <td className="px-4 py-2 border">{po.witel}</td>
+                    <td className="px-4 py-2 border text-center">
+                      <button
+                        onClick={() => handleDeletePO(po.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-4 py-4 text-center text-gray-500">
+                    Tidak ada data PO.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {poMaster.length > 0 && (
+          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPagePO(prev => Math.max(prev - 1, 1))}
+                disabled={currentPagePO === 1}
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPagePO(prev => Math.min(prev + 1, totalPagesPO))}
+                disabled={currentPagePO === totalPagesPO}
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{indexOfFirstPO + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(indexOfLastPO, poMaster.length)}</span> of{' '}
+                  <span className="font-medium">{poMaster.length}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPagePO(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPagePO === 1}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <FiChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  {/* Page Numbers Simple Logic: Show current page */}
+                  <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+                    Page {currentPagePO} of {totalPagesPO}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPagePO(prev => Math.min(prev + 1, totalPagesPO))}
+                    disabled={currentPagePO === totalPagesPO}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Next</span>
+                    <FiChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Section 3: Mapping Data Transaksi */}
