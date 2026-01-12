@@ -12,7 +12,8 @@ import {
   MdKeyboardArrowDown,
   MdPeople,
   MdHistory,
-  MdMerge
+  MdMerge,
+  MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
