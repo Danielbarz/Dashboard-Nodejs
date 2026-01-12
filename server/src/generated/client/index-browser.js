@@ -145,10 +145,10 @@ exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
   email: 'email',
-  password: 'password',
   role: 'role',
   currentRoleAs: 'currentRoleAs',
   emailVerifiedAt: 'emailVerifiedAt',
+  password: 'password',
   rememberToken: 'rememberToken',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -171,7 +171,7 @@ exports.Prisma.SosDataScalarFieldEnum = {
   standardName: 'standardName',
   orderId: 'orderId',
   orderSubtype: 'orderSubtype',
-  orderDescription: 'orderDescription',
+  order_description: 'order_description',
   segmen: 'segmen',
   subSegmen: 'subSegmen',
   custCity: 'custCity',
@@ -403,6 +403,249 @@ exports.Prisma.UserTableConfigurationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CacheScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  expiration: 'expiration'
+};
+
+exports.Prisma.Cache_locksScalarFieldEnum = {
+  key: 'key',
+  owner: 'owner',
+  expiration: 'expiration'
+};
+
+exports.Prisma.Canceled_ordersScalarFieldEnum = {
+  id: 'id',
+  order_id: 'order_id',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Completed_ordersScalarFieldEnum = {
+  order_id: 'order_id',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Failed_jobsScalarFieldEnum = {
+  id: 'id',
+  uuid: 'uuid',
+  connection: 'connection',
+  queue: 'queue',
+  payload: 'payload',
+  exception: 'exception',
+  failed_at: 'failed_at'
+};
+
+exports.Prisma.Job_batchesScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  total_jobs: 'total_jobs',
+  pending_jobs: 'pending_jobs',
+  failed_jobs: 'failed_jobs',
+  failed_job_ids: 'failed_job_ids',
+  options: 'options',
+  cancelled_at: 'cancelled_at',
+  created_at: 'created_at',
+  finished_at: 'finished_at'
+};
+
+exports.Prisma.JobsScalarFieldEnum = {
+  id: 'id',
+  queue: 'queue',
+  payload: 'payload',
+  attempts: 'attempts',
+  reserved_at: 'reserved_at',
+  available_at: 'available_at',
+  created_at: 'created_at'
+};
+
+exports.Prisma.List_poScalarFieldEnum = {
+  id: 'id',
+  nipnas: 'nipnas',
+  po: 'po',
+  segment: 'segment',
+  bill_city: 'bill_city',
+  witel: 'witel',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.MigrationsScalarFieldEnum = {
+  id: 'id',
+  migration: 'migration',
+  batch: 'batch'
+};
+
+exports.Prisma.Order_status_logsScalarFieldEnum = {
+  id: 'id',
+  order_id: 'order_id',
+  status: 'status',
+  source_file: 'source_file',
+  processed_at: 'processed_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Password_reset_tokensScalarFieldEnum = {
+  email: 'email',
+  token: 'token',
+  created_at: 'created_at'
+};
+
+exports.Prisma.Personal_access_tokensScalarFieldEnum = {
+  id: 'id',
+  tokenable_type: 'tokenable_type',
+  tokenable_id: 'tokenable_id',
+  name: 'name',
+  token: 'token',
+  abilities: 'abilities',
+  last_used_at: 'last_used_at',
+  expires_at: 'expires_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.SessionsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  ip_address: 'ip_address',
+  user_agent: 'user_agent',
+  payload: 'payload',
+  last_activity: 'last_activity'
+};
+
+exports.Prisma.Sos_data_rawScalarFieldEnum = {
+  id: 'id',
+  batch_id: 'batch_id',
+  accountnas: 'accountnas',
+  action_cd: 'action_cd',
+  agree_end_date: 'agree_end_date',
+  agree_itemnum: 'agree_itemnum',
+  agree_name: 'agree_name',
+  agree_start_date: 'agree_start_date',
+  agree_type: 'agree_type',
+  am: 'am',
+  amortisasi: 'amortisasi',
+  asset_integ_id: 'asset_integ_id',
+  before_bandwidth: 'before_bandwidth',
+  biaya_pasang: 'biaya_pasang',
+  bill_region: 'bill_region',
+  bill_witel: 'bill_witel',
+  billaccntname: 'billaccntname',
+  billaccntnum: 'billaccntnum',
+  billaddr: 'billaddr',
+  billcity: 'billcity',
+  billcom_date: 'billcom_date',
+  current_bandwidth: 'current_bandwidth',
+  cust_region: 'cust_region',
+  cust_witel: 'cust_witel',
+  custaccntname: 'custaccntname',
+  custaccntnum: 'custaccntnum',
+  custaddr: 'custaddr',
+  custcity: 'custcity',
+  hrg_bulanan: 'hrg_bulanan',
+  is_termin: 'is_termin',
+  kategori: 'kategori',
+  kategori_umur: 'kategori_umur',
+  lama_kontrak_hari: 'lama_kontrak_hari',
+  li_bandwidth: 'li_bandwidth',
+  li_billdate: 'li_billdate',
+  li_billing_start_date: 'li_billing_start_date',
+  li_created_date: 'li_created_date',
+  li_fulfillment_status: 'li_fulfillment_status',
+  li_id: 'li_id',
+  li_milestone: 'li_milestone',
+  li_payment_term: 'li_payment_term',
+  li_product_name: 'li_product_name',
+  li_productid: 'li_productid',
+  li_sid: 'li_sid',
+  li_status: 'li_status',
+  li_status_date: 'li_status_date',
+  line_item_description: 'line_item_description',
+  nipnas: 'nipnas',
+  order_created_date: 'order_created_date',
+  order_createdby: 'order_createdby',
+  order_createdby_name: 'order_createdby_name',
+  order_description: 'order_description',
+  order_id: 'order_id',
+  order_subtype: 'order_subtype',
+  prevorder: 'prevorder',
+  product_activation_date: 'product_activation_date',
+  product_digital: 'product_digital',
+  quote_row_id: 'quote_row_id',
+  revenue: 'revenue',
+  scaling: 'scaling',
+  segmen: 'segmen',
+  servaccntname: 'servaccntname',
+  servaccntnum: 'servaccntnum',
+  servaddr: 'servaddr',
+  servcity: 'servcity',
+  service_region: 'service_region',
+  service_witel: 'service_witel',
+  sid: 'sid',
+  standard_name: 'standard_name',
+  sub_segmen: 'sub_segmen',
+  umur_order: 'umur_order',
+  x_billcomp_dt: 'x_billcomp_dt',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Temp_order_productsScalarFieldEnum = {
+  id: 'id',
+  batch_id: 'batch_id',
+  order_id: 'order_id',
+  product_name: 'product_name',
+  net_price: 'net_price',
+  channel: 'channel',
+  status_wfm: 'status_wfm',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Temp_upload_dataScalarFieldEnum = {
+  id: 'id',
+  batch_id: 'batch_id',
+  order_id: 'order_id',
+  product: 'product',
+  segment: 'segment',
+  status_wfm: 'status_wfm',
+  channel: 'channel',
+  filter_produk: 'filter_produk',
+  witel_lama: 'witel_lama',
+  layanan: 'layanan',
+  order_date: 'order_date',
+  order_status: 'order_status',
+  order_sub_type: 'order_sub_type',
+  order_status_n: 'order_status_n',
+  nama_witel: 'nama_witel',
+  customer_name: 'customer_name',
+  milestone: 'milestone',
+  net_price: 'net_price',
+  is_template_price: 'is_template_price',
+  tahun: 'tahun',
+  telda: 'telda',
+  week: 'week',
+  order_created_date: 'order_created_date',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Update_logsScalarFieldEnum = {
+  id: 'id',
+  order_id: 'order_id',
+  product_name: 'product_name',
+  customer_name: 'customer_name',
+  nama_witel: 'nama_witel',
+  status_lama: 'status_lama',
+  status_baru: 'status_baru',
+  sumber_update: 'sumber_update',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -440,7 +683,24 @@ exports.Prisma.ModelName = {
   OrderProduct: 'OrderProduct',
   Target: 'Target',
   CustomTarget: 'CustomTarget',
-  UserTableConfiguration: 'UserTableConfiguration'
+  UserTableConfiguration: 'UserTableConfiguration',
+  cache: 'cache',
+  cache_locks: 'cache_locks',
+  canceled_orders: 'canceled_orders',
+  completed_orders: 'completed_orders',
+  failed_jobs: 'failed_jobs',
+  job_batches: 'job_batches',
+  jobs: 'jobs',
+  list_po: 'list_po',
+  migrations: 'migrations',
+  order_status_logs: 'order_status_logs',
+  password_reset_tokens: 'password_reset_tokens',
+  personal_access_tokens: 'personal_access_tokens',
+  sessions: 'sessions',
+  sos_data_raw: 'sos_data_raw',
+  temp_order_products: 'temp_order_products',
+  temp_upload_data: 'temp_upload_data',
+  update_logs: 'update_logs'
 };
 
 /**

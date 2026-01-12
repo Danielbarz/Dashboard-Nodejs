@@ -1,4 +1,4 @@
-﻿import prisma from '../lib/prisma.js'
+import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import PO_MAPPING from '../utils/poMapping.js'
 
@@ -104,7 +104,7 @@ export const getReportTambahan = async (req, res, next) => {
 
     // Aggregate data: parent by witelBaru, child by witelLama
     const witelMap = {}
-    
+
     // Helper for parent witel (witelBaru is already parent)
     const getParentWitel = (witelBaru) => witelBaru || 'OTHER'
 
@@ -179,7 +179,7 @@ export const getReportTambahan = async (req, res, next) => {
           witelMap[parentKey].golive_rev += revenue
           witelMap[childKey].golive_jml++
           witelMap[childKey].golive_rev += revenue
-          
+
           // ALSO count GoLive projects as "FI-OGP Live" in Progress buckets so the chart isn't empty
           witelMap[parentKey]['piOgp']++
           witelMap[childKey]['piOgp']++
@@ -407,7 +407,7 @@ export const getReportTambahan = async (req, res, next) => {
       mitraRevenueMap[po].totalRevenue += revenue
       mitraRevenueMap[po].projectCount += 1
     })
-    
+
     const topMitraRevenue = Object.values(mitraRevenueMap)
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
       .slice(0, 10)
@@ -416,9 +416,9 @@ export const getReportTambahan = async (req, res, next) => {
     // Use wider date range if not specified (e.g. 12 months back) to show meaningful trend
     let trendStartDate = start_date ? new Date(start_date) : new Date(new Date().setFullYear(new Date().getFullYear() - 1))
     let trendEndDate = end_date ? new Date(end_date) : new Date()
-    
+
     const trendMap = {}
-    
+
     // RE-FETCHING raw data with dates included (Optimization: could be merged with initial query but let's keep safe)
     const trendRows = await prisma.spmkMom.findMany({
       where: {
@@ -450,7 +450,7 @@ export const getReportTambahan = async (req, res, next) => {
 
       // Output Trend (Based on GoLive Date OR Proxy)
       let outputDate = row.tanggalGolive
-      
+
       // Fallback: If Done but no date, use MOM date as proxy
       if (!outputDate && row.goLive === 'Y' && row.tanggalMom) {
         outputDate = row.tanggalMom
@@ -508,7 +508,7 @@ export const getReportTambahan = async (req, res, next) => {
   }
 }
 
-// Get Report Datin - from SPMK MOM data  
+// Get Report Datin - from SPMK MOM data
 export const getReportDatin = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
@@ -583,12 +583,12 @@ export const getReportAnalysis = async (req, res, next) => {
 
     if (witel) {
       const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
-      
+
       // Case 1: Single Region Selected -> Drilldown to Branches
       if (witelList.length === 1 && regionMapping[witelList[0]]) {
         selectedRegion = witelList[0]
         targetRows = regionMapping[selectedRegion]
-      } 
+      }
       // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
       else if (selectedWitels.length > 0) {
         targetRows = targetRows.filter(r => witelList.includes(r))
@@ -599,7 +599,7 @@ export const getReportAnalysis = async (req, res, next) => {
     const getSegmentData = async (segmentKeywords) => {
       // Allow single string or array of strings
       const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
-      
+
       const data = await prisma.digitalProduct.findMany({
         where: {
           ...whereClause,
@@ -615,7 +615,7 @@ export const getReportAnalysis = async (req, res, next) => {
 
       // Process data
       const witelMap = {}
-      
+
       targetRows.forEach(w => {
         witelMap[w] = {
           nama_witel: w,
@@ -640,7 +640,7 @@ export const getReportAnalysis = async (req, res, next) => {
           const branches = regionMapping[selectedRegion] || []
           // Find which branch this rawWitel belongs to (e.g. "KOTA MALANG" -> "MALANG")
           const foundBranch = branches.find(b => rawWitel.includes(b))
-          
+
           if (foundBranch) {
             mappedName = foundBranch
           }
@@ -653,7 +653,7 @@ export const getReportAnalysis = async (req, res, next) => {
               break
             }
           }
-          
+
           // Fallback for special cases or if not found in mapping but contains region name
           if (!mappedName) {
              if (rawWitel.includes('BALI')) mappedName = 'BALI'
@@ -663,8 +663,8 @@ export const getReportAnalysis = async (req, res, next) => {
              else if (rawWitel.includes('SURAMADU')) mappedName = 'SURAMADU'
           }
         }
-        
-        if (!mappedName || !witelMap[mappedName]) return 
+
+        if (!mappedName || !witelMap[mappedName]) return
 
         let productCode = ''
         const pName = (row.productName || '').toLowerCase()
@@ -672,7 +672,7 @@ export const getReportAnalysis = async (req, res, next) => {
         else if (pName.includes('oca')) productCode = 'o'
         else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
         else if (pName.includes('pijar')) productCode = 'ps'
-        
+
         if (!productCode) return
 
         const status = (row.status || '').toLowerCase()
@@ -699,7 +699,7 @@ export const getReportAnalysis = async (req, res, next) => {
       }
     }
 
-    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG']) 
+    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG'])
     const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'])
 
     successResponse(
@@ -726,7 +726,7 @@ const fetchHSIReportData = async (start_date, end_date) => {
 
     // Base conditions
     const conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
-    
+
     // Filter by Date
     if (start_date && end_date) {
       conditions.push(`order_date >= '${start_date}'::date`)
@@ -739,31 +739,31 @@ const fetchHSIReportData = async (start_date, end_date) => {
       SELECT
         witel,
         witel_old,
-        
+
         -- 1. PRE PI
         SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
-        
+
         -- 2. REGISTERED (RE)
         COUNT(*) as registered,
-        
+
         -- 3. INPROGRESS SC
         SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
-        
+
         -- 4. QC1
         SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
-        
+
         -- 5. FCC
         SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
-        
+
         -- 6. CANCEL BY FCC
         SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
-        
+
         -- 7. SURVEY NEW MANJA
         SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
-        
+
         -- 8. UN-SC
         SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
-        
+
         -- PI AGING (Based on last_updated_date)
         SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) < 24 THEN 1 ELSE 0 END) as pi_under_1_hari,
         SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) >= 24 AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) <= 72 THEN 1 ELSE 0 END) as pi_1_3_hari,
@@ -775,12 +775,12 @@ const fetchHSIReportData = async (start_date, end_date) => {
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as fo_wfm_others,
-        
+
         -- OTHER FALLOUTS
         SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
         SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
         SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
-        
+
         -- TOTAL FALLOUT
         SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
 
@@ -844,7 +844,7 @@ const fetchHSIReportData = async (start_date, end_date) => {
 
       const cleanRow = {}
       for (const [k, v] of Object.entries(row)) cleanRow[k] = typeof v === 'bigint' ? Number(v) : v
-      
+
       cleanRow.witel_display = cleanRow.witel_old || '(Blank)'
       cleanRow.row_type = 'sub'
       calculatePercentages(cleanRow)
@@ -917,7 +917,7 @@ export const getReportDetails = async (req, res, next) => {
 
     if (witel) {
       const selectedRegions = witel.split(',').map(w => w.trim()).filter(w => w)
-      
+
       if (selectedRegions.length > 0) {
         // Mapping Region to Witel Cities
         const regionMapping = {
@@ -929,7 +929,7 @@ export const getReportDetails = async (req, res, next) => {
         }
 
         let targetWitels = []
-        
+
         selectedRegions.forEach(region => {
           if (regionMapping[region]) {
             targetWitels = [...targetWitels, ...regionMapping[region]]
@@ -1015,12 +1015,12 @@ export const getReportDetails = async (req, res, next) => {
       // Product Name Shortening
       let shortProductName = row.productName || '-'
       const pNameLower = shortProductName.toLowerCase()
-      
+
       if (pNameLower.includes('netmonk')) shortProductName = 'Netmonk'
       else if (pNameLower.includes('oca')) shortProductName = 'OCA'
       else if (pNameLower.includes('pijar')) shortProductName = 'Pijar'
       else if (pNameLower.includes('antares') || pNameLower.includes('iot') || pNameLower.includes('camera') || pNameLower.includes('cctv') || pNameLower.includes('recording')) shortProductName = 'Antares'
-      
+
       // Channel Logic
       let channel = 'SC-ONE'
       if ((row.witel && row.witel.includes('NCX')) || (row.branch && row.branch.includes('NCX'))) {
@@ -1041,7 +1041,7 @@ export const getReportDetails = async (req, res, next) => {
         order_status: row.status,
         net_price: parseFloat(row.revenue || 0),
         week: getWeekNumber(row.orderDate),
-        channel: channel, 
+        channel: channel,
         layanan: row.category
       }
     })
@@ -1112,19 +1112,19 @@ export const getKPIPOData = async (req, res, next) => {
         // 1. Witel Filter
         const filterWitels = (ao.filterWitelLama || '').split(',').map(s => s.trim().toLowerCase())
         const rowWitel = (row.witel || '').toLowerCase()
-        
+
         if (filterWitels.length === 0 || (filterWitels.length === 1 && filterWitels[0] === '')) {
            return false
         }
 
         const witelMatch = filterWitels.some(f => rowWitel.includes(f))
-        
+
         // 2. Special Filter (if exists)
         let specialMatch = true
         if (ao.specialFilterColumn && ao.specialFilterValue) {
            const col = ao.specialFilterColumn // e.g. 'segment'
            const val = ao.specialFilterValue // e.g. 'SME'
-           
+
            // Check if row has this column
            // Note: In Prisma result, 'segment' is the property name for segment
            const rowCol = col === 'segment' ? 'segment' : col
@@ -1210,14 +1210,14 @@ export const getReportDatinDetails = async (req, res, next) => {
         }
         return new Date(dateStr)
       }
-      
+
       const startDateObj = parseDate(start_date)
       const endDateObj = parseDate(end_date)
 
       if (startDateObj && !isNaN(startDateObj) && endDateObj && !isNaN(endDateObj)) {
         // Set end date to end of day
         endDateObj.setHours(23, 59, 59, 999)
-        
+
         whereClause.orderCreatedDate = {
           gte: startDateObj,
           lte: endDateObj
@@ -1272,36 +1272,36 @@ export const getReportDatinDetails = async (req, res, next) => {
       segmen: row.segmen,
       subSegmen: row.subSegmen,
       kategori: row.kategori,
-      
+
       // Detailed Fields
       kategoriUmur: row.kategoriUmur,
       umurOrder: row.umurOrder,
       lamaKontrak: row.lamaKontrakHari,
       amortisasi: row.amortisasi,
-      
+
       billWitel: row.billWitel,
       custWitel: row.custWitel,
       serviceWitel: row.serviceWitel,
       witelBaru: row.witelBaru || row.custWitel, // Fallback if witelBaru empty
-      
+
       billCity: row.billCity,
       custCity: row.custCity,
       servCity: row.servCity,
-      
+
       status: row.liStatus,
       milestone: row.liMilestone,
       statusDate: row.liStatusDate ? row.liStatusDate.toISOString().split('T')[0] : '-',
       billDate: row.liBilldate ? row.liBilldate.toISOString().split('T')[0] : '-',
-      
+
       biayaPasang: parseFloat(row.biayaPasang || 0),
       hargaBulanan: parseFloat(row.hrgBulanan || 0),
-      
+
       tipeOrder: row.actionCd || row.tipeOrder || row.agreeType, // Prioritize Action CD
       agreeType: row.agreeType,
       agreeStartDate: row.agreeStartDate ? row.agreeStartDate.toISOString().split('T')[0] : '-',
       agreeEndDate: row.agreeEndDate ? row.agreeEndDate.toISOString().split('T')[0] : '-',
       isTermin: row.isTermin,
-      
+
       poName: row.poName,
       segmenBaru: row.segmenBaru,
       kategoriBaru: row.kategoriBaru,
@@ -1341,7 +1341,7 @@ export const getReportDatinSummary = async (req, res, next) => {
         }
         return new Date(dateStr)
       }
-      
+
       const startDateObj = parseDate(start_date)
       const endDateObj = parseDate(end_date)
 
@@ -1395,19 +1395,19 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     if (witelFilter) {
       const selected = witelFilter.split(',').filter(w => w.trim() !== '')
-      
+
       // Case 1: Single Region Selected -> Drilldown to Branches
       if (selected.length === 1 && witelMappings[selected[0]]) {
         targetWitels = witelMappings[selected[0]]
         isBranchMode = true
-      } 
+      }
       // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
       else if (selected.length > 0) {
         // Filter targetWitels to only keep the selected ones
         // Note: Use the original list as source of truth for valid regions
         const originalRegions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
         const validSelections = selected.filter(s => originalRegions.includes(s))
-        
+
         if (validSelections.length > 0) {
           targetWitels = validSelections
         }
@@ -1416,7 +1416,7 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     const getWitelKey = (witelStr) => {
       const w = (witelStr || '').toUpperCase()
-      
+
       // If filtering by specific witel (e.g. BALI), we map to the exact branch (e.g. DENPASAR)
       if (isBranchMode) {
         // Find which branch it matches in the selected list
@@ -1430,7 +1430,7 @@ export const getReportDatinSummary = async (req, res, next) => {
       if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].some(k => w.includes(k))) return 'JATIM TIMUR'
       if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'].some(k => w.includes(k))) return 'NUSA TENGGARA'
       if (['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].some(k => w.includes(k))) return 'SURAMADU'
-      
+
       // Fallback: Check if the string itself contains the major region names
       if (w.includes('BALI')) return 'BALI'
       if (w.includes('BARAT')) return 'JATIM BARAT'
@@ -1467,7 +1467,7 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     // Initialize Data Structures
     const categories = ['SME', 'GOV', 'PRIVATE', 'SOE']
-    
+
     // Table 1 Structure
     const table1Map = {}
     categories.forEach(cat => {
@@ -1517,17 +1517,17 @@ export const getReportDatinSummary = async (req, res, next) => {
 
     // Process Data
     const now = new Date()
-    
+
     data.forEach(row => {
       const category = getCategory(row.segmen)
-      
+
       // Process Galaksi FIRST (before witel validation skip)
       const orderDate = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
       const diffTime = Math.abs(now - orderDate)
-      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30)) 
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30))
       const isLessThan3Months = diffMonths <= 3
       const orderType = getOrderType(row.actionCd)
-      
+
       // Update Galaksi - process this BEFORE witel validation
       let poKey = row.poName
 
@@ -1542,7 +1542,7 @@ export const getReportDatinSummary = async (req, res, next) => {
       // Only process if we have a valid PO name
       if (poKey) {
         const poName = normalizePOName(poKey)
-        
+
         if (poName) {
           if (!galaksiMap[poName]) {
             galaksiMap[poName] = {
@@ -1551,7 +1551,7 @@ export const getReportDatinSummary = async (req, res, next) => {
                ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
             }
           }
-          
+
           const g = galaksiMap[poName]
           if (isLessThan3Months) {
             if (orderType === 'AO') g.ao_3bln++
@@ -1559,7 +1559,7 @@ export const getReportDatinSummary = async (req, res, next) => {
             else if (orderType === 'DO') g.do_3bln++
             else if (orderType === 'MO') g.mo_3bln++
             else if (orderType === 'RO') g.ro_3bln++
-            
+
             g.total_3bln++
           } else {
             if (orderType === 'AO') g.ao_3bln2++
@@ -1567,17 +1567,17 @@ export const getReportDatinSummary = async (req, res, next) => {
             else if (orderType === 'DO') g.do_3bln2++
             else if (orderType === 'MO') g.mo_3bln2++
             else if (orderType === 'RO') g.ro_3bln2++
-            
+
             g.total_3bln2++
           }
         }
       }
-      
+
       // ============ NOW do witel validation for tables 1 & 2 ============
       // Try to resolve Witel/Branch from most specific source (City) to least specific (Region)
       // Check City first (often contains granular branch data like 'Denpasar', 'Malang')
       let witel = getWitelKey(row.custCity)
-      
+
       if (row.custCity && (row.custCity.includes('MADIUN') || row.custCity.includes('KEDIRI'))) {
           // console.log(`DEBUG: City=${row.custCity}, ResolvedWitel=${witel}, isBranchMode=${isBranchMode}`)
       }
@@ -1585,24 +1585,24 @@ export const getReportDatinSummary = async (req, res, next) => {
       // If City didn't yield a valid branch (returned OTHER) or just returned the generic Region name
       // Try the Witel columns
       const isGeneric = (w) => ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'].includes(w)
-      
+
       if (witel === 'OTHER') {
          witel = getWitelKey(row.serviceWitel || row.custWitel)
       } else if (isBranchMode && isGeneric(witel)) {
          // If City returned a generic name (unlikely but possible), see if Witel col has something different?
-         // Actually usually if City is generic, Witel is also generic. 
+         // Actually usually if City is generic, Witel is also generic.
          // But let's check just in case Witel has a specific override (unlikely).
          const alt = getWitelKey(row.serviceWitel || row.custWitel)
          if (alt !== 'OTHER' && !isGeneric(alt)) {
              witel = alt
          }
       }
-      
+
       if (witel === 'OTHER') return // Skip unknown witels for table processing
 
       const orderDate2 = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
       const diffTime2 = Math.abs(now - orderDate2)
-      const diffMonths2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24 * 30)) 
+      const diffMonths2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24 * 30))
       const isLessThan3Months2 = diffMonths2 <= 3
       const orderType2 = getOrderType(row.actionCd)
 
@@ -1613,41 +1613,41 @@ export const getReportDatinSummary = async (req, res, next) => {
       const t1 = table1Map[category].witels[witel]
       if (t1) {
         if (isLessThan3Months2) {
-          if (orderType2 === 'AO') { 
+          if (orderType2 === 'AO') {
             t1.ao_3bln++; t1.est_ao_3bln += revenue;
             t1.est_3bln += revenue; t1.total_3bln++;
           }
-          else if (orderType2 === 'DO') { 
+          else if (orderType2 === 'DO') {
             t1.do_3bln++; t1.est_do_3bln += revenue;
             t1.est_3bln += revenue; t1.total_3bln++;
           }
-          else if (orderType2 === 'MO') { 
+          else if (orderType2 === 'MO') {
             t1.mo_3bln++; t1.est_mo_3bln += revenue;
             t1.est_3bln += revenue; t1.total_3bln++;
           }
           else if (orderType2 === 'SO') { t1.so_3bln++; t1.est_so_3bln += revenue; }
           else if (orderType2 === 'RO') { t1.ro_3bln++; t1.est_ro_3bln += revenue; }
-          
+
           // Grand Total should match visible total for consistency
           if (['AO', 'DO', 'MO'].includes(orderType2)) {
              t1.grand_total++
           }
         } else {
-          if (orderType2 === 'AO') { 
+          if (orderType2 === 'AO') {
             t1.ao_3bln2++; t1.est_ao_3bln2 += revenue;
             t1.est_3bln2 += revenue; t1.total_3bln2++;
           }
-          else if (orderType2 === 'DO') { 
+          else if (orderType2 === 'DO') {
             t1.do_3bln2++; t1.est_do_3bln2 += revenue;
             t1.est_3bln2 += revenue; t1.total_3bln2++;
           }
-          else if (orderType2 === 'MO') { 
+          else if (orderType2 === 'MO') {
             t1.mo_3bln2++; t1.est_mo_3bln2 += revenue;
             t1.est_3bln2 += revenue; t1.total_3bln2++;
           }
           else if (orderType2 === 'SO') { t1.so_3bln2++; t1.est_so_3bln2 += revenue; }
           else if (orderType2 === 'RO') { t1.ro_3bln2++; t1.est_ro_3bln2 += revenue; }
-          
+
           if (['AO', 'DO', 'MO'].includes(orderType2)) {
              t1.grand_total++
           }
@@ -1661,13 +1661,13 @@ export const getReportDatinSummary = async (req, res, next) => {
           if (status === 'PROVIDE_ORDER') t2.provide_order++
           else if (status === 'IN_PROCESS') t2.in_process++
           else if (status === 'READY_BILL') t2.ready_bill++
-          
+
           t2.total_3bln++
         } else {
           if (status === 'PROVIDE_ORDER') t2.provide_order2++
           else if (status === 'IN_PROCESS') t2.in_process2++
           else if (status === 'READY_BILL') t2.ready_bill2++
-          
+
           t2.total_3bln2++
         }
         t2.grand_total++
@@ -1690,7 +1690,7 @@ export const getReportDatinSummary = async (req, res, next) => {
         grand_total: 0,
         isCategoryHeader: true
       }
-      
+
       const catHeader2 = {
         id: idCounter++,
         witel: cat, // In Table 2, category is shown in witel column for header
@@ -1721,7 +1721,7 @@ export const getReportDatinSummary = async (req, res, next) => {
         catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.est_mo_3bln2 += d1.est_mo_3bln2;
         catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_ro_3bln2 += d1.est_ro_3bln2;
         catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
-        
+
         catHeader1.grand_total += d1.grand_total;
 
         catHeader2.provide_order += d2.provide_order; catHeader2.in_process += d2.in_process; catHeader2.ready_bill += d2.ready_bill; catHeader2.total_3bln += d2.total_3bln;
@@ -1737,7 +1737,7 @@ export const getReportDatinSummary = async (req, res, next) => {
           est_do_3bln: (d1.est_do_3bln / 1000000).toFixed(2),
           est_mo_3bln: (d1.est_mo_3bln / 1000000).toFixed(2),
           est_3bln: (d1.est_3bln / 1000000).toFixed(2),
-          
+
           est_ao_3bln2: (d1.est_ao_3bln2 / 1000000).toFixed(2),
           est_do_3bln2: (d1.est_do_3bln2 / 1000000).toFixed(2),
           est_mo_3bln2: (d1.est_mo_3bln2 / 1000000).toFixed(2),

@@ -68,12 +68,12 @@ export class ProcessJTImport {
     try {
       await this.updateProgress(5, 'Parsing file...')
       console.log(`\n📥 Starting JT import: ${fileName}`)
-      
+
       const records = await this.parseFile(filePath, fileName)
       if (!records || records.length === 0) throw new Error('File is empty or invalid')
 
       console.log(`✅ File parsed: ${records.length} rows found\n`)
-      
+
       await this.updateProgress(15, `Found ${records.length} rows, clearing table...`)
 
       // Delete all existing records instead of TRUNCATE (more efficient with connection pooling)
@@ -95,7 +95,7 @@ export class ProcessJTImport {
         errors.push(...result.errors)
 
         console.log(`✅ Batch ${batchNum}: Inserted ${result.success} JT rows`)
-        
+
         if (failedCount > 0) {
           console.log(`⚠️  Batch ${batchNum}: ${result.failed} rows failed`)
         }
@@ -103,7 +103,7 @@ export class ProcessJTImport {
         const processed = Math.min(i + chunk.length, records.length)
         const progress = 15 + Math.floor((processed / records.length) * 80)
         await this.updateProgress(progress, `Processed ${processed}/${records.length} rows`)
-        
+
         batchNum++
       }
 

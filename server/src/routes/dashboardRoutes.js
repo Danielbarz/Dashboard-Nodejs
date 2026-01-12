@@ -25,7 +25,8 @@ import {
   getHSIFlowStats,
   getHSIFlowDetail,
   getSOSDatinFilters,
-  getSOSDatinDashboard
+  getSOSDatinDashboard,
+  getDigitalProductCharts
 } from '../controllers/dashboardController.js'
 
 const router = express.Router()
@@ -57,5 +58,8 @@ router.get('/hsi/flow/detail', authenticate, getHSIFlowDetail)
 // Dashboard SOS Datin
 router.get('/sos-datin/filters', authenticate, getSOSDatinFilters)
 router.get('/sos-datin/stats', authenticate, getSOSDatinDashboard)
+
+// Digital Product Dashboard Charts
+router.get('/digital-product/charts', authenticate, getDigitalProductCharts)
 
 export default router

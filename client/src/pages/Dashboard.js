@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import KPICard from '../components/KPICard'
-import StackedBarChart from '../components/StackedBarChart'
-import PieDonutChart from '../components/PieDonutChart'
 import FileUploadForm from '../components/FileUploadForm'
 import { dashboardService, roleService } from '../services/dashboardService'
+import api from '../services/api'
 import { MdTrendingUp, MdCheckCircle, MdSchedule } from 'react-icons/md'
 import { FiRefreshCw } from 'react-icons/fi'
+import {
+  RevenueByWitelChart,
+  AmountByWitelChart,
+  ProductBySegmentChart,
+  ProductByChannelChart,
+  ProductShareChart
+} from '../components/DigitalProductCharts'
 
 const DashboardPage = () => {
   const { user } = useAuth()
@@ -15,13 +21,18 @@ const DashboardPage = () => {
     endDate: ''
   })
 
-  // Chart data
-  const [revenueByWitel, setRevenueByWitel] = useState([])
-  const [amountByWitel, setAmountByWitel] = useState([])
+  // Chart data - NEW: using digital product charts endpoint
+  const [chartData, setChartData] = useState({
+    revenueByWitel: [],
+    amountByWitel: [],
+    productBySegment: [],
+    productByChannel: [],
+    productShare: [],
+    products: [],
+    segments: [],
+    channels: []
+  })
   const [kpiData, setKpiData] = useState(null)
-  const [totalOrderRegional, setTotalOrderRegional] = useState([])
-  const [sebaranDataPS, setSebaranDataPS] = useState([])
-  const [cancelByFCC, setCancelByFCC] = useState([])
 
   // Filter options
   const [filterOptions, setFilterOptions] = useState({
@@ -49,30 +60,27 @@ const DashboardPage = () => {
         ...(selectedSubType && { subType: selectedSubType })
       }
 
+      // Fetch chart data from new endpoint
+      const chartParams = {
+        ...(filters.startDate && { start_date: filters.startDate }),
+        ...(filters.endDate && { end_date: filters.endDate }),
+        ...(selectedWitel && { witel: selectedWitel })
+      }
+
       const [
-        revenueRes,
-        amountRes,
+        chartRes,
         kpiRes,
-        regionalRes,
-        psRes,
-        fccRes,
         optionsRes
       ] = await Promise.all([
-        dashboardService.getRevenueByWitel(queryParams),
-        dashboardService.getAmountByWitel(queryParams),
+        api.get('/dashboard/digital-product/charts', { params: chartParams }),
         dashboardService.getKPIData(queryParams),
-        dashboardService.getTotalOrderByRegional(queryParams),
-        dashboardService.getSebaranDataPS(queryParams),
-        dashboardService.getCancelByFCC(queryParams),
         dashboardService.getFilterOptions()
       ])
 
-      setRevenueByWitel(revenueRes.data.data)
-      setAmountByWitel(amountRes.data.data)
+      if (chartRes.data.success) {
+        setChartData(chartRes.data.data)
+      }
       setKpiData(kpiRes.data.data)
-      setTotalOrderRegional(regionalRes.data.data)
-      setSebaranDataPS(psRes.data.data)
-      setCancelByFCC(fccRes.data.data)
       setFilterOptions(optionsRes.data.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -115,7 +123,7 @@ const DashboardPage = () => {
     fetchDashboardData()
   }
 
-  if (loading && !revenueByWitel.length) {
+  if (loading && !chartData.revenueByWitel.length) {
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
         <FiRefreshCw className="animate-spin mr-2" /> Loading Dashboard...
@@ -239,59 +247,31 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* CHARTS ROW 1 */}
+      {/* CHARTS ROW 1: Revenue & Amount by Witel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {revenueByWitel.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-            <StackedBarChart
-              title="Revenue by Witel"
-              data={revenueByWitel}
-              colors={['#FFA500', '#4F46E5', '#10B981', '#EF4444']}
-            />
-          </div>
-        )}
-
-        {amountByWitel.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-            <StackedBarChart
-              title="Amount by Witel"
-              data={amountByWitel}
-              colors={['#FFA500', '#4F46E5', '#10B981', '#EF4444']}
-            />
-          </div>
-        )}
+        <RevenueByWitelChart
+          data={chartData.revenueByWitel}
+          products={chartData.products}
+        />
+        <AmountByWitelChart
+          data={chartData.amountByWitel}
+          products={chartData.products}
+        />
       </div>
 
-      {/* CHARTS ROW 2 */}
+      {/* CHARTS ROW 2: Product by Segment, Channel, Share */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {totalOrderRegional.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-            <PieDonutChart
-              title="Product by Segment"
-              data={totalOrderRegional}
-              type="pie"
-            />
-          </div>
-        )}
-        {sebaranDataPS.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-            <PieDonutChart
-              title="Product by Channel"
-              data={sebaranDataPS}
-              type="pie"
-            />
-          </div>
-        )}
-
-        {cancelByFCC.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-            <PieDonutChart
-              title="Product Share"
-              data={cancelByFCC}
-              type="pie"
-            />
-          </div>
-        )}
+        <ProductBySegmentChart
+          data={chartData.productBySegment}
+          segments={chartData.segments}
+        />
+        <ProductByChannelChart
+          data={chartData.productByChannel}
+          channels={chartData.channels}
+        />
+        <ProductShareChart
+          data={chartData.productShare}
+        />
       </div>
 
       {/* FILE UPLOAD - Only for active admin/superadmin */}

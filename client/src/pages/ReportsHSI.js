@@ -1,74 +1,3 @@
-<<<<<<< HEAD
-import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload, FiRefreshCw } from 'react-icons/fi'
-import axios from 'axios'
-import FileUploadForm from '../components/FileUploadForm'
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
-const ReportsHSI = () => {
-  const [startDate, setStartDate] = useState(null)
-  const [endDate, setEndDate] = useState(null)
-  const [selectedWitel, setSelectedWitel] = useState('')
-  const [reportData, setReportData] = useState([])
-  const [totals, setTotals] = useState({})
-  const [loading, setLoading] = useState(false)
-
-  const witelList = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
-
-  // --- Helpers ---
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('id-ID').format(num || 0);
-  };
-
-  const getPsReColor = (value) => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return '';
-    return num >= 80 ? 'bg-[#24c55f] text-white font-bold' : 'bg-[#e65253] text-white font-bold';
-  };
-
-  const colors = {
-    blue: 'bg-[#3e81f4]',
-    red: 'bg-[#e65253]',
-    green: 'bg-[#24c55f]',
-    gray: 'bg-[#6b717f]',
-  };
-
-  const totalRowStyle = "bg-[#cccccc] text-[#464647] font-bold border-slate-400";
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-      const token = localStorage.getItem('accessToken')
-      const params = {}
-      if (startDate) params.start_date = startDate.toISOString()
-      if (endDate) params.end_date = endDate.toISOString()
-
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
-        {
-          params,
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-      
-      if (response.data?.data) {
-        // Backend returns tableData, not reportData
-        setReportData(response.data.data.tableData || response.data.data.reportData || [])
-        setTotals(response.data.data.totals || {})
-      }
-    } catch (error) {
-      console.error('Failed to fetch HSI report:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate])
-=======
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { FiDownload, FiFilter, FiRefreshCw } from 'react-icons/fi';
@@ -104,18 +33,17 @@ const ReportsHSI = () => {
     useEffect(() => {
         fetchData();
     }, [startDate, endDate]);
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
 
     // 3. FILTERING LOGIC
     const displayData = useMemo(() => {
         if (selectedWitel === 'ALL') return tableData;
-        
+
         // If a specific witel is selected, find the parent and its children
         // The tableData is already flat [Parent, Child, Child, Parent, Child...]
         // We find the parent row and all subsequent 'sub' rows until next 'main'
         const result = [];
         let capturing = false;
-        
+
         for (const row of tableData) {
             if (row.row_type === 'main') {
                 if (row.witel_display === selectedWitel) {
@@ -131,174 +59,63 @@ const ReportsHSI = () => {
         return result;
     }, [tableData, selectedWitel]);
 
-<<<<<<< HEAD
-  const handleExport = () => {
-    const params = new URLSearchParams()
-    if (startDate) params.append('start_date', startDate.toISOString())
-    if (endDate) params.append('end_date', endDate.toISOString())
-    
-    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
-  }
+    // Styles & Helpers
+    const headerStyle = "bg-[#333333] text-white text-[10px] leading-tight font-semibold tracking-wider uppercase";
+    const subHeaderStyle = "bg-slate-100 text-slate-700 text-[9px] font-bold uppercase tracking-wider";
+    const totalRowStyle = "bg-slate-200 font-bold text-[10px] text-slate-800 border-t-2 border-slate-400";
 
-  // Reset all filters
-  const handleResetFilter = () => {
-    setStartDate(null)
-    setEndDate(null)
-    setSelectedWitel('')
-  }
+    const colors = {
+        blue: "bg-blue-100 text-blue-900",
+        gray: "bg-slate-100 text-slate-700",
+        orange: "bg-orange-100 text-orange-900",
+        green: "bg-green-100 text-green-900",
+        red: "bg-red-100 text-red-900"
+    };
 
-  // Export to Excel (CSV format)
-  const handleExportExcel = () => {
-    if (filteredData.length === 0) {
-      alert('Tidak ada data untuk di-export')
-      return
-    }
+    const formatNumber = (num) => {
+        if (num === null || num === undefined || num === '') return '-';
+        return Number(num).toLocaleString('id-ID');
+    };
 
-    // Define headers
-    const headers = [
-      'Witel', 'PRE PI', 'Registered', 'Inpro SC', 'QC1', 'FCC', 'RJCT FCC', 'Survey Manja', 'UN-SC',
-      'PI < 1 Hari', 'PI 1-3 Hari', 'PI > 3 Hari', 'Total PI',
-      'FO WFM Plgn', 'FO WFM Teknis', 'FO WFM System', 'FO WFM Others',
-      'FO UIM', 'FO ASP', 'FO OSM', 'Total Fallout',
-      'ACT COMP', 'JML COMP (PS)',
-      'Cancel Plgn', 'Cancel Teknis', 'Cancel System', 'Cancel Others', 'Total Cancel',
-      'Revoke', 'PI/RE %', 'PS/RE %', 'PS/PI %'
-    ]
-
-    // Map data rows
-    const rows = filteredData.map(row => [
-      row.witel || row.witel_display || '',
-      row.pre_pi || 0,
-      row.registered || 0,
-      row.inpro_sc || row.inprogress_sc || 0,
-      row.qc1 || 0,
-      row.fcc || 0,
-      row.rjct_fcc || row.cancel_by_fcc || 0,
-      row.survey_manja || row.survey_new_manja || 0,
-      row.un_sc || row.unsc || 0,
-      row.pi_under_24 || row.pi_under_1_hari || 0,
-      row.pi_24_72 || row.pi_1_3_hari || 0,
-      row.pi_over_72 || row.pi_over_3_hari || 0,
-      row.total_pi || 0,
-      row.fo_wfm_plgn || row.fo_wfm_kndl_plgn || 0,
-      row.fo_wfm_teknis || row.fo_wfm_kndl_teknis || 0,
-      row.fo_wfm_system || row.fo_wfm_kndl_sys || 0,
-      row.fo_wfm_others || 0,
-      row.fo_uim || 0,
-      row.fo_asp || 0,
-      row.fo_osm || 0,
-      row.total_fallout || 0,
-      row.act_comp || 0,
-      row.ps || row.jml_comp_ps || 0,
-      row.cancel_plgn || row.cancel_kndl_plgn || 0,
-      row.cancel_teknis || row.cancel_kndl_teknis || 0,
-      row.cancel_system || row.cancel_kndl_sys || 0,
-      row.cancel_others || 0,
-      row.total_cancel || 0,
-      row.revoke || 0,
-      row.perf_pi_re || row.pi_re_percent || 0,
-      row.perf_ps_re || row.ps_re_percent || 0,
-      row.perf_ps_pi || row.ps_pi_percent || 0
-    ])
-
-    // Create CSV content
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n')
-
-    // Add BOM for Excel UTF-8 compatibility
-    const BOM = '\uFEFF'
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
-    
-    // Create download link
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    
-    // Generate filename with date
-    const dateStr = new Date().toISOString().split('T')[0]
-    link.download = `Report_HSI_${dateStr}.csv`
-    
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
-  return (
-    <>
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4 items-center">
-          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
-            <option value="">Semua Witel</option>
-            {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
-          </select>
-=======
-    const witels = useMemo(() => {
-        return ['ALL', ...new Set(tableData.filter(r => r.row_type === 'main').map(r => r.witel_display))];
-    }, [tableData]);
-
-    // 4. HELPERS
-    const formatNumber = (num) => Number(num || 0).toLocaleString('id-ID');
-    
     const getPsReColor = (val) => {
         const v = parseFloat(val);
-        if (v >= 90) return 'text-green-600 font-bold';
-        if (v >= 70) return 'text-yellow-600 font-bold';
-        return 'text-red-600 font-bold';
-    };
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
-
-    const headerStyle = "bg-[#333333] text-white font-bold text-[10px] uppercase tracking-wider";
-    const subHeaderStyle = "bg-[#444444] text-white font-bold text-[9px] uppercase";
-    const totalRowStyle = "bg-[#cccccc] text-black font-bold text-[10px]";
-    
-    const colors = {
-        blue: "bg-blue-600 text-white",
-        red: "bg-red-600 text-white",
-        green: "bg-green-700 text-white",
-        orange: "bg-orange-500 text-white",
-        gray: "bg-gray-600 text-white"
+        if (isNaN(v)) return '';
+        if (v >= 100) return 'bg-green-200 text-green-800 font-bold';
+        if (v >= 90) return 'bg-yellow-100 text-yellow-800';
+        return 'bg-red-100 text-red-800';
     };
 
     return (
-        <div className="flex flex-col space-y-4 p-2 md:p-4 bg-slate-50 min-h-screen">
-            {/* TOOLBAR */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Witel</label>
-                        <select 
-                            value={selectedWitel} 
-                            onChange={(e) => setSelectedWitel(e.target.value)}
-                            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
-                        >
-                            {witels.map(w => <option key={w} value={w}>{w}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex flex-col">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1">Periode</label>
-                        <div className="flex items-center gap-2">
-                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-50" />
-                            <span className="text-slate-300">-</span>
-                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-50" />
-                        </div>
-                    </div>
+        <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div>
+                   <h1 className="text-2xl font-bold text-slate-800">Laporan HSI</h1>
+                   <p className="text-sm text-slate-500">Monitoring Performance & Fallout</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button onClick={fetchData} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
-                        <FiRefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                    <div className="flex flex-col px-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Start</label>
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="border-none p-0 text-sm font-semibold text-slate-700 focus:ring-0" />
+                    </div>
+                    <div className="w-px h-8 bg-slate-200"></div>
+                    <div className="flex flex-col px-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">End</label>
+                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="border-none p-0 text-sm font-semibold text-slate-700 focus:ring-0" />
+                    </div>
+                    <div className="w-px h-8 bg-slate-200"></div>
+                    <button onClick={fetchData} className="p-2 hover:bg-slate-100 rounded-full transition-colors relative group">
+                        <FiRefreshCw className={`w-5 h-5 text-blue-600 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md shadow-green-100 transition-all">
-                        <FiDownload /> Export
-                    </button>
+                    <a
+                        href={`http://localhost:5000/api/report/export-hsi?start_date=${startDate}&end_date=${endDate}`}
+                        target="_blank" rel="noreferrer"
+                        className="ml-2 flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+                    >
+                        <FiDownload className="mr-2" /> Export
+                    </a>
                 </div>
-            </div>
-
-            {/* TABLE CONTAINER */}
+            </div>            {/* TABLE CONTAINER */}
             <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto max-h-[75vh]">
                     <table className="min-w-full border-collapse text-center text-[10px]">
@@ -360,8 +177,8 @@ const ReportsHSI = () => {
                                 <tr><td colSpan="30" className="py-10 text-sm text-slate-400">Tidak ada data untuk periode ini.</td></tr>
                             ) : (
                                 displayData.map((row, index) => (
-                                <tr 
-                                    key={index} 
+                                <tr
+                                    key={index}
                                     className={`transition-colors ${
                                         row.row_type === 'main' ? 'bg-blue-50/50 hover:bg-blue-100 font-bold' : 'bg-white hover:bg-slate-50'
                                     }`}
@@ -385,7 +202,7 @@ const ReportsHSI = () => {
                                     <td className="border border-slate-200 p-1">{formatNumber(row.pi_1_3_hari || row.pi_24_72)}</td>
                                     <td className="border border-slate-200 p-1">{formatNumber(row.pi_over_3_hari || row.pi_over_72)}</td>
                                     <td className="border border-slate-200 p-1 bg-blue-50 font-bold">{formatNumber(row.total_pi)}</td>
-                                    
+
                                     <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_plgn || row.fo_wfm_plgn)}</td>
                                     <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_teknis || row.fo_wfm_teknis)}</td>
                                     <td className="border border-slate-200 p-1">{formatNumber(row.fo_wfm_kndl_sys || row.fo_wfm_system)}</td>
@@ -465,30 +282,6 @@ const ReportsHSI = () => {
                     </table>
                 </div>
             </div>
-<<<<<<< HEAD
-            
-            <button onClick={fetchData} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded hover:bg-blue-700 font-bold shadow transition">
-                Go
-            </button>
-            
-            <button 
-                onClick={handleResetFilter} 
-                className="bg-gray-500 text-white text-xs px-3 py-1.5 rounded hover:bg-gray-600 flex items-center gap-1 font-bold shadow transition"
-                title="Reset Filter"
-            >
-                <FiRefreshCw size={14}/> Reset
-            </button>
-            
-            <button 
-                onClick={handleExportExcel} 
-                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition"
-                disabled={filteredData.length === 0}
-            >
-                <FiDownload size={16}/> Excel
-            </button>
-          </div>
-=======
->>>>>>> cb5c0841a2fee744eaf93e577203a5a7f32ea25a
         </div>
     );
 };

@@ -797,10 +797,10 @@ export const getReportAnalysis = async (req, res, next) => {
 export const getReportHSI = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
-    
+
     // Base conditions with RSO2 Scope (Keep this for safety/scope)
     const conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
-    
+
     if (start_date && end_date) {
       conditions.push(`order_date >= '${start_date}'::date`)
       conditions.push(`order_date < ('${end_date}'::date + INTERVAL '1 day')`)
@@ -812,83 +812,83 @@ export const getReportHSI = async (req, res, next) => {
       SELECT
         witel,
         COUNT(*) as registered,
-        
+
         -- PRE PI
         SUM(CASE WHEN UPPER(status_resume) LIKE '%PRE PI%' THEN 1 ELSE 0 END) as pre_pi,
-        
+
         -- INPRO SC
         SUM(CASE WHEN UPPER(data_proses) = 'INPRO SC' THEN 1 ELSE 0 END) as inpro_sc,
-        
+
         -- QC1
         SUM(CASE WHEN UPPER(data_proses) = 'CANCEL QC1' THEN 1 ELSE 0 END) as qc1,
-        
+
         -- FCC
         SUM(CASE WHEN UPPER(data_proses) = 'CANCEL FCC' THEN 1 ELSE 0 END) as fcc,
-        
+
         -- RJCT FCC
         SUM(CASE WHEN UPPER(kelompok_status) = 'REJECT_FCC' THEN 1 ELSE 0 END) as rjct_fcc,
-        
+
         -- Survey Manja
         SUM(CASE WHEN UPPER(data_proses) = 'OGP SURVEY' AND UPPER(status_resume) LIKE '%INVALID SURVEY%' THEN 1 ELSE 0 END) as survey_manja,
-        
+
         -- UN-SC
         SUM(CASE WHEN UPPER(data_proses) = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
-        
+
         -- PI Aging
         SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) < INTERVAL '24 hours' THEN 1 ELSE 0 END) as pi_under_24,
         SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) >= INTERVAL '24 hours' AND (NOW() - order_date) <= INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_24_72,
         SUM(CASE WHEN kelompok_status = 'PI' AND (NOW() - order_date) > INTERVAL '72 hours' THEN 1 ELSE 0 END) as pi_over_72,
         SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
-        
+
         -- Fallout (FO)
         SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
         SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
         SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
-        
+
         -- FO WFM Split (Simplified Logic based on kel_kendala or default)
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%PELANGGAN%' THEN 1 ELSE 0 END) as fo_wfm_plgn,
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%TEKNIS%' THEN 1 ELSE 0 END) as fo_wfm_teknis,
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND UPPER(kelompok_kendala) LIKE '%SYSTEM%' THEN 1 ELSE 0 END) as fo_wfm_system,
         SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR (UPPER(kelompok_kendala) NOT LIKE '%PELANGGAN%' AND UPPER(kelompok_kendala) NOT LIKE '%TEKNIS%' AND UPPER(kelompok_kendala) NOT LIKE '%SYSTEM%')) THEN 1 ELSE 0 END) as fo_wfm_others,
         SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
-        
+
         -- ACT COMP
         SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp,
-        
+
         -- PS
         SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as ps,
-        
+
         -- CANCEL Split
         SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%PELANGGAN%' THEN 1 ELSE 0 END) as cancel_plgn,
         SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%TEKNIS%' THEN 1 ELSE 0 END) as cancel_teknis,
         SUM(CASE WHEN kelompok_status = 'CANCEL' AND UPPER(kelompok_kendala) LIKE '%SYSTEM%' THEN 1 ELSE 0 END) as cancel_system,
         SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR (UPPER(kelompok_kendala) NOT LIKE '%PELANGGAN%' AND UPPER(kelompok_kendala) NOT LIKE '%TEKNIS%' AND UPPER(kelompok_kendala) NOT LIKE '%SYSTEM%')) THEN 1 ELSE 0 END) as cancel_others,
         SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
-        
+
         -- REVOKE
         SUM(CASE WHEN data_proses = 'REVOKE' THEN 1 ELSE 0 END) as revoke
-        
+
       FROM hsi_data
       ${whereSql}
       GROUP BY witel
     `
 
     const tableData = await prisma.$queryRawUnsafe(query)
-    
+
     // Calculate Percentages
     const formattedData = tableData.map(row => {
         const r = {}
         for (const k in row) r[k] = typeof row[k] === 'bigint' ? Number(row[k]) : row[k]
-        
+
         const pi_re_numerator = r.total_pi + r.total_fallout + r.act_comp + r.ps + r.total_cancel
         const perf_pi_re = r.registered > 0 ? ((pi_re_numerator / r.registered) * 100).toFixed(2) : 0
-        
+
         const ps_re_denominator = r.registered - r.rjct_fcc - r.un_sc - r.revoke
         const perf_ps_re = ps_re_denominator > 0 ? ((r.ps / ps_re_denominator) * 100).toFixed(2) : 0
-        
+
         const ps_pi_denominator = r.total_pi + r.total_fallout + r.act_comp + r.ps
         const perf_ps_pi = ps_pi_denominator > 0 ? ((r.ps / ps_pi_denominator) * 100).toFixed(2) : 0
-        
+
         return { ...r, perf_pi_re, perf_ps_re, perf_ps_pi }
     })
 
@@ -1235,18 +1235,18 @@ export const getHSIDashboard = async (req, res, next) => {
     // --- CLAUSE 1: Order Date (For Charts 1, 2, 3, Trend, Table) ---
     let whereOrderDate = { ...baseWhere }
     if (start_date && end_date) {
-      whereOrderDate.orderDate = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
+      whereOrderDate.orderDate = {
+        gte: new Date(start_date),
+        lte: new Date(end_date)
       }
     }
 
     // --- CLAUSE 2: PS Date (For Charts 4, 5, 6 - Requested TGL_PS, using lastUpdatedDate as proxy due to nulls) ---
     let wherePsDate = { ...baseWhere }
     if (start_date && end_date) {
-      wherePsDate.lastUpdatedDate = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
+      wherePsDate.lastUpdatedDate = {
+        gte: new Date(start_date),
+        lte: new Date(end_date)
       }
     }
 
@@ -1324,7 +1324,7 @@ export const getHSIDashboard = async (req, res, next) => {
 
     chart5Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
-      
+
       // AMBIL RAW DATA: Jika null/kosong ganti string 'NULL', lalu uppercase agar seragam
       const errorCode = i.suberrorcode ? i.suberrorcode.toUpperCase() : 'NULL'
 
@@ -1333,12 +1333,12 @@ export const getHSIDashboard = async (req, res, next) => {
 
       // Inisialisasi object per wilayah jika belum ada
       if (!chart5Map[dim]) chart5Map[dim] = { name: dim, total: 0 }
-      
+
       // Assign jumlah count langsung ke kode error aslinya
       chart5Map[dim][errorCode] = (chart5Map[dim][errorCode] || 0) + i._count.id
       chart5Map[dim].total += i._count.id
     })
-    
+
     // Fixed keys for consistent legend
     const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
     const chart5Data = Object.values(chart5Map)
@@ -1359,30 +1359,30 @@ export const getHSIDashboard = async (req, res, next) => {
     // --- CHART 6: Cancel Non-FCC (PS Date, Sorted) ---
     const chart6Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'],
-      where: cancelWhere,
+      where: { ...wherePsDate, kelompokStatus: 'CANCEL' },
       _count: { id: true }
     })
-    
+
     const chart6Map = {}
     const chart6KeySet = new Set()
-    
+
     chart6Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
       const err = i.suberrorcode || 'Null'
       chart6KeySet.add(err)
-      
+
       if (!chart6Map[dim]) chart6Map[dim] = { name: dim, total: 0 }
       chart6Map[dim][err] = (chart6Map[dim][err] || 0) + i._count.id
       chart6Map[dim].total += i._count.id
     })
-    
+
     // Sort Descending by Total Record Count
     const chart6Data = Object.values(chart6Map).sort((a, b) => b.total - a.total)
     const chart6Keys = [...chart6KeySet]
 
-    // --- MAP DATA ---
+    // --- MAP DATA (Order Date) ---
     const mapWhere = {
-      ...whereClause,
+      ...whereOrderDate,
       gpsLatitude: { not: null },
       gpsLongitude: { not: null }
     }
@@ -1442,9 +1442,9 @@ export const getHSIDashboard = async (req, res, next) => {
       }
     }).filter(i => i !== null)
 
-    // --- TREND CHART ---
+    // --- TREND CHART (Order Date) ---
     const trendRaw = await prisma.hsiData.findMany({
-      where: whereClause,
+      where: whereOrderDate,
       select: { orderDate: true, kelompokStatus: true },
       orderBy: { orderDate: 'asc' }
     })
@@ -1464,7 +1464,7 @@ export const getHSIDashboard = async (req, res, next) => {
     // --- TABLE DATA (Order Date) ---
     const skip = (Number(page) - 1) * Number(limit)
     const tableDataRaw = await prisma.hsiData.findMany({
-      where: whereClause,
+      where: whereOrderDate,
       take: Number(limit),
       skip: skip,
       orderBy: { orderDate: 'desc' },
@@ -1748,12 +1748,12 @@ export const getHSIFlowDetail = async (req, res, next) => {
     const whereSql = sqlConditions.length > 0 ? `WHERE ${sqlConditions.join(' AND ')}` : '';
 
     // --- EXECUTE QUERY ---
-    
+
     // 1. EXPORT MODE
     if (export_detail === 'true') {
         const query = `
             SELECT *
-            FROM hsi_data 
+            FROM hsi_data
             ${whereSql}
             ORDER BY order_date DESC
         `;
@@ -1943,4 +1943,200 @@ export const getSOSDatinDashboard = async (req, res, next) => {
   }
 }
 
-// WOIIIIIIIIIIII
+// =================================================================
+// DIGITAL PRODUCT DASHBOARD CHARTS
+// =================================================================
+
+/**
+ * Get chart data for Digital Product Dashboard
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+ */
+/**
+ * Get chart data for Digital Product Dashboard
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+ */
+export const getDigitalProductCharts = async (req, res, next) => {
+  try {
+    const { start_date, end_date, witel } = req.query
+
+    // Define Date Filter
+    let dateFilter = ''
+    const params = []
+    let pIdx = 1
+
+    if (start_date && end_date) {
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      params.push(start_date, end_date)
+      pIdx += 2
+    }
+
+    // Common CTEs for normalization
+    // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
+    const normalizedDataCTE = `
+      WITH normalized_data AS (
+        SELECT
+          *,
+          CASE
+            WHEN witel IN ('BALI') THEN 'BALI'
+            WHEN witel IN ('SURAMADU') THEN 'SURAMADU'
+            WHEN witel IN ('NTT', 'NTB') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('MADIUN', 'KEDIRI', 'MALANG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JEMBER', 'PASURUAN', 'SIDOARJO') THEN 'JATIM TIMUR'
+            ELSE 'OTHER'
+          END as region_norm,
+          CASE
+            WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+            WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+            WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+            WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+            ELSE 'OTHER'
+          END as product_norm,
+          CASE
+            WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
+            ELSE 'SME'
+          END as segment_norm,
+          CASE
+            WHEN UPPER(category) LIKE '%NCX%' OR UPPER(witel) LIKE '%NCX%' OR UPPER(branch) LIKE '%NCX%' THEN 'NCX'
+            ELSE 'SC-ONE'
+          END as channel_norm
+        FROM digital_products
+        WHERE 1=1
+        ${dateFilter}
+      )
+    `
+
+    // Filter Condition based on Normalized Columns
+    const filterCondition = `
+      WHERE region_norm != 'OTHER'
+      AND product_norm != 'OTHER'
+      ${witel && witel !== 'ALL' ? `AND region_norm = $${pIdx}` : ''}
+    `
+
+    if (witel && witel !== 'ALL') params.push(witel)
+
+    // Run queries in parallel
+    const [
+      revenueByWitel,
+      amountByWitel,
+      productBySegment,
+      productByChannel,
+      productShare
+    ] = await Promise.all([
+      // 1. Revenue by Witel - Stacked Bar (Vertical)
+      // Extract revenue from product_name text if column is 0
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT
+          region_norm as witel,
+          product_norm as product,
+          SUM(
+            COALESCE(revenue, 0) +
+            COALESCE(substring(product_name from 'Total \\(Sebelum PPN\\) : ([0-9]+)')::numeric, 0)
+          )::numeric as revenue
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY region_norm, product_norm
+        ORDER BY region_norm, product_norm
+      `, ...params),
+
+      // 2. Amount by Witel - Stacked Bar (Vertical)
+      // Use COUNT(*) as proxy for amount since column is often 0
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT region_norm as witel, product_norm as product, COUNT(*)::int as amount
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY region_norm, product_norm
+        ORDER BY region_norm, product_norm
+      `, ...params),
+
+      // 3. Product by Segment - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT
+          product_norm as product,
+          segment_norm as segment,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, segment_norm
+        ORDER BY product_norm, segment_norm
+      `, ...params),
+
+      // 4. Product by Channel - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT
+          product_norm as product,
+          channel_norm as channel,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, channel_norm
+        ORDER BY product_norm, channel_norm
+      `, ...params),
+
+      // 5. Product Share - Pie Chart
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT
+          product_norm as product,
+          COUNT(*)::int as value
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm
+        ORDER BY value DESC
+      `, ...params)
+    ])
+
+    // Transform data for frontend charts
+    // 1 & 2: Transform to stacked bar format {witel: 'X', Antares: 10, Netmonk: 20, ...}
+    const transformStackedByWitel = (data, valueKey) => {
+      const result = {}
+      data.forEach(row => {
+        const witelName = row.witel || 'Unknown'
+        if (!result[witelName]) {
+          result[witelName] = { witel: witelName }
+        }
+        result[witelName][row.product] = Number(row[valueKey] || 0)
+      })
+      return Object.values(result)
+    }
+
+    // 3 & 4: Transform to horizontal stacked bar format {product: 'X', SME: 10, LEGS: 20, ...}
+    const transformStackedByProduct = (data, categoryKey) => {
+      const result = {}
+      data.forEach(row => {
+        const productName = row.product || 'Unknown'
+        if (!result[productName]) {
+          result[productName] = { product: productName }
+        }
+        result[productName][row[categoryKey]] = Number(row.total || 0)
+      })
+      return Object.values(result)
+    }
+
+    // Get unique products for color mapping
+    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
+    const segments = [...new Set(productBySegment.map(p => p.segment))]
+    const channels = [...new Set(productByChannel.map(p => p.channel))]
+
+    successResponse(res, {
+      revenueByWitel: transformStackedByWitel(revenueByWitel, 'revenue'),
+      amountByWitel: transformStackedByWitel(amountByWitel, 'amount'),
+      productBySegment: transformStackedByProduct(productBySegment, 'segment'),
+      productByChannel: transformStackedByProduct(productByChannel, 'channel'),
+      productShare: productShare.map(p => ({ name: p.product, value: Number(p.value) })),
+      // Metadata for chart rendering
+      products,
+      segments,
+      channels
+    }, 'Digital product charts data retrieved')
+
+  } catch (error) {
+    console.error('Error in getDigitalProductCharts:', error)
+    next(error)
+  }
+}

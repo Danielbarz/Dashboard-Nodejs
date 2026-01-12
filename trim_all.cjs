@@ -13,7 +13,7 @@ const dirs = ['client/src', 'server/src'];
 dirs.forEach(dir => {
   if (fs.existsSync(dir)) {
     walk(dir, (file) => {
-      if (file.endsWith('.js') || file.endsWith('.jsx') || file.endsWith('.cjs')) {
+      if (file.endsWith('.js') || file.endsWith('.jsx') || file.endsWith('.cjs') || file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.d.ts')) {
         const content = fs.readFileSync(file, 'utf8');
         const lines = content.split('\n');
         const newLines = lines.map(line => line.trimEnd());
