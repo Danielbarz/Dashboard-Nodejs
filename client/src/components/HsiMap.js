@@ -17,7 +17,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const HsiMap = ({ data }) => {
     // Pusat peta default (Sekitar Bali/Jatim)
-    const position = [-7.98, 112.63]; 
+    const position = [-7.98, 112.63];
 
     const getColor = (status) => {
         if (status === 'Completed') return '#10B981'; // Green
@@ -32,9 +32,9 @@ const HsiMap = ({ data }) => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {data.map((item, idx) => (
-                <CircleMarker 
-                    key={idx} 
-                    center={[item.lat, item.lng]} 
+                <CircleMarker
+                    key={idx}
+                    center={[item.lat, item.lng]}
                     pathOptions={{ color: getColor(item.status_group), fillColor: getColor(item.status_group), fillOpacity: 0.7 }}
                     radius={5}
                 >

@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import KPICard from '../components/KPICard'
-import StackedBarChart from '../components/StackedBarChart'
-import PieDonutChart from '../components/PieDonutChart'
 import FileUploadForm from '../components/FileUploadForm'
 import { dashboardService, roleService } from '../services/dashboardService'
+import api from '../services/api'
 import { MdTrendingUp, MdCheckCircle, MdSchedule } from 'react-icons/md'
+import { FiRefreshCw } from 'react-icons/fi'
+import {
+  RevenueByWitelChart,
+  AmountByWitelChart,
+  ProductBySegmentChart,
+  ProductByChannelChart,
+  ProductShareChart
+} from '../components/DigitalProductCharts'
 
 const DashboardPage = () => {
   const { user } = useAuth()
@@ -13,22 +20,27 @@ const DashboardPage = () => {
     startDate: '',
     endDate: ''
   })
-  
-  // Chart data
-  const [revenueByWitel, setRevenueByWitel] = useState([])
-  const [amountByWitel, setAmountByWitel] = useState([])
+
+  // Chart data - NEW: using digital product charts endpoint
+  const [chartData, setChartData] = useState({
+    revenueByWitel: [],
+    amountByWitel: [],
+    productBySegment: [],
+    productByChannel: [],
+    productShare: [],
+    products: [],
+    segments: [],
+    channels: []
+  })
   const [kpiData, setKpiData] = useState(null)
-  const [totalOrderRegional, setTotalOrderRegional] = useState([])
-  const [sebaranDataPS, setSebaranDataPS] = useState([])
-  const [cancelByFCC, setCancelByFCC] = useState([])
-  
+
   // Filter options
   const [filterOptions, setFilterOptions] = useState({
     products: [],
     branches: [],
     witels: []
   })
-  
+
   const [loading, setLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState('')
   const [selectedWitel, setSelectedWitel] = useState('')
@@ -48,30 +60,27 @@ const DashboardPage = () => {
         ...(selectedSubType && { subType: selectedSubType })
       }
 
+      // Fetch chart data from new endpoint
+      const chartParams = {
+        ...(filters.startDate && { start_date: filters.startDate }),
+        ...(filters.endDate && { end_date: filters.endDate }),
+        ...(selectedWitel && { witel: selectedWitel })
+      }
+
       const [
-        revenueRes,
-        amountRes,
+        chartRes,
         kpiRes,
-        regionalRes,
-        psRes,
-        fccRes,
         optionsRes
       ] = await Promise.all([
-        dashboardService.getRevenueByWitel(queryParams),
-        dashboardService.getAmountByWitel(queryParams),
+        api.get('/dashboard/digital-product/charts', { params: chartParams }),
         dashboardService.getKPIData(queryParams),
-        dashboardService.getTotalOrderByRegional(queryParams),
-        dashboardService.getSebaranDataPS(queryParams),
-        dashboardService.getCancelByFCC(queryParams),
         dashboardService.getFilterOptions()
       ])
 
-      setRevenueByWitel(revenueRes.data.data)
-      setAmountByWitel(amountRes.data.data)
+      if (chartRes.data.success) {
+        setChartData(chartRes.data.data)
+      }
       setKpiData(kpiRes.data.data)
-      setTotalOrderRegional(regionalRes.data.data)
-      setSebaranDataPS(psRes.data.data)
-      setCancelByFCC(fccRes.data.data)
       setFilterOptions(optionsRes.data.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -114,57 +123,67 @@ const DashboardPage = () => {
     fetchDashboardData()
   }
 
-  if (loading && !revenueByWitel.length) {
-    return <div className="text-center py-12">Loading...</div>
+  if (loading && !chartData.revenueByWitel.length) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-500">
+        <FiRefreshCw className="animate-spin mr-2" /> Loading Dashboard...
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Digital Product</h1>
-        <p className="text-gray-600 mt-1">Overview & Analytics</p>
+    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard Digital Product</h1>
+          <p className="text-gray-500 text-sm">Overview & Analytics Performance</p>
+        </div>
+        <button
+          onClick={fetchDashboardData}
+          className="p-2 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition-colors"
+          title="Refresh Data"
+        >
+          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
-      {/* FILTER PANEL */}
-      <div className="bg-white rounded-lg shadow p-6 relative">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Rentang Tanggal</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      {/* Modern Filter Section */}
+      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+
           {/* Start Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Dari</label>
+          <div className="flex flex-col space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Dari Tanggal</label>
             <input
               type="date"
               name="startDate"
               value={filters.startDate}
               onChange={handleDateChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
           {/* End Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sampai</label>
+          <div className="flex flex-col space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Sampai Tanggal</label>
             <input
               type="date"
               name="endDate"
               value={filters.endDate}
               onChange={handleDateChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
           {/* Product Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Produk</label>
+          <div className="flex flex-col space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Produk</label>
             <select
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
             >
-              <option value="">Pilih Produk</option>
+              <option value="">Semua Produk</option>
               {filterOptions.products?.map(product => (
                 <option key={product} value={product}>{product}</option>
               ))}
@@ -172,43 +191,35 @@ const DashboardPage = () => {
           </div>
 
           {/* Witel Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Witel</label>
+          <div className="flex flex-col space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Witel</label>
             <select
               value={selectedWitel}
               onChange={(e) => setSelectedWitel(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
             >
-              <option value="">Pilih Witel</option>
+              <option value="">Semua Witel</option>
               {filterOptions.witels?.map(witel => (
                 <option key={witel} value={witel}>{witel}</option>
               ))}
             </select>
           </div>
 
-          {/* Branch Info */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Branch (Telda)</label>
-            <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm">
-              Pilih Branch (Filtered)
-            </div>
+          {/* Reset & Apply */}
+          <div className="flex items-end gap-2">
+            <button
+              onClick={handleResetFilters}
+              className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition-all"
+            >
+              Reset
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+            >
+              Apply
+            </button>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={handleResetFilters}
-            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium"
-          >
-            Reset Filter
-          </button>
-          <button
-            onClick={handleApplyFilters}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-          >
-            Terapkan Filter
-          </button>
         </div>
       </div>
 
@@ -236,54 +247,38 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* CHARTS ROW 1 */}
+      {/* CHARTS ROW 1: Revenue & Amount by Witel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {revenueByWitel.length > 0 && (
-          <StackedBarChart
-            title="Revenue by Witel"
-            data={revenueByWitel}
-            colors={['#FFA500', '#4F46E5', '#10B981', '#EF4444']}
-          />
-        )}
-        
-        {amountByWitel.length > 0 && (
-          <StackedBarChart
-            title="Amount by Witel"
-            data={amountByWitel}
-            colors={['#FFA500', '#4F46E5', '#10B981', '#EF4444']}
-          />
-        )}
+        <RevenueByWitelChart 
+          data={chartData.revenueByWitel} 
+          products={chartData.products} 
+        />
+        <AmountByWitelChart 
+          data={chartData.amountByWitel} 
+          products={chartData.products} 
+        />
       </div>
 
-      {/* CHARTS ROW 2 */}
+      {/* CHARTS ROW 2: Product by Segment, Channel, Share */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {totalOrderRegional.length > 0 && (
-          <PieDonutChart
-            title="Product by Segment"
-            data={totalOrderRegional}
-            type="pie"
-          />
-        )}
-        {sebaranDataPS.length > 0 && (
-          <PieDonutChart
-            title="Product by Channel"
-            data={sebaranDataPS}
-            type="pie"
-          />
-        )}
-        
-        {cancelByFCC.length > 0 && (
-          <PieDonutChart
-            title="Product Share"
-            data={cancelByFCC}
-            type="pie"
-          />
-        )}
+        <ProductBySegmentChart 
+          data={chartData.productBySegment} 
+          segments={chartData.segments} 
+        />
+        <ProductByChannelChart 
+          data={chartData.productByChannel} 
+          channels={chartData.channels} 
+        />
+        <ProductShareChart 
+          data={chartData.productShare} 
+        />
       </div>
 
       {/* FILE UPLOAD - Only for active admin/superadmin */}
       {['admin', 'superadmin'].includes(activeRole) && (
-        <FileUploadForm type="digital_product" onSuccess={fetchDashboardData} />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
+          <FileUploadForm type="digital_product" onSuccess={fetchDashboardData} />
+        </div>
       )}
     </div>
   )

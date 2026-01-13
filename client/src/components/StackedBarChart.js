@@ -32,10 +32,10 @@ const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981
       <ResponsiveContainer width="100%" height={380}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="name" 
-            angle={-45} 
-            textAnchor="end" 
+          <XAxis
+            dataKey="name"
+            angle={-45}
+            textAnchor="end"
             height={100}
             tick={{ fontSize: 12 }}
           />
@@ -43,11 +43,11 @@ const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981
           <Tooltip formatter={(value) => value.toLocaleString('id-ID')} />
           <Legend />
           {keys.map((key, index) => (
-            <Bar 
-              key={key} 
-              dataKey={key} 
-              stackId="a" 
-              fill={colors[index % colors.length]} 
+            <Bar
+              key={key}
+              dataKey={key}
+              stackId="a"
+              fill={colors[index % colors.length]}
               name={key}
             />
           ))}

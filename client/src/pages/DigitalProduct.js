@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import api from '../services/api'
+import {
+  RevenueByWitelChart,
+  AmountByWitelChart,
+  ProductBySegmentChart,
+  ProductByChannelChart,
+  ProductShareChart
+} from '../components/DigitalProductCharts'
 
 // ===================================================================
 // KOMPONEN REUSABLE
@@ -412,6 +420,98 @@ const DigitalProduct = () => {
   const [isCancelSectionExpanded, setIsCancelSectionExpanded] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
 
+  // Chart state
+  const now = new Date()
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+  const [chartStartDate, setChartStartDate] = useState(firstDay.toISOString().split('T')[0])
+  const [chartEndDate, setChartEndDate] = useState(now.toISOString().split('T')[0])
+  const [chartLoading, setChartLoading] = useState(false)
+  
+  // Filters State
+  const [selectedWitels, setSelectedWitels] = useState([])
+  const [selectedBranches, setSelectedBranches] = useState([])
+  const [selectedProducts, setSelectedProducts] = useState([])
+  const [filterOptions, setFilterOptions] = useState({
+    witels: [],
+    products: [],
+    branchMap: {}
+  })
+
+  const [chartData, setChartData] = useState({
+    revenueByWitel: [],
+    amountByWitel: [],
+    productBySegment: [],
+    productByChannel: [],
+    productShare: [],
+    products: [],
+    segments: [],
+    channels: []
+  })
+
+  // Fetch Filter Options
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await api.get('/dashboard/digital-product/filters')
+        if (response.data.success) {
+          setFilterOptions(response.data.data)
+        }
+      } catch (error) {
+        console.error('Error fetching filters:', error)
+      }
+    }
+    fetchFilters()
+  }, [])
+
+  // Derived Branch Options based on Selected Witels
+  const availableBranchOptions = useMemo(() => {
+    if (selectedWitels.length === 0) {
+      // If no witel selected, show all branches or none? Usually all or none. 
+      // Let's show all available branches if needed, or better, dependent on witel.
+      // If no witel selected, maybe show nothing or all. Let's show all.
+      return Object.values(filterOptions.branchMap).flat().sort()
+    }
+    return selectedWitels.flatMap(witel => filterOptions.branchMap[witel] || []).sort()
+  }, [selectedWitels, filterOptions.branchMap])
+
+  // Reset branches if selected witel changes and selected branch is no longer valid
+  useEffect(() => {
+    const validBranches = selectedBranches.filter(b => availableBranchOptions.includes(b))
+    if (validBranches.length !== selectedBranches.length) {
+      setSelectedBranches(validBranches)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWitels])
+
+  // Fetch chart data
+  const fetchChartData = async () => {
+    setChartLoading(true)
+    try {
+      const params = { 
+        start_date: chartStartDate, 
+        end_date: chartEndDate 
+      }
+      
+      if (selectedWitels.length > 0) params.witel = selectedWitels.join(',')
+      if (selectedBranches.length > 0) params.branch = selectedBranches.join(',')
+      if (selectedProducts.length > 0) params.product = selectedProducts.join(',')
+
+      const response = await api.get('/dashboard/digital-product/charts', { params })
+      if (response.data.success) {
+        setChartData(response.data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+    } finally {
+      setChartLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchChartData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartStartDate, chartEndDate, selectedWitels, selectedBranches, selectedProducts])
+
   // Mock data - all empty
   const reportData = []
   const inProgressData = []
@@ -486,6 +586,97 @@ const DigitalProduct = () => {
           <h1 className="text-3xl font-bold text-gray-900">Digital Product Analysis</h1>
           <p className="text-gray-600 mt-2">Dashboard untuk analisis produk digital dan tracking order</p>
         </div>
+
+        {/* ============================================= */}
+        {/* SECTION: CHARTS */}
+        {/* ============================================= */}
+        <div className="mb-8">
+          {/* Chart Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4">
+              
+              {/* Product Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Product</label>
+                <MultiSelectDropdown
+                  options={filterOptions.products}
+                  selected={selectedProducts}
+                  onChange={setSelectedProducts}
+                  placeholder="Semua Produk"
+                />
+              </div>
+
+              {/* Witel Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Witel</label>
+                <MultiSelectDropdown
+                  options={filterOptions.witels}
+                  selected={selectedWitels}
+                  onChange={setSelectedWitels}
+                  placeholder="Semua Witel"
+                />
+              </div>
+
+              {/* Branch Filter */}
+              <div className="w-48">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
+                <MultiSelectDropdown
+                  options={availableBranchOptions}
+                  selected={selectedBranches}
+                  onChange={setSelectedBranches}
+                  placeholder="Semua Branch"
+                />
+              </div>
+
+              {/* Date Filter */}
+              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border mt-5">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-medium text-gray-400 uppercase">Dari</label>
+                  <input
+                    type="date"
+                    value={chartStartDate}
+                    onChange={(e) => setChartStartDate(e.target.value)}
+                    className="border-none p-0 text-sm font-medium text-gray-700 bg-transparent focus:ring-0"
+                  />
+                </div>
+                <span className="text-gray-300">|</span>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-medium text-gray-400 uppercase">Sampai</label>
+                  <input
+                    type="date"
+                    value={chartEndDate}
+                    onChange={(e) => setChartEndDate(e.target.value)}
+                    className="border-none p-0 text-sm font-medium text-gray-700 bg-transparent focus:ring-0"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={fetchChartData}
+                disabled={chartLoading}
+                className="px-4 py-2 mt-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                {chartLoading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+
+          {/* Charts Grid */}
+          <div className="space-y-6">
+            {/* Row 1: Revenue & Amount by Witel */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RevenueByWitelChart data={chartData.revenueByWitel} products={chartData.products} />
+              <AmountByWitelChart data={chartData.amountByWitel} products={chartData.products} />
+            </div>
+
+            {/* Row 2: Product by Segment, Channel, Share */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <ProductBySegmentChart data={chartData.productBySegment} segments={chartData.segments} />
+              <ProductByChannelChart data={chartData.productByChannel} channels={chartData.channels} />
+              <ProductShareChart data={chartData.productShare} />
+            </div>
+          </div>
+        </div>
+        {/* END CHARTS SECTION */}
 
         {/* MAIN GRID: 3 kolom kiri, 1 kolom kanan */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

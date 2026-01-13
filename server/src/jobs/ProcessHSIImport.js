@@ -34,7 +34,7 @@ const cleanNumber = (value) => {
 const parseDate = (value) => {
   if (!value) return null
   if (value instanceof Date) return value
-  
+
   // Handle Excel serial date
   if (typeof value === 'number') {
     return new Date(Math.round((value - 25569) * 86400 * 1000))
@@ -58,11 +58,11 @@ const parseDate = (value) => {
     const p1 = parseInt(parts[0])
     const p2 = parseInt(parts[1])
     const p3 = parseInt(parts[2])
-    
+
     // Heuristic: if p1 > 12, it must be DD/MM/YYYY
-    // But user sample had 12/15/2025, which is MM/DD. 
+    // But user sample had 12/15/2025, which is MM/DD.
     // If we see 15/12/2025, that would be DD/MM.
-    
+
     let m, d, y
     if (p1 > 12) {
        // Likely DD/MM/YYYY
@@ -94,12 +94,12 @@ export class ProcessHSIImport {
 
   async handle() {
     const { filePath, fileName, batchId } = this.job.data
-    
+
     console.log(`[HSI Import] Starting import for ${fileName} (Batch: ${batchId})`);
 
     try {
       await this.updateProgress(5, 'Parsing HSI file...')
-      
+
       const records = await this.parseFile(filePath, fileName)
       if (!records || records.length === 0) {
         throw new Error('File is empty')
@@ -116,7 +116,7 @@ export class ProcessHSIImport {
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize)
         const result = await this.processChunk(chunk, batchId)
-        
+
         successCount += result.success
         failedCount += result.failed
         errors.push(...result.errors)
@@ -126,11 +126,11 @@ export class ProcessHSIImport {
       }
 
       console.log(`[HSI Import] Finished. Success: ${successCount}, Failed: ${failedCount}`);
-      
+
       // Only delete file if it exists (test script might delete it, or race conditions)
       try {
         if (filePath && await this.fileExists(filePath)) {
-             unlinkSync(filePath) 
+             unlinkSync(filePath)
         }
       } catch (e) { console.warn('Could not delete temp file', e.message) }
 
@@ -163,7 +163,7 @@ export class ProcessHSIImport {
 
   async parseFile(filePath, fileName) {
     const ext = fileName.toLowerCase().match(/\.(xlsx|xls|csv)$/)?.[1]
-    
+
     if (ext === 'xlsx' || ext === 'xls') {
       const workbook = XLSX.readFile(filePath)
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -184,7 +184,7 @@ export class ProcessHSIImport {
   async processChunk(records, batchId) {
     const dataToCreate = records.map(record => {
       const keyMap = buildKeyMap(record)
-      
+
       const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'no_order', 'noorder')
       const noorder = getValue(record, keyMap, 'no_order', 'noorder')
       const finalOrderId = orderId || noorder || `hsi_${Date.now()}_${Math.random()}`
@@ -254,7 +254,7 @@ export class ProcessHSIImport {
     })
 
     try {
-      // Use createMany with skipDuplicates. 
+      // Use createMany with skipDuplicates.
       // Note: skipDuplicates only works if there is a unique constraint in the DB.
       // If orderId is not unique in the DB, this will insert duplicates.
       const result = await prisma.hsiData.createMany({

@@ -3,10 +3,10 @@ import { FiDownload, FiChevronDown, FiSearch } from 'react-icons/fi'
 import FileUploadForm from '../components/FileUploadForm'
 import api from '../services/api'
 
-// Filter Report DATIN 
+// Filter Report DATIN
 const FilterHeaderDatin = ({ title, columnKey, bgClass, activeFilters, setActiveFilters, openFilter, setOpenFilter, filterOptions }) => (
   <th className={`${bgClass} border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap relative`}>
-    <div 
+    <div
       className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/10 rounded px-1 -mx-1"
       onClick={(e) => {
         e.stopPropagation()
@@ -23,13 +23,13 @@ const FilterHeaderDatin = ({ title, columnKey, bgClass, activeFilters, setActive
       </div>
       <FiChevronDown className={`flex-shrink-0 transition-transform ${openFilter === columnKey ? 'rotate-180' : ''}`} />
     </div>
-    
+
     {openFilter === columnKey && (
-      <div 
+      <div
         className="absolute left-0 top-full mt-1 w-48 bg-white text-gray-800 rounded-md shadow-xl z-50 border border-gray-200 max-h-60 overflow-y-auto text-left"
         onClick={(e) => e.stopPropagation()}
       >
-        <div 
+        <div
           className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs border-b border-gray-100 ${!activeFilters[columnKey]?.length ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
           onClick={() => {
             setActiveFilters(prev => ({ ...prev, [columnKey]: [] }))
@@ -39,8 +39,8 @@ const FilterHeaderDatin = ({ title, columnKey, bgClass, activeFilters, setActive
           All
         </div>
         {filterOptions.map((option, idx) => (
-          <div 
-            key={idx} 
+          <div
+            key={idx}
             className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs ${activeFilters[columnKey]?.includes(option) ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
             onClick={() => {
               setActiveFilters(prev => ({ ...prev, [columnKey]: [option] }))
@@ -262,7 +262,7 @@ const ReportsDatin = () => {
           <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
             <div className="flex flex-col justify-center px-2 h-full w-40">
               <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
-              <div 
+              <div
                 className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
                 onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
               >
@@ -273,20 +273,20 @@ const ReportsDatin = () => {
             {isWitelDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                 {witelList.map(option => (
-                  <div 
-                    key={option} 
+                  <div
+                    key={option}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                     onClick={() => toggleWitel(option)}
                   >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedWitel.includes(option)} 
+                    <input
+                      type="checkbox"
+                      checked={selectedWitel.includes(option)}
                       readOnly
                       className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                     />
                     <span className="text-sm text-gray-700">{option}</span>
                   </div>
-                ))} 
+                ))}
               </div>
             )}
           </div>
@@ -322,13 +322,13 @@ const ReportsDatin = () => {
               <thead className="bg-blue-600">
                 <tr>
                   <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL</th>
-                  
+
                   {/* < 3 Bulan */}
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">AO</th>
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">DO</th>
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">MO</th>
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-800">ORDER &lt;3BLN TOTAL</th>
-                  
+
                   {/* > 3 Bulan */}
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">AO</th>
                   <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border text-[9px] bg-blue-700">DO</th>
@@ -363,7 +363,7 @@ const ReportsDatin = () => {
                 {table1Data.map((row) => (
                   <tr key={row.id} className={row.isCategoryHeader ? 'bg-blue-700 font-bold text-white' : 'hover:bg-gray-50'}>
                     <td className={`px-2 py-1 whitespace-nowrap border text-left ${row.isCategoryHeader ? 'font-bold text-white bg-blue-700' : ''}`}>{row.isCategoryHeader ? row.category : row.witel}</td>
-                    
+
                     {/* < 3 Bulan */}
                     <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.ao_3bln}</td>
                     <td className={`px-2 py-1 whitespace-nowrap border ${row.isCategoryHeader ? 'bg-blue-700 text-white' : ''}`}>{row.est_ao_3bln}</td>
@@ -507,13 +507,13 @@ const ReportsDatin = () => {
           <table className="min-w-full border-collapse border border-gray-300 text-xs">
             <thead>
               <tr className="text-white">
-                <th 
+                <th
                   className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap cursor-pointer hover:bg-blue-700"
                   onClick={() => setSortConfig({ key: 'order_id', direction: sortConfig.key === 'order_id' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}
                 >
                   Order ID
                 </th>
-                <th 
+                <th
                   className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap cursor-pointer hover:bg-blue-700"
                   onClick={() => setSortConfig({ key: 'order_date', direction: sortConfig.key === 'order_date' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}
                 >
@@ -521,24 +521,24 @@ const ReportsDatin = () => {
                 </th>
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">NIPNAS</th>
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Standard Name (PO)</th>
-                
+
                 {/* Filterable columns */}
                 <FilterHeaderDatin title="Produk" columnKey="produk" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.produk} />
-                
+
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Revenue</th>
-                
+
                 <FilterHeaderDatin title="Segmen" columnKey="segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.segmen} />
                 <FilterHeaderDatin title="Sub Segmen" columnKey="sub_segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.sub_segmen} />
                 <FilterHeaderDatin title="Kategori" columnKey="kategori" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.kategori} />
                 <FilterHeaderDatin title="Kategori Umur" columnKey="kategori_umur" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.kategori_umur} />
-                
+
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Umur Order</th>
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Bill Witel</th>
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Cust Witel</th>
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Service Witel</th>
-                
+
                 <FilterHeaderDatin title="Status" columnKey="status" bgClass="bg-orange-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.status} />
-                
+
                 <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Milestone</th>
                 <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Biaya Pasang</th>
                 <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Harga Bulanan</th>
@@ -579,8 +579,8 @@ const ReportsDatin = () => {
                       {item.hargaBulanan !== null && item.hargaBulanan !== undefined && item.hargaBulanan !== 0 ? item.hargaBulanan.toLocaleString('id-ID') : (item.hargaBulanan === 0 ? '0' : '-')}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
-                      {item.lamaKontrak !== null && item.lamaKontrak !== undefined && item.lamaKontrak !== 0 
-                        ? item.lamaKontrak.toLocaleString('id-ID') 
+                      {item.lamaKontrak !== null && item.lamaKontrak !== undefined && item.lamaKontrak !== 0
+                        ? item.lamaKontrak.toLocaleString('id-ID')
                         : (item.lamaKontrak === 0 ? '0' : '-')}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.billCity || '-'}</td>
