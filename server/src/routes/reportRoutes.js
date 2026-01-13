@@ -5,6 +5,7 @@ import {
   getReportDatin,
   getReportAnalysis,
   getReportHSI,
+  getHSIDateRange,
   getReportDetails,
   getKPIPOData,
   getReportDatinDetails,
@@ -19,6 +20,7 @@ router.get('/datin-details', authenticate, getReportDatinDetails)
 router.get('/datin-summary', authenticate, getReportDatinSummary)
 router.get('/analysis', authenticate, getReportAnalysis)
 router.get('/hsi', authenticate, getReportHSI)
+router.get('/hsi/date-range', authenticate, getHSIDateRange)
 router.get('/details', authenticate, getReportDetails)
 router.get('/kpi-po', authenticate, getKPIPOData)
 
