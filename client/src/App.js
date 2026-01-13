@@ -22,6 +22,7 @@ import Home from './pages/Home'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
 import AdminMergeFiles from './pages/AdminMergeFiles'
+import MasterDataPO from './pages/MasterDataPO';
 
 function App() {
   return (
@@ -158,6 +159,14 @@ function App() {
               </AdminModeRoute>
             }
           />
+          <Route
+            path="/admin/master-data-po"
+            element={
+              <AdminModeRoute>
+                <MasterDataPO />
+              </AdminModeRoute>
+            }
+/>
           <Route
             path="/admin/rollback"
             element={

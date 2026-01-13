@@ -12,7 +12,8 @@ import {
   MdKeyboardArrowDown,
   MdPeople,
   MdHistory,
-  MdMerge
+  MdMerge,
+  MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
@@ -537,6 +538,17 @@ const AppLayout = ({ children, pageTitle }) => {
               </div>
             )}
           </div>
+          )}
+
+          {isAdminMode && (
+            <NavLink
+              href="/admin/master-data-po"
+              active={isActive('/admin/master-data-po')}
+              icon={MdStorage} // Pastikan sudah di-import di atas
+              isSidebarOpen={isExpanded}
+            >
+              Master Data PO
+            </NavLink>
           )}
 
           {/* Admin Section - Only for superadmin */}

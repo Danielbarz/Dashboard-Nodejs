@@ -909,6 +909,34 @@ export const getReportHSI = async (req, res, next) => {
   }
 }
 
+// Get HSI Date Range (min and max order_date)
+export const getHSIDateRange = async (req, res, next) => {
+  try {
+    const allowedWitels = ['JATIM TIMUR', 'JATIM BARAT', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+    const witelFilter = `UPPER(witel) IN (${allowedWitels.map(w => `'${w}'`).join(',')})`
+    
+    const result = await prisma.$queryRawUnsafe(`
+      SELECT 
+        MIN(order_date) as min_date,
+        MAX(order_date) as max_date
+      FROM hsi_data
+      WHERE ${witelFilter}
+        AND order_date IS NOT NULL
+    `)
+    
+    successResponse(
+      res,
+      { 
+        min_date: result[0]?.min_date || new Date('2000-01-01'),
+        max_date: result[0]?.max_date || new Date()
+      },
+      'HSI date range retrieved successfully'
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
 // Get Report Details - Detailed list
 export const getReportDetails = async (req, res, next) => {
   try {
