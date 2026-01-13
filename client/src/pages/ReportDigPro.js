@@ -4,16 +4,24 @@ import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 
-const DetailTable = ({ 
-  title, 
-  data, 
-  searchQuery, 
-  setSearchQuery, 
-  activeFilters, 
-  setActiveFilters, 
-  openFilter, 
-  setOpenFilter, 
-  filterOptions 
+const regionMapping = {
+  'BALI': ['BALI', 'DENPASAR', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'Non-Telda (NCX)', 'SANUR', 'SINGARAJA', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+  'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'Non-Telda (NCX)', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+  'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'INNER - JATIM TIMUR', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'Non-Telda (NCX)', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+  'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'INNER - NUSA TENGGARA', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'Non-Telda (NCX)', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+  'SURAMADU': ['SURAMADU', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'Non-Telda (NCX)', 'PAMEKASAN', 'TANDES']
+}
+
+const DetailTable = ({
+  title,
+  data,
+  searchQuery,
+  setSearchQuery,
+  activeFilters,
+  setActiveFilters,
+  openFilter,
+  setOpenFilter,
+  filterOptions
 }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -23,19 +31,39 @@ const DetailTable = ({
       // Search Query
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        const matchesSearch = 
+        const matchesSearch =
           item.batch_id?.toString().toLowerCase().includes(query) ||
           item.order_id?.toString().toLowerCase().includes(query) ||
           item.customer_name?.toLowerCase().includes(query)
-        
+
         if (!matchesSearch) return false
       }
 
       // Active Filters
       for (const [key, values] of Object.entries(activeFilters)) {
         if (values && values.length > 0) {
-          if (!values.includes(item[key])) {
-            return false
+          if (key === 'witel') {
+             // Special handling for Witel to support Region -> Branch mapping
+             const itemWitel = (item[key] || '').toUpperCase()
+             const matchesWitel = values.some(selectedRegion => {
+                // Check if itemWitel is the region itself
+                if (itemWitel === selectedRegion) return true
+                
+                // Check if itemWitel is a branch of the selected region
+                const branches = regionMapping[selectedRegion]
+                if (branches && branches.includes(itemWitel)) return true
+                
+                // Fallback: check if itemWitel contains the selected region string
+                if (itemWitel.includes(selectedRegion)) return true
+                
+                return false
+             })
+             
+             if (!matchesWitel) return false
+          } else {
+             if (!values.includes(item[key])) {
+               return false
+             }
           }
         }
       }
@@ -53,7 +81,7 @@ const DetailTable = ({
 
   const FilterHeader = ({ title, columnKey, bgClass }) => (
     <th className={`${bgClass} border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap relative`}>
-      <div 
+      <div
         className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/10 rounded px-1 -mx-1"
         onClick={(e) => {
           e.stopPropagation()
@@ -70,13 +98,13 @@ const DetailTable = ({
         </div>
         <FiChevronDown className={`flex-shrink-0 transition-transform ${openFilter === columnKey ? 'rotate-180' : ''}`} />
       </div>
-      
+
       {openFilter === columnKey && (
-        <div 
+        <div
           className="absolute left-0 top-full mt-1 w-56 bg-white text-gray-800 rounded-md shadow-xl z-50 border border-gray-200 max-h-60 overflow-y-auto text-left"
           onClick={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs border-b border-gray-100 ${!activeFilters[columnKey]?.length ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
             onClick={() => {
               setActiveFilters(prev => ({ ...prev, [columnKey]: [] }))
@@ -86,8 +114,8 @@ const DetailTable = ({
             All
           </div>
           {filterOptions[columnKey]?.map((option, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs ${activeFilters[columnKey]?.includes(option) ? 'bg-blue-50 font-semibold text-blue-600' : ''}`}
               onClick={() => {
                 setActiveFilters(prev => ({ ...prev, [columnKey]: [option] }))
@@ -121,26 +149,25 @@ const DetailTable = ({
         <table className="min-w-full border-collapse border border-gray-300 text-xs">
           <thead>
             <tr className="text-white">
-              <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Batch ID</th>
-              <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order ID</th>
-              
-              <FilterHeader title="Segment" columnKey="segment" bgClass="bg-gray-600" />
-              <FilterHeader title="Channel" columnKey="channel" bgClass="bg-gray-600" />
+              <th className="bg-gray-800 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order ID</th>
+
+              <FilterHeader title="Segment" columnKey="segment" bgClass="bg-blue-600" />
+              <FilterHeader title="Channel" columnKey="channel" bgClass="bg-blue-600" />
               <FilterHeader title="Product" columnKey="product_name" bgClass="bg-blue-600" />
-              
+
               <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Layanan</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Customer Name</th>
-              
+
               <FilterHeader title="Order Status" columnKey="order_status" bgClass="bg-orange-600" />
-              
+
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Sub Type</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Milestone</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Week</th>
-              <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order Date</th>
+              <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order Date</th>
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Net Price</th>
-              
+
               <FilterHeader title="Witel" columnKey="witel" bgClass="bg-green-700" />
-              
+
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Branch</th>
             </tr>
           </thead>
@@ -148,7 +175,6 @@ const DetailTable = ({
             {currentData.length > 0 ? (
               currentData.map((item, idx) => (
                 <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.batch_id}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_id}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.segment}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.channel}</td>
@@ -173,7 +199,7 @@ const DetailTable = ({
               ))
             ) : (
               <tr>
-                <td colSpan="15" className="border border-gray-300 px-3 py-4 text-center text-gray-500">
+                <td colSpan="14" className="border border-gray-300 px-3 py-4 text-center text-gray-500">
                   Tidak ada data
                 </td>
               </tr>
@@ -181,7 +207,7 @@ const DetailTable = ({
           </tbody>
         </table>
       </div>
-      
+
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="text-sm text-gray-600">
@@ -259,7 +285,7 @@ const ReportDigPro = () => {
   const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
   const [isSegmentDropdownOpen, setIsSegmentDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   const [activeFilters, setActiveFilters] = useState({
     segment: [],
     channel: [],
@@ -267,7 +293,7 @@ const ReportDigPro = () => {
     order_status: [],
     witel: []
   })
-  
+
   const [filterOptions, setFilterOptions] = useState({
     segment: [],
     channel: [],
@@ -290,10 +316,10 @@ const ReportDigPro = () => {
   }, [])
 
   useEffect(() => {
-    const uniqueSegments = detailData.length > 0 
-      ? [...new Set(detailData.map(item => item.segment).filter(Boolean))].sort() 
+    const uniqueSegments = detailData.length > 0
+      ? [...new Set(detailData.map(item => item.segment).filter(Boolean))].sort()
       : []
-    
+
     const uniqueOrderStatus = detailData.length > 0
       ? [...new Set(detailData.map(item => item.order_status).filter(Boolean))].sort()
       : []
@@ -407,8 +433,8 @@ const ReportDigPro = () => {
       groupClass: 'bg-gray-600',
       columnClass: 'bg-gray-500',
       columns: [
-        { 
-          key: 'grand_total_realisasi', 
+        {
+          key: 'grand_total_realisasi',
           title: 'Total',
           isCalculation: true,
           operands: ['prov_comp_n_realisasi', 'prov_comp_o_realisasi', 'prov_comp_ae_realisasi', 'prov_comp_ps_realisasi']
@@ -425,10 +451,10 @@ const ReportDigPro = () => {
         axios.get(
           `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/analysis`,
           {
-            params: { 
-              start_date: startDate, 
+            params: {
+              start_date: startDate,
               end_date: endDate,
-              witel: selectedWitel.join(',') 
+              witel: selectedWitel.join(',')
             },
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -436,9 +462,9 @@ const ReportDigPro = () => {
         axios.get(
           `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/details`,
           {
-            params: { 
-              start_date: startDate, 
-              end_date: endDate, 
+            params: {
+              start_date: startDate,
+              end_date: endDate,
               segment: selectedSegment.join(','),
               witel: selectedWitel.join(',')
             },
@@ -448,10 +474,10 @@ const ReportDigPro = () => {
         axios.get(
           `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/kpi-po`,
           {
-            params: { 
-              start_date: startDate, 
+            params: {
+              start_date: startDate,
               end_date: endDate,
-              witel: selectedWitel.join(',') 
+              witel: selectedWitel.join(',')
             },
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -497,14 +523,14 @@ const ReportDigPro = () => {
       const sum = col.operands.reduce((acc, key) => acc + (parseFloat(item[key]) || 0), 0)
       return sum
     }
-    
+
     const fullKey = parentCol ? `${parentCol.key}${col.key}` : col.key
     const value = item[fullKey]
-    
+
     if (fullKey.startsWith('revenue_') && typeof value === 'number') {
       return value.toLocaleString('id-ID', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
     }
-    
+
     return value !== undefined && value !== null ? value : 0
   }
 
@@ -553,8 +579,8 @@ const ReportDigPro = () => {
                   {selectedWitel.length === 1 ? 'Branch/Telda' : 'WILAYAH TELKOM'}
                 </th>
                 {tableConfig.map((group, idx) => (
-                  <th 
-                    key={idx} 
+                  <th
+                    key={idx}
                     colSpan={group.columns.reduce((acc, col) => acc + (col.subColumns ? col.subColumns.length : 1), 0)}
                     className={`${group.groupClass} text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider`}
                   >
@@ -565,7 +591,7 @@ const ReportDigPro = () => {
               <tr>
                 {tableConfig.map(group => (
                   group.columns.map((col, idx) => (
-                    <th 
+                    <th
                       key={idx}
                       colSpan={col.subColumns ? col.subColumns.length : 1}
                       rowSpan={col.subColumns ? 1 : 2}
@@ -580,7 +606,7 @@ const ReportDigPro = () => {
                 {tableConfig.map(group => (
                   group.columns.map(col => (
                     col.subColumns && col.subColumns.map((subCol, idx) => (
-                      <th 
+                      <th
                         key={idx}
                         className={`${group.subColumnClass} text-gray-900 border border-gray-400 px-2 py-1 font-medium`}
                       >
@@ -645,16 +671,16 @@ const ReportDigPro = () => {
 
   const renderKpiTable = (data) => (
     <div className="mb-8">
-      <h3 className="text-lg font-bold mb-4 text-center">KPI PO</h3>
+      <h3 className="text-lg font-bold mb-4 text-left">KPI PO</h3>
       <div className="overflow-x-auto rounded-lg shadow-sm">
         <table className="min-w-full border-collapse border border-gray-300 text-xs">
           <thead>
             <tr>
               <th rowSpan="2" className="bg-gray-800 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">NAMA PO</th>
               <th rowSpan="2" className="bg-gray-800 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">WITEL</th>
-              <th colSpan="2" className="bg-orange-500 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">PRODIGI DONE</th>
-              <th colSpan="2" className="bg-blue-500 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">PRODIGI OGP</th>
-              <th rowSpan="2" className="bg-green-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">TOTAL</th>
+              <th colSpan="2" className="bg-orange-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">PRODIGI DONE</th>
+              <th colSpan="2" className="bg-blue-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">PRODIGI OGP</th>
+              <th rowSpan="2" className="bg-green-700 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">TOTAL</th>
               <th colSpan="2" className="bg-gray-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">ACH</th>
             </tr>
             <tr>
@@ -662,9 +688,9 @@ const ReportDigPro = () => {
               <th className="bg-orange-400 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">SCONE</th>
               <th className="bg-blue-400 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">NCX</th>
               <th className="bg-blue-400 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">SCONE</th>
-              <th className="bg-gray-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">YTD</th>
-              <th className="bg-gray-600 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Q3</th>
-            </tr>
+              <th className="bg-gray-500 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">YTD</th>
+              <th className="bg-gray-500 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Q3</th>
+            </tr> 
           </thead>
           <tbody>
             {data.length > 0 ? (
@@ -714,7 +740,7 @@ const ReportDigPro = () => {
           <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
             <div className="flex flex-col justify-center px-2 h-full w-24">
               <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Segment</span>
-              <div 
+              <div
                 className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
                 onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
               >
@@ -725,14 +751,14 @@ const ReportDigPro = () => {
             {isSegmentDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-300 rounded-md shadow-lg z-10">
                 {segmentOptions.map(option => (
-                  <div 
-                    key={option} 
+                  <div
+                    key={option}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                     onClick={() => toggleSegment(option)}
                   >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedSegment.includes(option)} 
+                    <input
+                      type="checkbox"
+                      checked={selectedSegment.includes(option)}
                       readOnly
                       className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                     />
@@ -746,7 +772,7 @@ const ReportDigPro = () => {
           <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
             <div className="flex flex-col justify-center px-2 h-full w-40">
               <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
-              <div 
+              <div
                 className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
                 onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
               >
@@ -757,20 +783,20 @@ const ReportDigPro = () => {
             {isWitelDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                 {witelOptions.map(option => (
-                  <div 
-                    key={option} 
+                  <div
+                    key={option}
                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                     onClick={() => toggleWitel(option)}
                   >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedWitel.includes(option)} 
+                    <input
+                      type="checkbox"
+                      checked={selectedWitel.includes(option)}
                       readOnly
                       className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                     />
                     <span className="text-sm text-gray-700">{option}</span>
                   </div>
-                ))} 
+                ))}
               </div>
             )}
           </div>
@@ -782,100 +808,105 @@ const ReportDigPro = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        {loading ? (
-          <div className="text-center py-10">Loading...</div>
-        ) : (
-          <>
-            {selectedSegment.includes('LEGS') && renderTable(`Progress WFM Digital Product MTD ${startDate} - ${endDate} Segmen LEGS`, reportData.legs || [], reportData.detailsLegs)}
-            {selectedSegment.includes('SME') && renderTable(`Progress WFM Digital Product MTD ${startDate} - ${endDate} Segmen SME`, reportData.sme || [], reportData.detailsSme)}
-
-            <div className="mt-8">
-              {selectedSegment.includes('LEGS') && (
-                <DetailTable
-                  title={`Report Digital Order Details LEGS Witel ${selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}`}
-                  data={detailData.filter(item => {
-                    const legsSegments = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG'];
-                    const matchesSegment = item.segment && legsSegments.some(s => item.segment.toUpperCase().includes(s));
-                    const matchesSearch = searchQuery === '' || 
-                      (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                      (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                      (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
-                    
-                    const matchesFilters = 
-                      (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
-                      (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
-                      (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
-                        const pName = (item.product_name || '').toLowerCase();
-                        const fValue = f.toLowerCase();
-                        if (fValue === 'antares') {
-                          return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
-                        }
-                        return pName.includes(fValue);
-                      })) &&
-                      (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
-                      (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
-
-                    return matchesSegment && matchesSearch && matchesFilters;
-                  })}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  activeFilters={activeFilters}
-                  setActiveFilters={setActiveFilters}
-                  openFilter={openFilter}
-                  setOpenFilter={setOpenFilter}
-                  filterOptions={filterOptions}
-                />
-              )}
-
-              {selectedSegment.includes('SME') && (
-                <DetailTable
-                  title={`Report Digital Order Details`}
-                  data={detailData.filter(item => {
-                    // Removed segment filtering to show all data as requested
-                    const matchesSearch = searchQuery === '' || 
-                      (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                      (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                      (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
-                    
-                    const matchesFilters = 
-                      (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
-                      (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
-                      (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
-                        const pName = (item.product_name || '').toLowerCase();
-                        const fValue = f.toLowerCase();
-                        if (fValue === 'antares') {
-                          return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
-                        }
-                        return pName.includes(fValue);
-                      })) &&
-                      (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
-                      (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
-
-                    return matchesSearch && matchesFilters;
-                  })}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  activeFilters={activeFilters}
-                  setActiveFilters={setActiveFilters}
-                  openFilter={openFilter}
-                  setOpenFilter={setOpenFilter}
-                  filterOptions={filterOptions}
-                />
-              )}
+      <>
+          {selectedSegment.includes('LEGS') && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              {renderTable(`Progress WFM Digital Product MTD`, reportData.legs || [], reportData.detailsLegs)}
             </div>
-
-            <div className="mt-8">
-              {renderKpiTable(kpiData)}
+          )}
+          
+          {selectedSegment.includes('SME') && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              {renderTable(`Progress WFM Digital Product MTD`, reportData.sme || [], reportData.detailsSme)}
             </div>
-          </>
-        )}
-      </div>
+          )}
+
+          {selectedSegment.includes('LEGS') && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <DetailTable
+                title={`Report Digital Order Details LEGS Witel ${selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}`}
+                data={detailData.filter(item => {
+                  const legsSegments = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG'];
+                  const matchesSegment = item.segment && legsSegments.some(s => item.segment.toUpperCase().includes(s));
+                  const matchesSearch = searchQuery === '' ||
+                    (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+                  const matchesFilters =
+                    (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
+                    (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
+                    (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
+                      const pName = (item.product_name || '').toLowerCase();
+                      const fValue = f.toLowerCase();
+                      if (fValue === 'antares') {
+                        return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
+                      }
+                      return pName.includes(fValue);
+                    })) &&
+                    (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
+                    (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
+
+                  return matchesSegment && matchesSearch && matchesFilters;
+                })}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                activeFilters={activeFilters}
+                setActiveFilters={setActiveFilters}
+                openFilter={openFilter}
+                setOpenFilter={setOpenFilter}
+                filterOptions={filterOptions}
+              />
+            </div>
+          )}
+
+          {selectedSegment.includes('SME') && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <DetailTable
+                title={`Report Digital Order Details`}
+                data={detailData.filter(item => {
+                  // Removed segment filtering to show all data as requested
+                  const matchesSearch = searchQuery === '' ||
+                    (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+                  const matchesFilters =
+                    (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
+                    (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
+                    (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
+                      const pName = (item.product_name || '').toLowerCase();
+                      const fValue = f.toLowerCase();
+                      if (fValue === 'antares') {
+                        return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
+                      }
+                      return pName.includes(fValue);
+                    })) &&
+                    (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
+                    (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
+
+                  return matchesSearch && matchesFilters;
+                })}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                activeFilters={activeFilters}
+                setActiveFilters={setActiveFilters}
+                openFilter={openFilter}
+                setOpenFilter={setOpenFilter}
+                filterOptions={filterOptions}
+              />
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            {renderKpiTable(kpiData)}
+          </div>
+      </>
 
       {isAdminMode && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data</h2>
-          <FileUploadForm 
+          <FileUploadForm
             type="analysis"
             onSuccess={() => {
               setRefreshKey(prev => prev + 1)

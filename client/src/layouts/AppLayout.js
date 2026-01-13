@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { roleService } from '../services/dashboardService'
 import {
+  MdHome,
   MdDashboard,
   MdAssessment,
   MdExitToApp,
@@ -10,30 +11,38 @@ import {
   MdAdminPanelSettings,
   MdKeyboardArrowDown,
   MdPeople,
-  MdHistory
+  MdHistory,
+  MdMerge,
+  MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import ChatBot from '../components/ChatBot'
 
 // ==================== HELPER COMPONENTS ====================
 
 const Logo = ({ isSidebarOpen }) => (
-  <div className="flex items-center justify-center h-20 border-b border-gray-200 relative overflow-hidden">
-    <div className={`transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-      <h1 className="text-2xl font-bold text-red-600">
-        Telkom<span className="text-gray-800">Indonesia</span>
-      </h1>
-    </div>
-    <div className={`absolute transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-      <img 
-        src={`${process.env.PUBLIC_URL}/logotelkom.png`}
-        alt="Telkom" 
-        className="h-10 w-10 object-contain" 
+  <div className="flex items-center justify-center h-24 border-b border-gray-200 transition-all duration-300 px-2 overflow-hidden">
+    {isSidebarOpen ? (
+      <img
+        src="/images/logotelkom_full.png"
+        alt="Telkom Indonesia"
+        className="h-16 w-auto object-contain transition-all duration-300 animate-fade-in scale-125"
+        onError={(e) => {
+          console.error('Failed to load full logo')
+          e.target.style.display = 'none'
+        }}
+      />
+    ) : (
+      <img
+        src="/images/logotelkom.png?v=1"
+        alt="Telkom"
+        className="h-12 w-12 object-contain transition-all duration-300"
         onError={(e) => {
           console.error('Failed to load logo')
           e.target.style.display = 'none'
-        }} 
+        }}
       />
-    </div>
+    )}
   </div>
 )
 
@@ -45,8 +54,10 @@ const NavLink = ({ href, active, icon: Icon, isSidebarOpen, children }) => (
         isSidebarOpen ? 'px-6' : 'justify-center'
       } ${active ? 'bg-gray-200 text-gray-800 font-bold' : ''}`}
     >
-      <Icon size={22} />
-      <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+      <Icon size={isSidebarOpen ? 22 : 26} />
+      <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
+        isSidebarOpen ? 'opacity-100' : 'opacity-0 absolute'
+      }`}>
         {children}
       </span>
     </Link>
@@ -71,6 +82,13 @@ const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switchin
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Auto-close profile popup when sidebar collapses
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      setIsProfileOpen(false)
+    }
+  }, [isSidebarOpen])
 
   if (!user) return null
 
@@ -118,13 +136,13 @@ const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switchin
         </div>
       )}
       <div
-        className={`flex items-center cursor-pointer p-2 rounded-lg hover:bg-gray-100 ${!isSidebarOpen && 'justify-center'}`}
+        className={`flex items-center cursor-pointer rounded-lg hover:bg-gray-100 transition-all duration-300 ${isSidebarOpen ? 'p-2 justify-start' : 'p-0 justify-center h-14'}`}
         onClick={() => setIsProfileOpen(!isProfileOpen)}
       >
-        <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+        <div className={`rounded-full bg-red-600 flex items-center justify-center text-white font-bold flex-shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-10 h-10 text-lg' : 'w-12 h-12 text-xl'}`}>
           {user.name?.charAt(0).toUpperCase() || '?'}
         </div>
-        <div className={`ml-3 flex-grow overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>
+        <div className={`ml-3 flex-grow overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 hidden'}`}>
           <p className="font-semibold text-gray-800 text-sm truncate">{user.name}</p>
           <p className="text-xs text-gray-500 capitalize">{currentRole}</p>
         </div>
@@ -139,11 +157,15 @@ const AppLayout = ({ children, pageTitle }) => {
   const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile open state, Desktop always false (dynamic)
+  const [isHovered, setIsHovered] = useState(false) // Hover state
   const [currentRole, setCurrentRole] = useState(null)
   const [canSwitchRole, setCanSwitchRole] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(0)
+
+  // Effectively open if pinned (mobile) OR hovered
+  const isExpanded = isSidebarOpen || isHovered
 
   // Menu expansion states
   const [isDashboardOpen, setIsDashboardOpen] = useState(true)
@@ -154,13 +176,8 @@ const AppLayout = ({ children, pageTitle }) => {
 
   // Close sidebar on mobile resize
   useEffect(() => {
-    const isDesktop = () => window.innerWidth >= 1024
     const handleResize = () => {
-      if (isDesktop()) {
-        setIsSidebarOpen(true)
-      } else {
-        setIsSidebarOpen(false)
-      }
+      setIsSidebarOpen(false)
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -172,7 +189,7 @@ const AppLayout = ({ children, pageTitle }) => {
       const userRole = user.role || 'user'
       const activeRole = user.currentRoleAs || userRole
       const canSwitch = ['admin', 'superadmin'].includes(userRole)
-      
+
       setCurrentRole(activeRole)
       setCanSwitchRole(canSwitch)
       fetchCurrentRole()
@@ -256,17 +273,7 @@ const AppLayout = ({ children, pageTitle }) => {
       localStorage.setItem('currentRole', targetRole)
       refreshUser()
 
-      // Navigate based on the target role
-      if (targetRole === 'user') {
-        // Exiting admin mode - go to user dashboard
-        navigate('/dashboard')
-      } else if (targetRole === 'superadmin') {
-        // Entering superadmin mode - go to user management
-        navigate('/admin/users')
-      } else if (targetRole === 'admin') {
-        // Entering admin mode - go to dashboard
-        navigate('/dashboard')
-      }
+      // Removed forced navigation to keep user on the same page
     } catch (error) {
       console.error('Failed to switch role:', error)
       if (targetRole === 'user') {
@@ -292,8 +299,10 @@ const AppLayout = ({ children, pageTitle }) => {
 
   const getPageTitle = () => {
     if (pageTitle) return pageTitle
-    
+
     const pathMap = {
+      '/': 'Home',
+      '/home': 'Home',
       '/analysis': 'Dashboard Digital Product',
       '/tambahan': 'Dashboard Jaringan Tambahan',
       '/datin': 'Dashboard Datin',
@@ -322,51 +331,61 @@ const AppLayout = ({ children, pageTitle }) => {
     <div className="min-h-screen bg-gray-100 font-sans">
       {/* SIDEBAR */}
       <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={`flex flex-col bg-white h-screen fixed shadow-lg z-30 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0 lg:w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
+          isExpanded ? 'translate-x-0 lg:w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
         }`}
       >
-        {/* Sidebar toggle button for desktop */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="hidden lg:block absolute -right-3 top-6 z-40 bg-white p-1 rounded-full shadow-md border hover:bg-gray-100 transition-colors"
-        >
-          {isSidebarOpen ? <FiChevronLeft size={16} /> : <FiChevronRight size={16} />}
-        </button>
-
-        <Logo isSidebarOpen={isSidebarOpen} />
+        <Logo isSidebarOpen={isExpanded} />
 
         {/* Navigation */}
         <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
+          {/* Home Link */}
+          <NavLink
+            href="/"
+            active={isActive('/') || isActive('/home')}
+            icon={MdHome}
+            isSidebarOpen={isExpanded}
+          >
+            Home
+          </NavLink>
+
           {/* Dashboard Section - Only in user mode or   admin mode (NOT superadmin) */}
           {!isSuperAdmin && (
             <div className="relative">
               <button
-                onClick={() => isSidebarOpen && setIsDashboardOpen(!isDashboardOpen)}
+                onClick={() => {
+                  if (!isExpanded) {
+                    setIsDashboardOpen(true)
+                  } else {
+                    setIsDashboardOpen(!isDashboardOpen)
+                  }
+                }}
                 className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
-                  isSidebarOpen ? 'px-6' : 'justify-center'
+                  isExpanded ? 'px-6' : 'justify-center'
                 }`}
               >
-                <MdDashboard size={22} />
+                <MdDashboard size={isExpanded ? 22 : 26} />
                 <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                  isSidebarOpen ? 'opacity-100' : 'opacity-0 absolute'
+                  isExpanded ? 'opacity-100' : 'opacity-0 absolute'
                 }`}>
                   Dashboard
                 </span>
-                {isSidebarOpen && (
+                {isExpanded && (
                   <MdKeyboardArrowDown
                     size={20}
                     className={`ml-auto transition-transform duration-300 ${isDashboardOpen ? 'rotate-180' : ''}`}
                   />
                 )}
-                {!isSidebarOpen && (
+                {!isExpanded && (
                   <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
                     Dashboard
                   </div>
                 )}
               </button>
 
-              {isSidebarOpen && isDashboardOpen && (
+              {isExpanded && isDashboardOpen && (
                 <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
                   <Link
                     to="/dashboard"
@@ -435,31 +454,37 @@ const AppLayout = ({ children, pageTitle }) => {
           {!isSuperAdmin && (
           <div className="relative">
             <button
-              onClick={() => isSidebarOpen && setIsReportsOpen(!isReportsOpen)}
+              onClick={() => {
+                if (!isExpanded) {
+                  setIsReportsOpen(true)
+                } else {
+                  setIsReportsOpen(!isReportsOpen)
+                }
+              }}
               className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
-                isSidebarOpen ? 'px-6' : 'justify-center'
+                isExpanded ? 'px-6' : 'justify-center'
               }`}
             >
-              <MdAssessment size={22} />
+              <MdAssessment size={isExpanded ? 22 : 26} />
               <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                isSidebarOpen ? 'opacity-100' : 'opacity-0 absolute'
+                isExpanded ? 'opacity-100' : 'opacity-0 absolute'
               }`}>
                 Reports
               </span>
-              {isSidebarOpen && (
+              {isExpanded && (
                 <MdKeyboardArrowDown
                   size={20}
                   className={`ml-auto transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`}
                 />
               )}
-              {!isSidebarOpen && (
+              {!isExpanded && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
                   Reports
                 </div>
               )}
             </button>
 
-            {isSidebarOpen && isReportsOpen && (
+            {isExpanded && isReportsOpen && (
               <div className="pl-8 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
                 <Link
                   to="/report-digpro"
@@ -516,6 +541,17 @@ const AppLayout = ({ children, pageTitle }) => {
           </div>
           )}
 
+          {isAdminMode && (
+            <NavLink
+              href="/admin/master-data-po"
+              active={isActive('/admin/master-data-po')}
+              icon={MdStorage} // Pastikan sudah di-import di atas
+              isSidebarOpen={isExpanded}
+            >
+              Master Data PO
+            </NavLink>
+          )}
+
           {/* Admin Section - Only for superadmin */}
           {isSuperAdmin && (
             <>
@@ -523,18 +559,27 @@ const AppLayout = ({ children, pageTitle }) => {
                 href="/admin/users"
                 active={isActive('/admin/users')}
                 icon={MdPeople}
-                isSidebarOpen={isSidebarOpen}
+                isSidebarOpen={isExpanded}
               >
                 User Management
               </NavLink>
-              
+
               <NavLink
                 href="/admin/rollback"
                 active={isActive('/admin/rollback')}
                 icon={MdHistory}
-                isSidebarOpen={isSidebarOpen}
+                isSidebarOpen={isExpanded}
               >
                 Rollback Batch
+              </NavLink>
+
+              <NavLink
+                href="/admin/merge-files"
+                active={isActive('/admin/merge-files')}
+                icon={MdMerge}
+                isSidebarOpen={isExpanded}
+              >
+                Merge CSV/XLSX
               </NavLink>
             </>
           )}
@@ -543,7 +588,7 @@ const AppLayout = ({ children, pageTitle }) => {
         {/* User Profile */}
         <UserProfile
           user={user}
-          isSidebarOpen={isSidebarOpen}
+          isSidebarOpen={isExpanded}
           currentRole={currentRole}
           canSwitchRole={showSwitchButton}
           switching={switching}
@@ -563,7 +608,7 @@ const AppLayout = ({ children, pageTitle }) => {
       )}
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
+      <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
         {/* Header */}
         <header className="bg-white shadow-sm sticky top-0 z-20">
           <div className="max-w-full mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -604,8 +649,13 @@ const AppLayout = ({ children, pageTitle }) => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
+
+      {/* AI ChatBot */}
+      <ChatBot />
     </div>
   )
 }

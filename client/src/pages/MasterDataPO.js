@@ -1,149 +1,129 @@
 import React, { useState, useEffect } from 'react'
-import { FiPlus, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi'
+import {
+  FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
+  FiChevronLeft, FiChevronRight, FiAlertCircle, FiDatabase, FiUser
+} from 'react-icons/fi'
 import axios from 'axios'
 
 const MasterDataPO = () => {
+  // --- States ---
+  const [activeTab, setActiveTab] = useState('po') // 'po', 'ao', 'mapping'
+
   const [accountOfficers, setAccountOfficers] = useState([])
   const [poMaster, setPoMaster] = useState([])
   const [unmappedOrders, setUnmappedOrders] = useState([])
-  const [showAOForm, setShowAOForm] = useState(false)
-  const [showPOForm, setShowPOForm] = useState(false)
+
+  // Modal States
+  const [showAOModal, setShowAOModal] = useState(false)
+  const [showPOModal, setShowPOModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+
   const [selectedOrder, setSelectedOrder] = useState(null)
 
+  // Pagination State for PO
+  const [currentPagePO, setCurrentPagePO] = useState(1)
+  const [itemsPerPagePO] = useState(10)
+
+  // Forms
   const [aoForm, setAoForm] = useState({
-    name: '',
-    displayWitel: '',
-    filterWitelLama: '',
-    specialFilterColumn: '',
-    specialFilterValue: ''
+    name: '', displayWitel: '', filterWitelLama: '', specialFilterColumn: '', specialFilterValue: ''
   })
-
   const [poForm, setPoForm] = useState({
-    nipnas: '',
-    namaPo: '',
-    segment: '',
-    witel: ''
+    nipnas: '', namaPo: '', segment: '', witel: ''
   })
-
   const [editForm, setEditForm] = useState({
-    poName: '',
-    billCity: '',
-    billWitel: '',
-    segment: ''
+    poName: '', billCity: '', billWitel: '', segment: ''
   })
 
+  // --- Effects ---
   useEffect(() => {
     fetchAccountOfficers()
     fetchPOMaster()
     fetchUnmappedOrders()
   }, [])
 
+  // --- Fetch Functions ---
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('accessToken')
+    return { headers: { Authorization: `Bearer ${token}` } }
+  }
+
   const fetchAccountOfficers = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        getAuthHeader()
       )
       setAccountOfficers(response.data.data || [])
-    } catch (error) {
-      console.error('Failed to fetch account officers:', error)
-    }
+    } catch (error) { console.error('Error fetching AO:', error) }
   }
 
   const fetchPOMaster = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        getAuthHeader()
       )
       setPoMaster(response.data.data || [])
-    } catch (error) {
-      console.error('Failed to fetch PO master:', error)
-    }
+    } catch (error) { console.error('Error fetching PO:', error) }
   }
 
   const fetchUnmappedOrders = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/unmapped-orders`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        getAuthHeader()
       )
-      // Robust handling for both Array (standard) and Object (paginated/stale) responses
       const data = response.data.data
-      if (Array.isArray(data)) {
-        setUnmappedOrders(data)
-      } else if (data && Array.isArray(data.items)) {
-        setUnmappedOrders(data.items)
-      } else {
-        setUnmappedOrders([])
-      }
-    } catch (error) {
-      console.error('Failed to fetch unmapped orders:', error)
-    }
+      setUnmappedOrders(Array.isArray(data) ? data : (data?.items || []))
+    } catch (error) { console.error('Error fetching unmapped:', error) }
   }
 
+  // --- Handlers ---
   const handleAddAO = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers`,
-        aoForm,
-        { headers: { Authorization: `Bearer ${token}` } }
+        aoForm, getAuthHeader()
       )
-      setShowAOForm(false)
+      setShowAOModal(false)
       setAoForm({ name: '', displayWitel: '', filterWitelLama: '', specialFilterColumn: '', specialFilterValue: '' })
       fetchAccountOfficers()
-    } catch (error) {
-      console.error('Failed to add account officer:', error)
-    }
+    } catch (error) { alert('Gagal menambah AO') }
   }
 
   const handleDeleteAO = async (id) => {
     if (!window.confirm('Hapus Account Officer ini?')) return
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.delete(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        getAuthHeader()
       )
       fetchAccountOfficers()
-    } catch (error) {
-      console.error('Failed to delete account officer:', error)
-    }
+    } catch (error) { alert('Gagal menghapus AO') }
   }
 
   const handleAddPO = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po`,
-        poForm,
-        { headers: { Authorization: `Bearer ${token}` } }
+        poForm, getAuthHeader()
       )
-      setShowPOForm(false)
+      setShowPOModal(false)
       setPoForm({ nipnas: '', namaPo: '', segment: '', witel: '' })
       fetchPOMaster()
-    } catch (error) {
-      console.error('Failed to add PO:', error)
-    }
+    } catch (error) { alert('Gagal menambah PO') }
   }
 
   const handleDeletePO = async (id) => {
     if (!window.confirm('Hapus PO ini?')) return
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.delete(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        getAuthHeader()
       )
       fetchPOMaster()
-    } catch (error) {
-      console.error('Failed to delete PO:', error)
-    }
+    } catch (error) { alert('Gagal menghapus PO') }
   }
 
   const handleEditOrder = (order) => {
@@ -159,394 +139,380 @@ const MasterDataPO = () => {
 
   const handleUpdateMapping = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.put(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/update-mapping/${selectedOrder.id}`,
-        editForm,
-        { headers: { Authorization: `Bearer ${token}` } }
+        editForm, getAuthHeader()
       )
       setShowEditModal(false)
       fetchUnmappedOrders()
-    } catch (error) {
-      console.error('Failed to update mapping:', error)
-    }
+    } catch (error) { alert('Gagal update mapping') }
   }
 
   const handleAutoMapping = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
       await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/auto-mapping`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {}, getAuthHeader()
       )
       fetchUnmappedOrders()
       alert('Mapping otomatis selesai!')
-    } catch (error) {
-      console.error('Failed to auto-map:', error)
-    }
+    } catch (error) { alert('Gagal auto mapping') }
   }
+
+  // --- Pagination Logic (PO) ---
+  const indexOfLastPO = currentPagePO * itemsPerPagePO
+  const indexOfFirstPO = indexOfLastPO - itemsPerPagePO
+  const currentPOs = poMaster.slice(indexOfFirstPO, indexOfLastPO)
+  const totalPagesPO = Math.ceil(poMaster.length / itemsPerPagePO)
+
+  // --- Render Helpers ---
+  const TabButton = ({ id, label, icon: Icon, count }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+        activeTab === id
+          ? 'border-red-600 text-red-600 bg-red-50'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+      }`}
+    >
+      <Icon className={`mr-2 ${activeTab === id ? 'text-red-600' : 'text-gray-400'}`} size={18} />
+      {label}
+      {count !== undefined && (
+        <span className={`ml-2 px-2.5 py-0.5 rounded-full text-xs ${
+          activeTab === id ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {count}
+        </span>
+      )}
+    </button>
+  )
+
+  const Modal = ({ title, children, onClose, onSave, saveLabel = "Simpan" }) => (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 transform transition-all scale-100">
+        <div className="flex justify-between items-center px-6 py-4 border-b">
+          <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <FiX size={24} />
+          </button>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+        <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onSave}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm shadow-sm transition-colors flex items-center"
+          >
+            <FiCheck className="mr-2" /> {saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
-      {/* Section 1: Master Account Officer */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Master Account Officer (Digital Product)</h2>
-          <button
-            onClick={() => setShowAOForm(!showAOForm)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
-          >
-            <FiPlus className="mr-2" /> Tambah AO
-          </button>
+      {/* Header & Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200 bg-white">
+          <h1 className="text-xl font-bold text-gray-800">Master Data Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Kelola data referensi PO, Account Officer, dan Mapping Order.</p>
         </div>
 
-        {showAOForm && (
-          <div className="mb-4 p-4 border border-gray-300 rounded-md bg-gray-50">
-            <h3 className="font-semibold mb-3">Tambah Account Officer Baru</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama AO</label>
+        <div className="flex border-b border-gray-200 overflow-x-auto">
+          <TabButton id="po" label="Master PO" icon={FiDatabase} count={poMaster.length} />
+          <TabButton id="ao" label="Account Officers" icon={FiUser} count={accountOfficers.length} />
+          <TabButton id="mapping" label="Unmapped Orders" icon={FiAlertCircle} count={unmappedOrders.length} />
+        </div>
+
+        {/* --- TAB CONTENT: MASTER PO --- */}
+        {activeTab === 'po' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Contoh: Alfonsus..."
-                  value={aoForm.name}
-                  onChange={(e) => setAoForm({ ...aoForm, name: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
+                  placeholder="Cari PO / NIPNAS..."
+                  className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-red-500 focus:border-red-500 w-64"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Display Witel</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: JATIM BARAT"
-                  value={aoForm.displayWitel}
-                  onChange={(e) => setAoForm({ ...aoForm, displayWitel: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Filter Witel Lama (Source)</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: MADIUN"
-                  value={aoForm.filterWitelLama}
-                  onChange={(e) => setAoForm({ ...aoForm, filterWitelLama: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Special Filter Column (Opt)</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: segment"
-                  value={aoForm.specialFilterColumn}
-                  onChange={(e) => setAoForm({ ...aoForm, specialFilterColumn: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Special Filter Value (Opt)</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: LEGS"
-                  value={aoForm.specialFilterValue}
-                  onChange={(e) => setAoForm({ ...aoForm, specialFilterValue: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
+              <button
+                onClick={() => setShowPOModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"
+              >
+                <FiPlus className="mr-2" /> Tambah PO
+              </button>
             </div>
-            <div className="flex gap-2 mt-4">
+
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['Nama PO', 'NIPNAS', 'Segment', 'Bill City', 'Witel', 'Aksi'].map(h => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentPOs.length > 0 ? (
+                    currentPOs.map((po) => (
+                      <tr key={po.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{po.namaPo}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500 font-mono">{po.nipnas}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{po.segment}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{po.billCity || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{po.witel}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <button onClick={() => handleDeletePO(po.id)} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors">
+                            <FiTrash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500 italic">Belum ada data PO.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPagesPO > 1 && (
+              <div className="flex items-center justify-between mt-4 border-t pt-4">
+                <span className="text-sm text-gray-700">
+                  Halaman <span className="font-medium">{currentPagePO}</span> dari <span className="font-medium">{totalPagesPO}</span>
+                </span>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setCurrentPagePO(p => Math.max(1, p - 1))}
+                    disabled={currentPagePO === 1}
+                    className="p-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <FiChevronLeft />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPagePO(p => Math.min(totalPagesPO, p + 1))}
+                    disabled={currentPagePO === totalPagesPO}
+                    className="p-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <FiChevronRight />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: ACCOUNT OFFICERS --- */}
+        {activeTab === 'ao' && (
+          <div className="p-6">
+            <div className="flex justify-end mb-6">
               <button
-                onClick={handleAddAO}
-                className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
+                onClick={() => setShowAOModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"
               >
-                <FiCheck className="mr-2" /> Simpan
+                <FiPlus className="mr-2" /> Tambah AO
               </button>
-              <button
-                onClick={() => setShowAOForm(false)}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
-              >
-                Batal
-              </button>
+            </div>
+
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['Nama AO', 'Display Witel', 'Filter Source', 'Special Filter', 'Aksi'].map(h => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {accountOfficers.map((ao) => (
+                    <tr key={ao.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{ao.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{ao.displayWitel}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{ao.filterWitelLama}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 text-xs font-mono bg-gray-50 rounded p-1">
+                        {ao.specialFilterColumn ? `${ao.specialFilterColumn}: ${ao.specialFilterValue}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <button onClick={() => handleDeleteAO(ao.id)} className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors">
+                          <FiTrash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-sm">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left font-bold text-white border">Nama</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Display Witel</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Filter Source</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Special Filter</th>
-                <th className="px-4 py-3 text-center font-bold text-white border">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {accountOfficers.map((ao) => (
-                <tr key={ao.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{ao.name}</td>
-                  <td className="px-4 py-2 border">{ao.displayWitel}</td>
-                  <td className="px-4 py-2 border">{ao.filterWitelLama}</td>
-                  <td className="px-4 py-2 border">
-                    {ao.specialFilterColumn && ao.specialFilterValue
-                      ? `${ao.specialFilterColumn}: ${ao.specialFilterValue}`
-                      : '-'}
-                  </td>
-                  <td className="px-4 py-2 border text-center">
-                    <button
-                      onClick={() => handleDeleteAO(ao.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* --- TAB CONTENT: MAPPING --- */}
+        {activeTab === 'mapping' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+              <div>
+                <h3 className="text-sm font-bold text-yellow-800">Perhatian</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Terdapat <span className="font-bold">{unmappedOrders.length} order</span> yang belum memiliki mapping PO valid.
+                </p>
+              </div>
+              <button
+                onClick={handleAutoMapping}
+                className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium shadow-sm"
+              >
+                <FiCheck className="mr-2" /> Auto Mapping
+              </button>
+            </div>
+
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['Order ID', 'NIPNAS', 'Pelanggan', 'Cust City', 'Bill Witel', 'Aksi'].map(h => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {unmappedOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm text-blue-600 font-mono">{order.orderId}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{order.nipnas}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{order.customerName}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{order.custCity}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{order.billWitel || '-'}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <button onClick={() => handleEditOrder(order)} className="text-blue-600 hover:text-blue-800 flex items-center space-x-1 hover:bg-blue-50 px-2 py-1 rounded transition-colors">
+                          <FiEdit2 size={14} /> <span>Map Manual</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Section 2: Master Data PO */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Master Data PO (Datin/SOS)</h2>
-          <button
-            onClick={() => setShowPOForm(!showPOForm)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
-          >
-            <FiPlus className="mr-2" /> Tambah PO
-          </button>
-        </div>
+      {/* --- MODALS --- */}
 
-        {showPOForm && (
-          <div className="mb-4 p-4 border border-gray-300 rounded-md bg-gray-50">
-            <h3 className="font-semibold mb-3">Tambah PO Baru</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">NIPNAS</label>
-                <input
-                  type="text"
-                  value={poForm.nipnas}
-                  onChange={(e) => setPoForm({ ...poForm, nipnas: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama PO</label>
-                <input
-                  type="text"
-                  value={poForm.namaPo}
-                  onChange={(e) => setPoForm({ ...poForm, namaPo: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-              </div>
+      {/* 1. Modal Tambah PO */}
+      {showPOModal && (
+        <Modal title="Tambah PO Baru" onClose={() => setShowPOModal(false)} onSave={handleAddPO}>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nama PO</label>
+              <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                value={poForm.namaPo} onChange={(e) => setPoForm({ ...poForm, namaPo: e.target.value })} placeholder="Nama Account Manager" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">NIPNAS</label>
+              <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                value={poForm.nipnas} onChange={(e) => setPoForm({ ...poForm, nipnas: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Segmen</label>
-                <input
-                  type="text"
-                  value={poForm.segment}
-                  onChange={(e) => setPoForm({ ...poForm, segment: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={poForm.segment} onChange={(e) => setPoForm({ ...poForm, segment: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Witel</label>
-                <input
-                  type="text"
-                  value={poForm.witel}
-                  onChange={(e) => setPoForm({ ...poForm, witel: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={poForm.witel} onChange={(e) => setPoForm({ ...poForm, witel: e.target.value })} />
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={handleAddPO}
-                className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
-              >
-                <FiCheck className="mr-2" /> Simpan
-              </button>
-              <button
-                onClick={() => setShowPOForm(false)}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
-              >
-                Batal
-              </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* 2. Modal Tambah AO */}
+      {showAOModal && (
+        <Modal title="Tambah Account Officer" onClose={() => setShowAOModal(false)} onSave={handleAddAO}>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nama AO</label>
+              <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                value={aoForm.name} onChange={(e) => setAoForm({ ...aoForm, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Display Witel</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={aoForm.displayWitel} onChange={(e) => setAoForm({ ...aoForm, displayWitel: e.target.value })} placeholder="Ex: JATIM BARAT" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Filter Source</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={aoForm.filterWitelLama} onChange={(e) => setAoForm({ ...aoForm, filterWitelLama: e.target.value })} placeholder="Ex: MADIUN" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Special Col (Opt)</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={aoForm.specialFilterColumn} onChange={(e) => setAoForm({ ...aoForm, specialFilterColumn: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Special Val (Opt)</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={aoForm.specialFilterValue} onChange={(e) => setAoForm({ ...aoForm, specialFilterValue: e.target.value })} />
+              </div>
             </div>
           </div>
-        )}
+        </Modal>
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-sm">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left font-bold text-white border">PO</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">NIPNAS</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Segment</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Bill City</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Witel</th>
-                <th className="px-4 py-3 text-center font-bold text-white border">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {poMaster.map((po) => (
-                <tr key={po.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{po.namaPo}</td>
-                  <td className="px-4 py-2 border">{po.nipnas}</td>
-                  <td className="px-4 py-2 border">{po.segment}</td>
-                  <td className="px-4 py-2 border">{po.billCity || '-'}</td>
-                  <td className="px-4 py-2 border">{po.witel}</td>
-                  <td className="px-4 py-2 border text-center">
-                    <button
-                      onClick={() => handleDeletePO(po.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Section 3: Mapping Data Transaksi */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-lg font-medium text-gray-900">Mapping Data Transaksi (Datin)</h2>
-            <p className="text-sm text-gray-600">Daftar order yang belum memiliki PO Name valid.</p>
-          </div>
-          <button
-            onClick={handleAutoMapping}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700"
-          >
-            <FiCheck className="mr-2" /> Jalankan Mapping Otomatis
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-sm">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left font-bold text-white border">Order ID</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">NIPNAS</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Nama Pelanggan</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Cust City</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Serv City</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Bill Witel</th>
-                <th className="px-4 py-3 text-left font-bold text-white border">Bill City</th>
-                <th className="px-4 py-3 text-center font-bold text-white border">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {unmappedOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{order.orderId}</td>
-                  <td className="px-4 py-2 border">{order.nipnas}</td>
-                  <td className="px-4 py-2 border">{order.customerName}</td>
-                  <td className="px-4 py-2 border">{order.custCity}</td>
-                  <td className="px-4 py-2 border">{order.servCity}</td>
-                  <td className="px-4 py-2 border">{order.billWitel || '-'}</td>
-                  <td className="px-4 py-2 border">{order.billCity || '-'}</td>
-                  <td className="px-4 py-2 border text-center">
-                    <button
-                      onClick={() => handleEditOrder(order)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <FiEdit2 />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Edit Modal */}
+      {/* 3. Modal Edit Mapping */}
       {showEditModal && selectedOrder && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Update Mapping PO</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Perbarui PO Name untuk NIPNAS: {selectedOrder.nipnas} ({selectedOrder.customerName})
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pilih PO Name (AM)</label>
-                <select
-                  value={editForm.poName}
-                  onChange={(e) => setEditForm({ ...editForm, poName: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                >
-                  <option value="">-- Pilih Account Manager --</option>
-                  {accountOfficers.map((ao) => (
-                    <option key={ao.id} value={ao.nama}>
-                      {ao.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bill City (Kota Tagihan)</label>
-                <input
-                  type="text"
-                  value={editForm.billCity}
-                  onChange={(e) => setEditForm({ ...editForm, billCity: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">*Ubah kota jika mapping Witel gagal.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bill Witel (Witel Tagihan)</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: SURAMADU"
-                  value={editForm.billWitel}
-                  onChange={(e) => setEditForm({ ...editForm, billWitel: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">*Isi manual 5 Witel Utama (BALI, SURAMADU, dll) jika mapping otomatis gagal.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Segmen</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: State-Owned Enterprise Service"
-                  value={editForm.segment}
-                  onChange={(e) => setEditForm({ ...editForm, segment: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">*Segmen dari order ini (isi manual jika data kosong).</p>
-              </div>
+        <Modal title="Update Mapping Manual" onClose={() => setShowEditModal(false)} onSave={handleUpdateMapping} saveLabel="Update">
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-500 uppercase font-semibold">Pelanggan</p>
+              <p className="text-sm font-bold text-gray-800">{selectedOrder.customerName}</p>
+              <p className="text-xs text-gray-600 font-mono mt-1">{selectedOrder.nipnas}</p>
             </div>
 
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={handleUpdateMapping}
-                className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pilih PO Name (AM)</label>
+              <select
+                value={editForm.poName}
+                onChange={(e) => setEditForm({ ...editForm, poName: e.target.value })}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
               >
-                <FiCheck className="mr-2" /> Update
-              </button>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
-              >
-                Batal
-              </button>
+                <option value="">-- Pilih Account Manager --</option>
+                {accountOfficers.map((ao) => (
+                  <option key={ao.id} value={ao.name}>{ao.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bill City</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={editForm.billCity} onChange={(e) => setEditForm({ ...editForm, billCity: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bill Witel</label>
+                <input type="text" className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-red-500 focus:border-red-500 text-sm"
+                  value={editForm.billWitel} onChange={(e) => setEditForm({ ...editForm, billWitel: e.target.value })} />
+              </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
