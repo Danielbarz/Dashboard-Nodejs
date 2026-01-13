@@ -1,10 +1,6 @@
 import { PrismaClient } from '../generated/client/index.js'
 
 // Initialize Prisma Client for AI Reader
-// We need to construct the connection string dynamically for the ai_reader user
-// Assuming the default connection string is in process.env.DATABASE_URL
-// Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
-
 const getAiDbUrl = () => {
     const originalUrl = process.env.DATABASE_URL;
     if (!originalUrl) return null;
@@ -23,113 +19,161 @@ const getAiDbUrl = () => {
 const aiPrisma = new PrismaClient({
     datasources: {
         db: {
-            url: getAiDbUrl() || process.env.DATABASE_URL // Fallback to default if parsing fails (warn user!)
+            url: getAiDbUrl() || process.env.DATABASE_URL
         }
     },
     log: ['query', 'error']
 });
 
-const OLLAMA_URL = 'http://localhost:11434/api/generate';
+// FORCE IPv4 to avoid localhost resolution issues
+const OLLAMA_URL = 'http://127.0.0.1:11434/api/generate';
 const MODEL_NAME = process.env.OLLAMA_MODEL || 'deepseek-r1:1.5b';
 
 const DB_SCHEMA = `
-Table: digital_products
-Columns: product_name (String), revenue (Decimal), witel (String), regional (String), order_date (DateTime), status (String), segment (String)
-
-Table: hsi_data
-Columns: order_id (String), witel (String), datel (String), status_resume (String), order_date (DateTime), customer_name (String), package_name (String)
-
-Table: sos_data
-Columns: order_id (String), revenue (Decimal), witel (String), bill_witel (String), order_date (DateTime), segment (String), product_name (String)
-
-Table: users
-Columns: name (String), email (String), role (String)
+Tables: 
+- digital_products (product_name, revenue, witel, regional). Use for "Digital Product".
+- hsi_data (status_resume, witel). Use for "Indihome" or "HSI".
+- spmk_mom (rab, status_proyek). Use for "Proyek".
 `;
 
 const SYSTEM_PROMPT = `
-You are an expert SQL Data Analyst for Telkom Indonesia.
-Your task is to answer user questions by generating SQL queries against the provided database schema.
+You are a PostgreSQL Generator. 
+1. Use 'LIMIT x' for top/limit. NEVER use 'TOP x'.
+2. Use ILIKE for text comparisons.
+3. Output ONLY the SQL.
 
-RULES:
-1. Use ONLY the provided tables: digital_products, hsi_data, sos_data, users.
-2. Return ONLY the raw SQL query. Do not use Markdown formatting (no triple backticks).
-3. Do not include explanations in the SQL response.
-4. Ensure the SQL is valid PostgreSQL.
-5. If the user asks about something not in the schema, answer "I cannot answer that based on the available data."
-6. Current date context: ${new Date().toISOString()}
-7. For aggregation, use standard SQL functions (SUM, COUNT, AVG).
-8. Text matching should be case-insensitive (ILIKE).
+Examples:
+Q: 5 witel revenue tertinggi?
+A: SELECT witel, SUM(revenue) as total FROM digital_products GROUP BY witel ORDER BY total DESC LIMIT 5;
 
-SCHEMA:
-${DB_SCHEMA}
+Q: Produk share apa aja?
+A: SELECT DISTINCT product_name FROM digital_products WHERE product_name IN ('Netmonk', 'Antares', 'OCA', 'Pijar');
+
+Q: Tampilkan 5 witel dengan revenue tertinggi pada digital product?
+A: SELECT witel, SUM(revenue) as total_revenue FROM digital_products GROUP BY witel ORDER BY total_revenue DESC LIMIT 5;
 `;
 
 export const askAi = async (question) => {
     try {
         // Step 1: Generate SQL
-        console.log(`[AI] Generating SQL for: "${question}"`);
+        console.log(`[AI] Generating SQL for: "${question}" using model ${MODEL_NAME}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         const sqlResponse = await fetch(OLLAMA_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: MODEL_NAME,
-                prompt: `${SYSTEM_PROMPT}\n\nUser Question: ${question}\nSQL Query:`,
+                prompt: `${SYSTEM_PROMPT}\n\nQ: ${question}\nA:`,
                 stream: false,
                 options: {
-                    temperature: 0.1 // Deterministic
+                    temperature: 0.1, // Lower temperature for precision
+                    num_predict: 600, // Higher limit
+                    stop: ["\nQ:", "Q:", "Observation:"] // Stop tokens
                 }
-            })
+            }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
-        if (!sqlResponse.ok) throw new Error('Ollama connection failed');
+        if (!sqlResponse.ok) throw new Error(`Ollama Error: ${sqlResponse.statusText}`);
         const sqlJson = await sqlResponse.json();
-        let sql = sqlJson.response.trim();
+        let rawResponse = sqlJson.response.trim();
         
-        // Clean up SQL (remove think tags if any, remove markdown)
-        sql = sql.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
+        console.log(`[AI] Full Raw Output (Pre-clean): ${rawResponse}`);
 
-        console.log(`[AI] Generated SQL: ${sql}`);
+        // Remove <think> blocks
+        let cleanResponse = rawResponse.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        
+        if (!cleanResponse && rawResponse.length > 0) {
+             // If cleaning removed everything, maybe the model didn't use tags properly
+             // Try to extract just code blocks if they exist
+             const codeBlock = rawResponse.match(/```sql([\s\S]*?)```/i);
+             if (codeBlock) {
+                 cleanResponse = codeBlock[1].trim();
+             } else {
+                 cleanResponse = rawResponse;
+             }
+        }
+        
+        console.log(`[AI] Cleaned Output: ${cleanResponse}`);
 
-        // Step 2: Execute SQL (Safe Read-Only)
-        // Basic safety check
-        if (!sql.toLowerCase().startsWith('select')) {
-             // If it's not a SELECT, it might be an apology or refusal
-             return { answer: sql, sql: null, data: null };
+        // Robust SQL Extraction: Find the SELECT statement
+        // Matches "SELECT ... ;" or "SELECT ... " until end of line/string
+        const sqlMatch = cleanResponse.match(/(SELECT[\s\S]+?;)/i) || cleanResponse.match(/(SELECT[\s\S]+)/i);
+        
+        let sql = null;
+        if (sqlMatch) {
+            sql = sqlMatch[0].trim();
+            // Remove any markdown code blocks if still present
+            sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
         }
 
-        const results = await aiPrisma.$queryRawUnsafe(sql);
+        if (!sql) {
+            console.log('[AI] Failed to extract SQL');
+            return { 
+                answer: "Maaf, saya bingung. Coba tanya lebih spesifik, misal: 'Hitung total revenue di Surabaya'", 
+                sql: null, 
+                data: null 
+            };
+        }
+
+        console.log(`[AI] Executing SQL: ${sql}`);
+
+        // Step 2: Execute SQL
+        let results;
+        try {
+            results = await aiPrisma.$queryRawUnsafe(sql);
+        } catch (dbError) {
+            console.error('[AI DB Error]', dbError.message);
+            return { answer: "Gagal mengeksekusi query database.", sql: sql, error: dbError.message };
+        }
         
         // Handle BigInt serialization
         const serializedResults = JSON.parse(JSON.stringify(results, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
         ));
 
-        console.log(`[AI] SQL Results: ${JSON.stringify(serializedResults).slice(0, 100)}...`);
+        console.log(`[AI] Results found: ${serializedResults.length} rows`);
 
         // Step 3: Interpret Results
+        const interpController = new AbortController();
+        const interpTimeout = setTimeout(() => interpController.abort(), 60000);
+
         const interpretationResponse = await fetch(OLLAMA_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: MODEL_NAME,
                 prompt: `
-                User Question: ${question}
-                SQL Query Used: ${sql}
-                Data Results: ${JSON.stringify(serializedResults)}
+                [DATA]
+                ${JSON.stringify(serializedResults).slice(0, 1000)}
+                [/DATA]
+
+                [INSTRUCTION]
+                Jawab pertanyaan ini berdasarkan [DATA] di atas dalam Bahasa Indonesia: "${question}"
                 
-Please provide a concise, natural language answer summarizing these results. 
-Do not mention "SQL" or "query" in the final answer. 
-If the result is empty, say "No data found."
+                Aturan:
+                1. Jangan ulangi pertanyaan.
+                2. Langsung sebutkan jawabannya.
+                3. Jika data berupa daftar, sebutkan isinya (misal: "Produknya adalah: A, B, C").
+                4. Jika hasil kosong, katakan "Data tidak ditemukan".
+                [/INSTRUCTION]
                 `,
-                stream: false
-            })
+                stream: false,
+                options: { 
+                    temperature: 0.1,
+                    num_predict: 300
+                }
+            }),
+            signal: interpController.signal
         });
+        clearTimeout(interpTimeout);
 
         const interpretationJson = await interpretationResponse.json();
         let finalAnswer = interpretationJson.response;
-        
-        // Remove think tags
         finalAnswer = finalAnswer.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
         return {
@@ -141,7 +185,7 @@ If the result is empty, say "No data found."
     } catch (error) {
         console.error('[AI Service Error]', error);
         return {
-            answer: "Sorry, I encountered an error processing your request. Please ensure Ollama is running.",
+            answer: "Maaf, terjadi kesalahan (Timeout/Error). Pastikan Ollama berjalan.",
             error: error.message
         };
     }
