@@ -690,7 +690,183 @@ export const exportReportTambahan = async (req, res, next) => {
 
 export const exportReportHSI = async (req, res, next) => {
   try {
-    successResponse(res, { message: 'Export Report HSI not implemented' }, 'Export placeholder')
+    const { start_date, end_date } = req.query
+
+    const allowedWitels = ['JATIM TIMUR', 'JATIM BARAT', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+    const witelIncludeFilter = `UPPER(witel) IN (${allowedWitels.map(w => `'${w}'`).join(',')})`
+
+    let dateFilter = ''
+    if (start_date && end_date) {
+      const start = new Date(start_date)
+      const end = new Date(end_date)
+      dateFilter = `AND "order_date" >= '${start.toISOString().split('T')[0]}'::date 
+                    AND "order_date" <= '${end.toISOString().split('T')[0]}'::date`
+    }
+
+    const rawData = await prisma.$queryRawUnsafe(`
+      SELECT
+        witel,
+        witel_old,
+        SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
+        COUNT(*) as registered,
+        SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
+        SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
+        SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
+        SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
+        SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
+        SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as unsc,
+        SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 < 24 THEN 1 ELSE 0 END) as pi_under_1_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 >= 24 AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 <= 72 THEN 1 ELSE 0 END) as pi_1_3_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 > 72 THEN 1 ELSE 0 END) as pi_over_3_hari,
+        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
+        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as fo_wfm_others,
+        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
+        SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
+        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
+        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
+        SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp,
+        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as cancel_kndl_plgn,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as cancel_kndl_teknis,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as cancel_kndl_sys,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others,
+        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
+        SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke
+      FROM hsi_data
+      WHERE ${witelIncludeFilter}
+        ${dateFilter}
+      GROUP BY witel, witel_old
+      HAVING witel_old IS NOT NULL AND witel_old != ''
+      ORDER BY witel, witel_old
+    `)
+
+    const numericFields = [
+      'pre_pi', 'registered', 'inprogress_sc', 'qc1', 'fcc', 'cancel_by_fcc', 'survey_new_manja', 'unsc',
+      'pi_under_1_hari', 'pi_1_3_hari', 'pi_over_3_hari', 'total_pi',
+      'fo_wfm_kndl_plgn', 'fo_wfm_kndl_teknis', 'fo_wfm_kndl_sys', 'fo_wfm_others',
+      'fo_uim', 'fo_asp', 'fo_osm', 'total_fallout', 'act_comp', 'jml_comp_ps',
+      'cancel_kndl_plgn', 'cancel_kndl_teknis', 'cancel_kndl_sys', 'cancel_others', 'total_cancel', 'revoke'
+    ]
+
+    const calculatePercentages = (item) => {
+      const num_pire = item.total_pi + item.total_fallout + item.act_comp + item.jml_comp_ps + item.total_cancel
+      item.pi_re_percent = item.registered > 0 ? ((num_pire / item.registered) * 100).toFixed(2) : '0.00'
+
+      const denom_psre = item.registered - item.cancel_by_fcc - item.unsc - item.revoke
+      item.ps_re_percent = denom_psre > 0 ? ((item.jml_comp_ps / denom_psre) * 100).toFixed(2) : '0.00'
+
+      const denom_pspi = item.total_pi + item.total_fallout + item.act_comp + item.jml_comp_ps
+      item.ps_pi_percent = denom_pspi > 0 ? ((item.jml_comp_ps / denom_pspi) * 100).toFixed(2) : '0.00'
+    }
+
+    rawData.forEach(row => {
+      numericFields.forEach(field => {
+        row[field] = Number(row[field] || 0)
+      })
+    })
+
+    const groupedData = {}
+    rawData.forEach(row => {
+      if (!groupedData[row.witel]) groupedData[row.witel] = []
+      groupedData[row.witel].push(row)
+    })
+
+    const finalReportData = []
+    const witelOrder = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+
+    witelOrder.forEach(witel => {
+      const children = groupedData[witel]
+      if (!children || children.length === 0) return
+
+      const parent = { witel_display: witel, row_type: 'main' }
+      numericFields.forEach(field => {
+        parent[field] = children.reduce((sum, child) => sum + child[field], 0)
+      })
+      calculatePercentages(parent)
+      finalReportData.push(parent)
+
+      children.sort((a, b) => (a.witel_old || '').localeCompare(b.witel_old || ''))
+      children.forEach(child => {
+        child.witel_display = child.witel_old || '(Blank)'
+        child.row_type = 'sub'
+        calculatePercentages(child)
+        finalReportData.push(child)
+      })
+    })
+
+    const totals = { witel_display: 'TOTAL' }
+    numericFields.forEach(field => {
+      totals[field] = rawData.reduce((sum, row) => sum + row[field], 0)
+    })
+    calculatePercentages(totals)
+
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Report HSI')
+
+    const columns = [
+      { header: 'Witel', key: 'witel_display', width: 20 },
+      { header: 'PRE PI', key: 'pre_pi', width: 10 },
+      { header: 'Registered (RE)', key: 'registered', width: 15 },
+      { header: 'Inpro SC', key: 'inprogress_sc', width: 12 },
+      { header: 'QC 1', key: 'qc1', width: 10 },
+      { header: 'FCC', key: 'fcc', width: 10 },
+      { header: 'RJCT FCC', key: 'cancel_by_fcc', width: 12 },
+      { header: 'Survey Manja', key: 'survey_new_manja', width: 14 },
+      { header: 'UN-SC', key: 'unsc', width: 10 },
+      { header: 'PI < 1 Hari', key: 'pi_under_1_hari', width: 14 },
+      { header: 'PI 1-3 Hari', key: 'pi_1_3_hari', width: 14 },
+      { header: 'PI > 3 Hari', key: 'pi_over_3_hari', width: 14 },
+      { header: 'Total PI', key: 'total_pi', width: 12 },
+      { header: 'FO WFM KNDL Plgn', key: 'fo_wfm_kndl_plgn', width: 16 },
+      { header: 'FO WFM KNDL Teknis', key: 'fo_wfm_kndl_teknis', width: 18 },
+      { header: 'FO WFM KNDL System', key: 'fo_wfm_kndl_sys', width: 18 },
+      { header: 'FO WFM Others', key: 'fo_wfm_others', width: 16 },
+      { header: 'FO UIM', key: 'fo_uim', width: 10 },
+      { header: 'FO ASP', key: 'fo_asp', width: 10 },
+      { header: 'FO OSM', key: 'fo_osm', width: 10 },
+      { header: 'Total Fallout', key: 'total_fallout', width: 14 },
+      { header: 'ACT COMP (QC2)', key: 'act_comp', width: 15 },
+      { header: 'JML COMP (PS)', key: 'jml_comp_ps', width: 15 },
+      { header: 'Cancel KNDL Plgn', key: 'cancel_kndl_plgn', width: 16 },
+      { header: 'Cancel KNDL Teknis', key: 'cancel_kndl_teknis', width: 16 },
+      { header: 'Cancel KNDL System', key: 'cancel_kndl_sys', width: 16 },
+      { header: 'Cancel Others', key: 'cancel_others', width: 14 },
+      { header: 'Total Cancel', key: 'total_cancel', width: 14 },
+      { header: 'Revoke', key: 'revoke', width: 10 },
+      { header: 'PI/RE (%)', key: 'pi_re_percent', width: 12 },
+      { header: 'PS/RE (%)', key: 'ps_re_percent', width: 12 },
+      { header: 'PS/PI (%)', key: 'ps_pi_percent', width: 12 }
+    ]
+
+    worksheet.columns = columns
+
+    finalReportData.forEach(row => {
+      const rowValues = { ...row }
+      rowValues.pi_re_percent = `${row.pi_re_percent}%`
+      rowValues.ps_re_percent = `${row.ps_re_percent}%`
+      rowValues.ps_pi_percent = `${row.ps_pi_percent}%`
+      const excelRow = worksheet.addRow(rowValues)
+      if (row.row_type === 'main') {
+        excelRow.font = { bold: true }
+      }
+    })
+
+    const totalRowValues = { ...totals, row_type: 'total' }
+    totalRowValues.pi_re_percent = `${totals.pi_re_percent}%`
+    totalRowValues.ps_re_percent = `${totals.ps_re_percent}%`
+    totalRowValues.ps_pi_percent = `${totals.ps_pi_percent}%`
+    const totalRow = worksheet.addRow(totalRowValues)
+    totalRow.font = { bold: true }
+
+    worksheet.getRow(1).font = { bold: true }
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', `attachment; filename=report-hsi-${Date.now()}.xlsx`)
+    res.send(buffer)
   } catch (error) {
     next(error)
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import axios from 'axios'
+import api from '../services/api'
 import FileUploadForm from '../components/FileUploadForm'
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -110,17 +111,33 @@ const ReportsHSI = () => {
     return reportData.filter(row => row.witel === selectedWitel)
   }, [reportData, selectedWitel])
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!startDate || !endDate) {
       alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
       return
     }
     
-    const params = new URLSearchParams({ 
-        start_date: startDate.toISOString(), 
-        end_date: endDate.toISOString() 
-    })
-    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/export/report-hsi?${params.toString()}`
+    try {
+      const response = await api.get('/dashboard/export/report-hsi', {
+        params: { 
+          start_date: startDate.toISOString(), 
+          end_date: endDate.toISOString() 
+        },
+        responseType: 'blob'
+      })
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `report-hsi-${new Date().getTime()}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Gagal export data. Silakan coba lagi.')
+    }
   }
 
   return (
