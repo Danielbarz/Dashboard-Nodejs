@@ -297,7 +297,7 @@ export const ProductShareChart = ({ data }) => {
   // Calculate percentages
   const dataWithPercent = data.map(item => ({
     ...item,
-    percent: total > 0 ? ((item.value / total) * 100).toFixed(0) : 0
+    displayPercent: total > 0 ? ((item.value / total) * 100).toFixed(0) : 0
   }))
 
   const RADIAN = Math.PI / 180
