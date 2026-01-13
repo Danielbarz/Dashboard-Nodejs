@@ -676,8 +676,13 @@ export const getReportAnalysis = async (req, res, next) => {
         if (!productCode) return
 
         const status = (row.status || '').toLowerCase()
-        const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isCompleted = ['complete', 'completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
         const isInProgress = !isCompleted
+
+        // DEBUG PS SME
+        if (productCode === 'ps' && segmentKeywords.includes('SME') && isCompleted) {
+             // console.log(`[DEBUG PS] Found PS. Status: ${status} (Completed: ${isCompleted}). Witel: ${row.witel} -> Mapped: ${mappedName}. NetPrice: ${row.netPrice}`)
+        }
 
         if (isInProgress) {
           witelMap[mappedName][`in_progress_${productCode}`]++
@@ -686,14 +691,25 @@ export const getReportAnalysis = async (req, res, next) => {
           witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
           
           // Use netPrice if available, otherwise fallback to extraction from productName (for AE products)
+          // Added Sanity Check: Ignore unreasonable amounts (> 10 Billion) likely due to data errors
           let amount = 0
           const np = row.netPrice
+          const MAX_REASONABLE_PRICE = 10000000000 // 10 Billion
+
           if (np !== null && np !== undefined && Number(np) > 0) {
-             amount = Number(np)
+             const val = Number(np)
+             if (val < MAX_REASONABLE_PRICE) {
+                amount = val
+             }
           } else if (row.productName) {
              // Fallback: Extract from "Total (Sebelum PPN) : 35000" (flexible spacing)
              const match = row.productName.match(/Total \(Sebelum PPN\)\s*:\s*([0-9]+)/i)
-             if (match) amount = parseInt(match[1])
+             if (match) {
+                const extracted = parseInt(match[1])
+                if (extracted < MAX_REASONABLE_PRICE) {
+                   amount = extracted
+                }
+             }
           }
 
           witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta

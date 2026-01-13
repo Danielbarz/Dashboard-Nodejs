@@ -160,34 +160,135 @@ export const getAmountByWitel = async (req, res, next) => {
   }
 }
 
-// Get KPI data from SOS data
+// Get KPI data from Digital Product data
 export const getKPIData = async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query
+    const { startDate, endDate, witel, branch, product } = req.query
 
-    let whereClause = {}
+    // Define Date Filter
+    let dateFilter = ''
+    const params = []
+    let pIdx = 1
 
     if (startDate && endDate) {
-      whereClause.orderCreatedDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      params.push(startDate, endDate)
+      pIdx += 2
+    }
+
+    // Reuse the same CTE for consistency
+    const normalizedDataCTE = `
+      WITH normalized_data AS (
+        SELECT
+          *,
+          CASE
+            WHEN witel IN ('BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG') THEN 'BALI'
+            WHEN witel IN ('JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO') THEN 'JATIM TIMUR'
+            WHEN witel IN ('NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES') THEN 'SURAMADU'
+            ELSE 'OTHER' 
+          END as region_norm,
+          CASE
+            WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+            WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+            WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+            WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+            ELSE 'OTHER'
+          END as product_norm,
+          CASE
+            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
+            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
+            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
+            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
+            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
+            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
+            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
+            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
+            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
+            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
+            WHEN UPPER(branch) IN ('MLG') THEN 'MALANG'
+            WHEN UPPER(branch) IN ('KDR') THEN 'KEDIRI'
+            WHEN UPPER(branch) IN ('MDN') THEN 'MADIUN'
+            WHEN UPPER(branch) IN ('BJN') THEN 'BOJONEGORO'
+            WHEN UPPER(branch) IN ('PON') THEN 'PONOROGO'
+            WHEN UPPER(branch) IN ('SDO') THEN 'SIDOARJO'
+            WHEN UPPER(branch) IN ('BWI') THEN 'BANYUWANGI'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JEMBER'
+            WHEN UPPER(branch) IN ('PSR') THEN 'PASURUAN'
+            WHEN UPPER(branch) IN ('MTR') THEN 'MATARAM'
+            WHEN UPPER(branch) IN ('KPG') THEN 'KUPANG'
+            WHEN UPPER(branch) IN ('LBJ') THEN 'LABOAN BAJO'
+            WHEN UPPER(branch) IN ('BMA') THEN 'BIMA'
+            WHEN UPPER(branch) IN ('SBS') THEN 'SURABAYA'
+            WHEN UPPER(branch) IN ('SBU') THEN 'SURABAYA'
+            WHEN UPPER(branch) IN ('GSK') THEN 'GRESIK'
+            WHEN UPPER(branch) IN ('PMK') THEN 'PAMEKASAN'
+            WHEN UPPER(branch) IN ('BKL') THEN 'BANGKALAN'
+            ELSE UPPER(branch)
+          END as branch_norm,
+          channel as channel_norm
+        FROM digital_products
+        WHERE 1=1
+        ${dateFilter}
+      )
+    `
+
+    let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
+
+    // 1. Witel Filter
+    if (witel && witel !== 'ALL') {
+      const witelArr = witel.split(',').filter(w => w)
+      if (witelArr.length > 0) {
+        const placeholders = witelArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND region_norm IN (${placeholders})`
+        params.push(...witelArr)
       }
     }
 
-    const totalOrders = await prisma.sosData.count({ where: whereClause })
-    const completedOrders = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        liStatus: { in: ['completed', 'activated', 'live'] }
+    // 2. Branch Filter
+    if (branch) {
+      const branchArr = branch.split(',').filter(b => b)
+      if (branchArr.length > 0) {
+        const placeholders = branchArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND branch_norm IN (${placeholders})`
+        params.push(...branchArr)
       }
-    })
+    }
+
+    // 3. Product Filter
+    if (product) {
+      const productArr = product.split(',').filter(p => p)
+      if (productArr.length > 0) {
+        const placeholders = productArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND product_norm IN (${placeholders})`
+        params.push(...productArr)
+      }
+    }
+
+    const stats = await prisma.$queryRawUnsafe(`
+      ${normalizedDataCTE}
+      SELECT
+        COUNT(*)::int as total,
+        SUM(CASE 
+          WHEN status ILIKE '%completed%' OR status ILIKE '%activated%' OR status ILIKE '%live%' OR status ILIKE '%done%' OR status ILIKE '%closed%' OR status ILIKE '%ps%' 
+          THEN 1 ELSE 0 
+        END)::int as completed
+      FROM normalized_data
+      ${filterCondition}
+    `, ...params)
+
+    const totalOrders = stats[0]?.total || 0
+    const completedOrders = stats[0]?.completed || 0
+    const progressOrders = totalOrders - completedOrders
 
     successResponse(
       res,
       {
-        totalOrders,
-        completedOrders,
-        progressOrders: totalOrders - completedOrders,
+        totalOrder: totalOrders,
+        completed: completedOrders,
+        openProgress: progressOrders,
         completionRate: totalOrders > 0 ? ((completedOrders / totalOrders) * 100).toFixed(2) : 0
       },
       'KPI data retrieved successfully'
@@ -1999,113 +2100,30 @@ export const getSOSDatinDashboard = async (req, res, next) => {
  */
 
 export const getDigitalProductFilters = async (req, res, next) => {
-
   try {
+    // 1. Fixed Product List as requested
+    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
 
-    const [witelsRaw, branchesRaw, productsRaw] = await Promise.all([
+    // 2. Define RSO2 Regions
+    const witels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-      prisma.digitalProduct.findMany({
-
-        distinct: ['witel'],
-
-        select: { witel: true },
-
-        where: { witel: { not: null } },
-
-        orderBy: { witel: 'asc' }
-
-      }),
-
-      prisma.digitalProduct.findMany({
-
-        distinct: ['witel', 'branch'],
-
-        select: { witel: true, branch: true },
-
-        where: { branch: { not: null } },
-
-        orderBy: { branch: 'asc' }
-
-      }),
-
-      prisma.digitalProduct.findMany({
-
-        distinct: ['productName'],
-
-        select: { productName: true },
-
-        where: { productName: { not: null } },
-
-        orderBy: { productName: 'asc' }
-
-      })
-
-    ])
-
-
-
-    const witels = witelsRaw.map(w => w.witel)
-
-    
-
-    // Group branches by witel
-
-    const branchMap = {}
-
-    branchesRaw.forEach(item => {
-
-      if (!branchMap[item.witel]) {
-
-        branchMap[item.witel] = []
-
-      }
-
-      if (item.branch && !branchMap[item.witel].includes(item.branch)) {
-
-        branchMap[item.witel].push(item.branch)
-
-      }
-
-    })
-
-
-
-    // Get unique normalized products
-
-    const products = [...new Set(productsRaw.map(p => {
-
-      const name = p.productName
-
-      if (name.match(/Netmonk/i)) return 'Netmonk'
-
-      if (name.match(/OCA/i)) return 'OCA'
-
-      if (name.match(/Pijar/i)) return 'Pijar'
-
-      if (name.match(/Antares|IOT|CCTV/i)) return 'Antares'
-
-      return name // Return original if not matched, or maybe categorize as 'Other'
-
-    }))].sort()
-
-
+    // 3. Define Branch Map (based on established RSO2 grouping)
+    const branchMap = {
+      'BALI': ['DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+    }
 
     successResponse(res, {
-
       witels,
-
       branchMap,
-
       products
-
     }, 'Digital product filter options retrieved')
-
   } catch (error) {
-
     next(error)
-
   }
-
 }
 
 
@@ -2139,150 +2157,107 @@ export const getDigitalProductCharts = async (req, res, next) => {
 
 
     if (start_date && end_date) {
-
-      dateFilter = `AND order_date >= ${pIdx}::date AND order_date <= ${pIdx + 1}::date`
-
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
       params.push(start_date, end_date)
-
       pIdx += 2
-
     }
-
-
 
     // Common CTEs for normalization
-
     // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
-
     const normalizedDataCTE = `
-
       WITH normalized_data AS (
-
         SELECT
-
           *,
-
           CASE
-
-            WHEN witel IN ('BALI') THEN 'BALI'
-
-            WHEN witel IN ('SURAMADU') THEN 'SURAMADU'
-
-            WHEN witel IN ('NTT', 'NTB') THEN 'NUSA TENGGARA'
-
-            WHEN witel IN ('MADIUN', 'KEDIRI', 'MALANG') THEN 'JATIM BARAT'
-
-            WHEN witel IN ('JEMBER', 'PASURUAN', 'SIDOARJO') THEN 'JATIM TIMUR'
-
-            ELSE witel 
-
+            WHEN witel IN ('BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG') THEN 'BALI'
+            WHEN witel IN ('JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO') THEN 'JATIM TIMUR'
+            WHEN witel IN ('NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES') THEN 'SURAMADU'
+            ELSE 'OTHER' 
           END as region_norm,
-
           CASE
-
             WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
-
             WHEN product_name ILIKE '%OCA%' THEN 'OCA'
-
             WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
-
             WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
-
             ELSE 'OTHER'
-
           END as product_norm,
-
           CASE
-
+            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
+            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
+            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
+            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
+            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
+            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
+            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
+            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
+            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
+            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
+            ELSE UPPER(branch)
+          END as branch_norm,
+          CASE
             WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
-
             ELSE 'SME'
-
           END as segment_norm,
-
-                              channel as channel_norm
-
+          channel as channel_norm
         FROM digital_products
-
         WHERE 1=1
-
         ${dateFilter}
-
       )
-
     `
 
-
-
     // Build dynamic filters
-
     let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
-
-
+    let isSingleWitel = false
+    let isSingleBranch = false
 
     // 1. Witel Filter (Multiselect)
-
     // If witel param exists and is not 'ALL', add condition
-
     if (witel && witel !== 'ALL') {
-
       const witelArr = witel.split(',').filter(w => w)
-
       if (witelArr.length > 0) {
-
+        if (witelArr.length === 1) isSingleWitel = true
         // Create placeholders $3, $4, etc.
-
-        const placeholders = witelArr.map(() => `${pIdx++}`).join(',')
-
+        const placeholders = witelArr.map(() => `$${pIdx++}`).join(',')
         filterCondition += ` AND region_norm IN (${placeholders})`
-
         params.push(...witelArr)
-
       }
-
     }
-
-
 
     // 2. Branch Filter (Multiselect)
-
     if (branch) {
-
       const branchArr = branch.split(',').filter(b => b)
-
       if (branchArr.length > 0) {
-
-        const placeholders = branchArr.map(() => `${pIdx++}`).join(',')
-
-        filterCondition += ` AND branch IN (${placeholders})`
-
+        if (branchArr.length === 1) isSingleBranch = true
+        const placeholders = branchArr.map(() => `$${pIdx++}`).join(',')
+        // Use branch_norm for filtering to match the aggregation
+        filterCondition += ` AND branch_norm IN (${placeholders})`
         params.push(...branchArr)
-
       }
-
     }
-
-
 
     // 3. Product Filter (Multiselect)
-
     if (product) {
-
       const productArr = product.split(',').filter(p => p)
-
       if (productArr.length > 0) {
-
-        const placeholders = productArr.map(() => `${pIdx++}`).join(',')
-
+        const placeholders = productArr.map(() => `$${pIdx++}`).join(',')
         filterCondition += ` AND product_norm IN (${placeholders})`
-
         params.push(...productArr)
-
       }
-
     }
 
-
+    // Determine Grouping Column (Drill-down logic)
+    // 1. Single Branch -> Group by Product (Independent Bars)
+    // 2. Single Witel -> Group by Branch
+    // 3. Default -> Group by Region
+    let groupByCol = 'region_norm'
+    if (isSingleBranch) {
+      groupByCol = 'product_norm'
+    } else if (isSingleWitel) {
+      groupByCol = 'branch_norm'
+    }
 
     // Run queries in parallel
     const [
@@ -2292,29 +2267,34 @@ export const getDigitalProductCharts = async (req, res, next) => {
       productByChannel,
       productShare
     ] = await Promise.all([
-      // 1. Revenue by Witel - Stacked Bar (Vertical)
-      // Use net_price as it contains the correct revenue data
+      // 1. Revenue by Witel (or Branch) - Stacked Bar (Vertical)
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
         SELECT 
-          region_norm as witel, 
+          ${groupByCol} as witel, 
           product_norm as product, 
-          SUM(COALESCE(net_price, 0))::numeric as revenue
+          SUM(
+            COALESCE(
+              NULLIF(net_price, 0),
+              NULLIF(revenue, 0),
+              (substring(product_name from 'Total \\(Sebelum PPN\\)\\s*:\\s*([0-9]+)')::numeric),
+              0
+            )
+          )::numeric as revenue
         FROM normalized_data
         ${filterCondition}
-        GROUP BY region_norm, product_norm
-        ORDER BY region_norm, product_norm
+        GROUP BY ${groupByCol}, product_norm
+        ORDER BY ${groupByCol}, product_norm
       `, ...params),
 
-      // 2. Amount by Witel - Stacked Bar (Vertical)
-      // Use COUNT(*) as proxy for amount since column is often 0
+      // 2. Amount by Witel (or Branch) - Stacked Bar (Vertical)
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT region_norm as witel, product_norm as product, COUNT(*)::int as amount
+        SELECT ${groupByCol} as witel, product_norm as product, COUNT(*)::int as amount
         FROM normalized_data
         ${filterCondition}
-        GROUP BY region_norm, product_norm
-        ORDER BY region_norm, product_norm
+        GROUP BY ${groupByCol}, product_norm
+        ORDER BY ${groupByCol}, product_norm
       `, ...params),
 
       // 3. Product by Segment - Horizontal Stacked Bar
