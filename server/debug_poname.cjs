@@ -4,7 +4,7 @@ const prisma = new PrismaClient()
 
 async function main() {
   console.log('Checking poName in sosData...')
-  
+
   const totalCount = await prisma.sosData.count()
   console.log(`Total records: ${totalCount}`)
 
@@ -41,7 +41,7 @@ async function main() {
       witel: true
     }
   })
-  
+
   console.log('Sample records with poName:')
   console.log(samples)
 }

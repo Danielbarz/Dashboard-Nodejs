@@ -21,7 +21,7 @@ import {
   exportReportTambahan,
   exportReportHSI,
   exportJTReport,
-  getHSIDashboard, 
+  getHSIDashboard,
   getHSIFlowStats,
   getHSIFlowDetail
 } from '../controllers/dashboardController.js'

@@ -15,7 +15,7 @@ async function debugJatimDetails() {
     })
 
     console.log(`Total JATIM BARAT records: ${records.length}`)
-    
+
     // Check Madiun
     const madiuns = records.filter(r => (r.custCity || '').toUpperCase().includes('MADIUN'))
     console.log(`\n--- MADIUN Records (${madiuns.length}) ---`)
@@ -26,20 +26,20 @@ async function debugJatimDetails() {
     // Check SME records that ended up lump-summed
     // Valid branches:
     const validBranches = ['KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG']
-    
+
     console.log('\n--- JATIM BARAT SME LUMP Records ---')
     const smeLumps = records.filter(r => {
         const seg = (r.segmen || '').toUpperCase()
         const isSme = ['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'].some(k => seg.includes(k))
         if (!isSme) return false
-        
+
         // Exclude ones that match a valid branch in City
         const city = (r.custCity || '').toUpperCase()
         const matchesBranch = validBranches.some(b => city.includes(b))
-        
+
         return !matchesBranch
     })
-    
+
     console.log(`Count: ${smeLumps.length}`)
     smeLumps.forEach(r => {
         console.log(`City: "${r.custCity}", Date: ${r.orderCreatedDate?.toISOString().split('T')[0]}, Seg: ${r.segmen}`)

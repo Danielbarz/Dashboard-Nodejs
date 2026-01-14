@@ -4,7 +4,7 @@ async function checkMasterPO() {
   try {
     const count = await prisma.poMaster.count()
     console.log(`📊 Master PO Count: ${count}`)
-    
+
     if (count > 0) {
       const samples = await prisma.poMaster.findMany({ take: 5 })
       console.log('Sample POs:', samples)

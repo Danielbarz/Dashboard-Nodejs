@@ -101,15 +101,15 @@ export const RevenueByWitelChart = ({ data, products = [] }) => {
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis 
-            dataKey="witel" 
-            angle={-45} 
-            textAnchor="end" 
+          <XAxis
+            dataKey="witel"
+            angle={-45}
+            textAnchor="end"
             height={80}
             tick={{ fontSize: 11 }}
             interval={0}
           />
-          <YAxis 
+          <YAxis
             tickFormatter={(value) => {
               if (value >= 1000000000) return `${(value / 1000000000).toFixed(0)}M`
               if (value >= 1000000) return `${(value / 1000000).toFixed(0)}Jt`
@@ -120,11 +120,11 @@ export const RevenueByWitelChart = ({ data, products = [] }) => {
           <Tooltip content={<RevenueTooltip />} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
           {productKeys.map((product) => (
-            <Bar 
-              key={product} 
-              dataKey={product} 
-              stackId="a" 
-              fill={PRODUCT_COLORS[product] || '#6b7280'} 
+            <Bar
+              key={product}
+              dataKey={product}
+              stackId="a"
+              fill={PRODUCT_COLORS[product] || '#6b7280'}
               name={product}
             />
           ))}
@@ -155,10 +155,10 @@ export const AmountByWitelChart = ({ data, products = [] }) => {
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis 
-            dataKey="witel" 
-            angle={-45} 
-            textAnchor="end" 
+          <XAxis
+            dataKey="witel"
+            angle={-45}
+            textAnchor="end"
             height={80}
             tick={{ fontSize: 11 }}
             interval={0}
@@ -167,11 +167,11 @@ export const AmountByWitelChart = ({ data, products = [] }) => {
           <Tooltip content={<AmountTooltip />} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
           {productKeys.map((product) => (
-            <Bar 
-              key={product} 
-              dataKey={product} 
-              stackId="a" 
-              fill={PRODUCT_COLORS[product] || '#6b7280'} 
+            <Bar
+              key={product}
+              dataKey={product}
+              stackId="a"
+              fill={PRODUCT_COLORS[product] || '#6b7280'}
               name={product}
             />
           ))}
@@ -200,27 +200,27 @@ export const ProductBySegmentChart = ({ data, segments = [] }) => {
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Product by Segment</h3>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart 
-          data={data} 
-          layout="vertical" 
+        <BarChart
+          data={data}
+          layout="vertical"
           margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
-          <YAxis 
-            dataKey="product" 
-            type="category" 
+          <YAxis
+            dataKey="product"
+            type="category"
             tick={{ fontSize: 11 }}
             width={60}
           />
           <Tooltip content={<AmountTooltip />} />
           <Legend />
           {segmentKeys.map((segment) => (
-            <Bar 
-              key={segment} 
-              dataKey={segment} 
-              stackId="a" 
-              fill={SEGMENT_COLORS[segment] || '#6b7280'} 
+            <Bar
+              key={segment}
+              dataKey={segment}
+              stackId="a"
+              fill={SEGMENT_COLORS[segment] || '#6b7280'}
               name={segment}
             />
           ))}
@@ -249,27 +249,27 @@ export const ProductByChannelChart = ({ data, channels = [] }) => {
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Product by Channel</h3>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart 
-          data={data} 
-          layout="vertical" 
+        <BarChart
+          data={data}
+          layout="vertical"
           margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
-          <YAxis 
-            dataKey="product" 
-            type="category" 
+          <YAxis
+            dataKey="product"
+            type="category"
             tick={{ fontSize: 11 }}
             width={60}
           />
           <Tooltip content={<AmountTooltip />} />
           <Legend />
           {channelKeys.map((channel) => (
-            <Bar 
-              key={channel} 
-              dataKey={channel} 
-              stackId="a" 
-              fill={CHANNEL_COLORS[channel] || '#6b7280'} 
+            <Bar
+              key={channel}
+              dataKey={channel}
+              stackId="a"
+              fill={CHANNEL_COLORS[channel] || '#6b7280'}
               name={channel}
             />
           ))}
@@ -307,11 +307,11 @@ export const ProductShareChart = ({ data }) => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN)
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor="middle" 
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
         dominantBaseline="central"
         fontSize={12}
         fontWeight="bold"
@@ -337,17 +337,17 @@ export const ProductShareChart = ({ data }) => {
             dataKey="value"
           >
             {dataWithPercent.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={PRODUCT_COLORS[entry.name] || '#6b7280'} 
+              <Cell
+                key={`cell-${index}`}
+                fill={PRODUCT_COLORS[entry.name] || '#6b7280'}
               />
             ))}
           </Pie>
-          <Tooltip 
+          <Tooltip
             formatter={(value, name) => [value.toLocaleString('id-ID'), name]}
           />
-          <Legend 
-            verticalAlign="middle" 
+          <Legend
+            verticalAlign="middle"
             align="right"
             layout="vertical"
             wrapperStyle={{ paddingLeft: '20px' }}

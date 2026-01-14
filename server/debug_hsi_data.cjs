@@ -8,11 +8,11 @@ async function main() {
 
   // Filter for Follow Up Completed
   const query = `
-      SELECT 
+      SELECT
         data_ps_revoke,
         COUNT(*) as count
       FROM hsi_data
-      WHERE data_proses = 'REVOKE' 
+      WHERE data_proses = 'REVOKE'
         AND status_resume = '102 | FOLLOW UP COMPLETED'
       GROUP BY data_ps_revoke
       ORDER BY count DESC

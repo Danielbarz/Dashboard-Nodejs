@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
     try {
         console.log("Testing getUnmappedOrders query...");
-        
+
         const unmappedOrders = await prisma.sosData.findMany({
             where: {
                 OR: [

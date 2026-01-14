@@ -18,7 +18,7 @@ const DetailTable = ({ title, data }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [openFilter, setOpenFilter] = useState(null)
-  
+
   // State Filter Lokal
   const [activeFilters, setActiveFilters] = useState({
     segment: [],
@@ -44,7 +44,7 @@ const DetailTable = ({ title, data }) => {
   useEffect(() => {
     if (data.length > 0) {
       const getUnique = (key) => [...new Set(data.map(item => item[key]).filter(Boolean))].sort()
-      
+
       setFilterOptions({
         segment: getUnique('segment'),
         channel: getUnique('channel'),
@@ -708,7 +708,7 @@ const ReportDigPro = () => {
               {renderTable(`Progress WFM Digital Product MTD`, reportData.legs || [], reportData.detailsLegs)}
             </div>
           )}
-          
+
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               {renderTable(`Progress WFM Digital Product MTD`, reportData.sme || [], reportData.detailsSme)}

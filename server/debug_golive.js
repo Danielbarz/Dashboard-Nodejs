@@ -3,7 +3,7 @@ import prisma from './src/lib/prisma.js'
 async function debugGolive() {
   try {
     console.log('🔍 Investigating GoLive Discrepancy...')
-    
+
     // 1. Total GoLive by Status Flag
     const statusCount = await prisma.spmkMom.count({
       where: { goLive: 'Y' }
@@ -12,7 +12,7 @@ async function debugGolive() {
 
     // 2. Total GoLive with Valid Date
     const dateCount = await prisma.spmkMom.count({
-      where: { 
+      where: {
         goLive: 'Y',
         tanggalGolive: { not: null }
       }
@@ -23,7 +23,7 @@ async function debugGolive() {
     if (statusCount > dateCount) {
       console.log(`⚠️ WARNING: ${statusCount - dateCount} projects are Done but have NO Date!`)
       const problematicRows = await prisma.spmkMom.findMany({
-        where: { 
+        where: {
           goLive: 'Y',
           tanggalGolive: null
         },
@@ -38,7 +38,7 @@ async function debugGolive() {
       where: { tanggalGolive: { not: null } },
       select: { tanggalGolive: true }
     })
-    
+
     const years = {}
     dates.forEach(d => {
       const y = d.tanggalGolive.getFullYear()

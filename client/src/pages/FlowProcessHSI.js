@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from '../services/api';
-import axios from 'axios'; 
+import axios from 'axios';
 
 // =================================================================================
 // 1. SUB-KOMPONEN UI
@@ -58,11 +58,11 @@ const HeaderStep = ({ title, color = "bg-gray-800", isLast }) => (
 
 const MainCard = ({ title, count, total, colorClass = "bg-slate-50 border-2 border-gray-300", onClick, loading }) => {
     const percent = total > 0 ? ((count / total) * 100).toFixed(2) + '%' : '';
-    
+
     return (
-        <div 
+        <div
             onClick={onClick}
-            className={`${colorClass} rounded-lg p-3 text-center shadow-sm flex flex-col justify-center min-h-[120px] 
+            className={`${colorClass} rounded-lg p-3 text-center shadow-sm flex flex-col justify-center min-h-[120px]
             transition-all cursor-pointer ${loading ? 'opacity-70 cursor-wait' : 'hover:shadow-lg hover:scale-105'}`}
         >
             <div className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-wide mb-2">{title}</div>
@@ -79,9 +79,9 @@ const MainCard = ({ title, count, total, colorClass = "bg-slate-50 border-2 bord
 const DetailCard = ({ title, count, totalForPercent, highlight = false, onClick, loading }) => {
     const percent = totalForPercent > 0 ? ((count / totalForPercent) * 100).toFixed(2) + '%' : '';
     return (
-        <div 
+        <div
             onClick={onClick}
-            className={`relative overflow-hidden rounded-lg p-3 shadow-sm border flex flex-col justify-center min-h-[80px] 
+            className={`relative overflow-hidden rounded-lg p-3 shadow-sm border flex flex-col justify-center min-h-[80px]
             transition-all ${loading ? 'opacity-70 cursor-wait' : 'hover:translate-y-[-2px] hover:shadow-md cursor-pointer'}
             ${highlight ? 'bg-red-50 border-red-200 hover:bg-red-100' : 'bg-blue-50 border-blue-100 hover:bg-blue-100'}`}
         >
@@ -99,9 +99,9 @@ const DetailCard = ({ title, count, totalForPercent, highlight = false, onClick,
 const TreeCard = ({ title, count, total, color = "bg-white", borderColor = "border-gray-300", textColor = "text-gray-800", onClick, loading }) => {
     const percent = total > 0 ? ((count / total) * 100).toFixed(2) + '%' : '';
     return (
-        <div 
+        <div
             onClick={onClick}
-            className={`p-3 rounded-3xl border-2 ${borderColor} ${color} shadow-sm text-center w-full min-w-[110px] z-20 relative 
+            className={`p-3 rounded-3xl border-2 ${borderColor} ${color} shadow-sm text-center w-full min-w-[110px] z-20 relative
             transition-all ${loading ? 'opacity-70 cursor-wait' : 'hover:shadow-lg hover:-translate-y-1 cursor-pointer'}`}
         >
             <div className={`text-[10px] font-bold uppercase mb-2 ${textColor} opacity-80`}>{title}</div>
@@ -119,14 +119,14 @@ const TreeCard = ({ title, count, total, color = "bg-white", borderColor = "bord
 // 2. COMPONENT TABEL DETAIL (EXTRACTED)
 // =================================================================================
 
-const DetailTable = ({ 
-    category, 
-    loading, 
-    data, 
-    onExport, 
-    onPageChange, 
+const DetailTable = ({
+    category,
+    loading,
+    data,
+    onExport,
+    onPageChange,
     currentPage,
-    id 
+    id
 }) => (
     <div className="mt-8 bg-white rounded-3xl shadow border border-gray-200 p-8 scroll-mt-20" id={id}>
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -137,7 +137,7 @@ const DetailTable = ({
                     <p className="text-sm text-gray-500">Menampilkan daftar order untuk kategori terpilih.</p>
                 </div>
             </div>
-            <button 
+            <button
                 onClick={onExport}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 text-sm font-bold transition-colors"
             >
@@ -174,7 +174,7 @@ const DetailTable = ({
                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.type_layanan}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                        item.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' : 
+                                        item.kelompok_status === 'PS' ? 'bg-green-100 text-green-800' :
                                         (item.kelompok_status && item.kelompok_status.includes('CANCEL')) ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                                     }`}>
                                         {item.kelompok_status}
@@ -240,18 +240,18 @@ const DetailTable = ({
 // =================================================================================
 
 export default function FlowProcessHSI() {
-    
+
     // --- STATE INITIALIZATION ---
     const [dateRange, setDateRange] = useState([null, null]);
     const [startDate, endDate] = dateRange;
-    
+
     const [selectedWitels, setSelectedWitels] = useState([]);
     const [selectedBranches, setSelectedBranches] = useState([]);
-    
+
     // ACTIVE STATE
     const [activeCategory, setActiveCategory] = useState(null);
     const [activeSection, setActiveSection] = useState(null); // 'main' | 'revoke'
-    
+
     // Loading states
     const [loading, setLoading] = useState(false);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -333,9 +333,9 @@ export default function FlowProcessHSI() {
             };
             const response = await api.get('/dashboard/hsi/flow/detail', { params });
             if (response.data.data) {
-                setDetailData({ 
-                    data: response.data.data.table, 
-                    meta: response.data.data.pagination 
+                setDetailData({
+                    data: response.data.data.table,
+                    meta: response.data.data.pagination
                 });
             }
         } catch (error) {
@@ -357,7 +357,7 @@ export default function FlowProcessHSI() {
         setActiveSection(section);
         setCurrentPage(1);
         loadDetail(categoryName, 1);
-        
+
         // Scroll ke section yang relevan
         setTimeout(() => {
             const elementId = section === 'main' ? 'detail-section-main' : 'detail-section-revoke';
@@ -385,7 +385,7 @@ export default function FlowProcessHSI() {
                 detail_category: activeCategory,
                 export_detail: 'true'
             };
-            const response = await api.get('/dashboard/hsi/flow/detail', { 
+            const response = await api.get('/dashboard/hsi/flow/detail', {
                 params,
                 responseType: 'blob'
             });
@@ -426,16 +426,16 @@ export default function FlowProcessHSI() {
     };
 
     // --- CALCULATIONS ---
-    const psRePercent = flowStats?.ps_re_denominator > 0 
-        ? ((flowStats.ps_count / flowStats.ps_re_denominator) * 100).toFixed(2) 
+    const psRePercent = flowStats?.ps_re_denominator > 0
+        ? ((flowStats.ps_count / flowStats.ps_re_denominator) * 100).toFixed(2)
         : '0.00';
-    const psPiPercent = flowStats?.ps_pi_denominator > 0 
-        ? ((flowStats.ps_count / flowStats.ps_pi_denominator) * 100).toFixed(2) 
+    const psPiPercent = flowStats?.ps_pi_denominator > 0
+        ? ((flowStats.ps_count / flowStats.ps_pi_denominator) * 100).toFixed(2)
         : '0.00';
-    const complyCount = flowStats?.comply_count || 0; 
-    const complyDenominator = flowStats?.ps_count || 1; 
-    const complyPercent = flowStats?.ps_count > 0 
-        ? ((complyCount / complyDenominator) * 100).toFixed(2) 
+    const complyCount = flowStats?.comply_count || 0;
+    const complyDenominator = flowStats?.ps_count || 1;
+    const complyPercent = flowStats?.ps_count > 0
+        ? ((complyCount / complyDenominator) * 100).toFixed(2)
         : '0.00';
 
     // --- RENDER ---
@@ -476,7 +476,7 @@ export default function FlowProcessHSI() {
 
                 {/* MAIN WRAPPER - FLOWCHART */}
                 <div className="bg-white rounded-3xl shadow border border-gray-200 p-6 md:p-8 mb-8">
-                    
+
                     {/* FLOW CHEVRONS */}
                     <div className="flex w-full mb-8 overflow-x-auto pb-4 no-scrollbar pl-2">
                         <HeaderStep title="OFFERING" stepNumber={0} />
@@ -488,7 +488,7 @@ export default function FlowProcessHSI() {
 
                     {/* GRID DASHBOARD */}
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        
+
                         {/* COLUMN 1: RE */}
                         <div className="space-y-3">
                             <MainCard title="RE" count={flowStats?.re} onClick={() => handleCardClick('RE', 'main')} loading={loading} />
@@ -531,7 +531,7 @@ export default function FlowProcessHSI() {
                         {/* COLUMN 5: PS + Provisioning + RATIO BOX */}
                         <div className="space-y-3">
                             <MainCard title="PS (COMPLETED)" count={flowStats?.ps_count} total={flowStats?.re} colorClass="bg-green-50 border-2 border-green-500" onClick={() => handleCardClick('PS (COMPLETED)', 'main')} loading={loading} />
-                            
+
                             <div className="p-3 bg-slate-50 rounded-lg border-2 border-gray-100 flex flex-col gap-3">
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Provisioning</div>
                                 <DetailCard title="OGP Provisioning" count={flowStats?.ogp_provi} totalForPercent={flowStats?.re} onClick={() => handleCardClick('OGP Provisioning', 'main')} loading={loading} />
@@ -562,7 +562,7 @@ export default function FlowProcessHSI() {
 
                 {/* TABLE FOR MAIN FLOWCHART (Appears here if 'main' section clicked) */}
                 {activeCategory && activeSection === 'main' && (
-                    <DetailTable 
+                    <DetailTable
                         id="detail-section-main"
                         category={activeCategory}
                         loading={detailLoading}
@@ -585,7 +585,7 @@ export default function FlowProcessHSI() {
                             {/* LEVEL 1 */}
                             <div className="relative z-10 mb-16">
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-16 bg-gray-300"></div>
-                                <div 
+                                <div
                                     className={`bg-red-50 border-2 border-red-200 p-4 rounded-3xl text-center shadow min-w-[200px] cursor-pointer hover:bg-red-100 transition-colors ${loading ? 'opacity-70' : ''}`}
                                     onClick={() => handleCardClick('Total Revoke', 'revoke')}
                                 >
@@ -639,7 +639,7 @@ export default function FlowProcessHSI() {
 
                 {/* TABLE FOR REVOKE TREE (Appears here if 'revoke' section clicked) */}
                 {activeCategory && activeSection === 'revoke' && (
-                    <DetailTable 
+                    <DetailTable
                         id="detail-section-revoke"
                         category={activeCategory}
                         loading={detailLoading}

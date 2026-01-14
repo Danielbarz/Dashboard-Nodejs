@@ -46,7 +46,7 @@ const ReportsHSI = () => {
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi/date-range`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      
+
       if (response.data?.data) {
         setStartDate(new Date(response.data.data.min_date))
         setEndDate(new Date(response.data.data.max_date))
@@ -66,21 +66,21 @@ const ReportsHSI = () => {
       alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
       return
     }
-    
+
     try {
       setLoading(true)
       const token = localStorage.getItem('accessToken')
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/hsi`,
         {
-          params: { 
-            start_date: startDate.toISOString(), 
-            end_date: endDate.toISOString() 
+          params: {
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
           },
           headers: { Authorization: `Bearer ${token}` }
         }
       )
-      
+
       if (response.data?.data) {
         setReportData(response.data.data.reportData || response.data.data.tableData || [])
         setTotals(response.data.data.totals || {})
@@ -116,16 +116,16 @@ const ReportsHSI = () => {
       alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
       return
     }
-    
+
     try {
       const response = await api.get('/dashboard/export/report-hsi', {
-        params: { 
-          start_date: startDate.toISOString(), 
-          end_date: endDate.toISOString() 
+        params: {
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString()
         },
         responseType: 'blob'
       })
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
@@ -150,11 +150,11 @@ const ReportsHSI = () => {
             {witelList.map(witel => <option key={witel} value={witel}>{witel}</option>)}
           </select>
 
-          <div className="flex gap-2 items-center relative z-50"> 
+          <div className="flex gap-2 items-center relative z-50">
             <div className="relative z-50">
-                <DatePicker 
-                    selected={startDate} 
-                    onChange={(date) => setStartDate(date)} 
+                <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
                     selectsStart
                     startDate={startDate}
                     endDate={endDate}
@@ -164,9 +164,9 @@ const ReportsHSI = () => {
             </div>
             <span className="text-gray-400">-</span>
             <div className="relative z-50">
-                <DatePicker 
-                    selected={endDate} 
-                    onChange={(date) => setEndDate(date)} 
+                <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
                     selectsEnd
                     startDate={startDate}
                     endDate={endDate}
@@ -174,13 +174,13 @@ const ReportsHSI = () => {
                     className="border border-gray-300 rounded text-xs p-1.5 w-28 cursor-pointer focus:ring-blue-500 focus:border-blue-500"
                 />
             </div>
-            
+
             <button onClick={fetchData} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded hover:bg-blue-700 font-bold shadow transition">
                 Go
             </button>
-            
-            <button 
-                onClick={handleExport} 
+
+            <button
+                onClick={handleExport}
                 className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 flex items-center gap-1 font-bold shadow transition ml-2"
             >
                 <FiDownload size={16}/> Excel
@@ -195,7 +195,7 @@ const ReportsHSI = () => {
         </h3>
         <div className="overflow-x-auto max-h-[80vh] relative z-0">
           <table className="w-full text-[10px] border-collapse border border-slate-400 text-center font-sans">
-            
+
             {/* TABLE HEAD */}
             <thead className="text-white font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
                 <tr>
@@ -220,7 +220,7 @@ const ReportsHSI = () => {
                     <th className={`border border-slate-300 p-1 ${colors.gray}`} colSpan={7}>FALLOUT</th>
                     <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={3}>TOTAL FALLOUT</th>
                     <th className={`border border-slate-300 p-1 ${colors.gray}`} rowSpan={3}>ACT COMP (QC2)</th>
-                    
+
                     <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL Plgn</th>
                     <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL Teknis</th>
                     <th className={`border border-slate-300 p-1 ${colors.red}`} rowSpan={3}>KNDL System</th>
@@ -258,20 +258,20 @@ const ReportsHSI = () => {
                     </td></tr>
                 ) : (
                     filteredData.map((row, index) => (
-                    <tr 
-                        key={index} 
+                    <tr
+                        key={index}
                         className={`
-                            transition-colors 
+                            transition-colors
                             ${row.row_type === 'main' ? 'bg-slate-100' : 'bg-white hover:bg-blue-50'}
                             ${row.row_type === 'main' ? 'font-bold text-black border-t-2 border-slate-300' : ''}
                         `}
                     >
-                        <td className={`border border-slate-300 p-1 text-left sticky left-0 z-10 px-2 
+                        <td className={`border border-slate-300 p-1 text-left sticky left-0 z-10 px-2
                             ${row.row_type === 'main' ? 'bg-slate-100 font-extrabold uppercase' : 'bg-inherit pl-6'}
                         `}>
                             {row.witel_display || row.witel}
                         </td>
-                        
+
                         <td className="border border-slate-300 p-1">{formatNumber(row.pre_pi)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.registered)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.inprogress_sc)}</td>
@@ -285,17 +285,17 @@ const ReportsHSI = () => {
                         <td className="border border-slate-300 p-1">{formatNumber(row.pi_1_3_hari)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.pi_over_3_hari)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.total_pi)}</td>
-                        
+
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_plgn)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_teknis)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_kndl_sys)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_wfm_others)}</td>
-                        
+
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_uim)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_asp)}</td>
                         <td className="border border-slate-300 p-1">{formatNumber(row.fo_osm)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.total_fallout)}</td>
-                        
+
                         <td className="border border-slate-300 p-1">{formatNumber(row.act_comp)}</td>
                         <td className="border border-slate-300 p-1 bg-slate-50">{formatNumber(row.jml_comp_ps)}</td>
 

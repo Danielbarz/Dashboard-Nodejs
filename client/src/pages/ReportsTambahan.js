@@ -69,22 +69,8 @@ const ReportsTambahan = () => {
   const fetchReportData = async () => {
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-tambahan`,
-        {
-          params: { start_date: startDate, end_date: endDate },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-      if (response.data?.data) {
-        setTableDataFromAPI(response.data.data.tableData || [])
-        setProjectDataFromAPI(response.data.data.projectData || [])
-        setTop3WitelFromAPI(response.data.data.top3Witel || [])
-        setTop3PoFromAPI(response.data.data.top3Po || [])
-      }
 
-      // Fetch preview data (raw project rows) for detailed view
-      const previewResponse = await axios.get(
+      const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/tambahan`,
         {
           params: { start_date: startDate, end_date: endDate },
@@ -92,11 +78,19 @@ const ReportsTambahan = () => {
         }
       )
 
-      const rawProjects = previewResponse.data?.data?.rawProjectRows || []
-      // Default sort by usia desc initially
-      // const sortedProjects = [...rawProjects].sort((a, b) => (b.usia || 0) - (a.usia || 0))
-      // setPreviewData(sortedProjects)
-      setPreviewData(rawProjects)
+      if (response.data?.data) {
+        setTableDataFromAPI(response.data.data.tableData || [])
+        setProjectDataFromAPI(response.data.data.projectData || [])
+
+        // Backend sends 'topUsiaByWitel', Frontend uses 'top3Witel'
+        setTop3WitelFromAPI(response.data.data.topUsiaByWitel || [])
+        setTop3PoFromAPI(response.data.data.topUsiaByPo || [])
+
+        // Take preview data directly from the same response
+        const rawProjects = response.data.data.rawProjectRows || []
+        setPreviewData(rawProjects)
+      }
+
       setCurrentPage(1)
       setPageInput(1)
     } catch (error) {
