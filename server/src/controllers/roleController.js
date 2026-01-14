@@ -39,9 +39,9 @@ export const switchRole = async (req, res, next) => {
     // Update current_role_as in database
     await prisma.user.update({
       where: { id: BigInt(userId) },
-      data: { 
+      data: {
         currentRoleAs: targetRole,
-        updatedAt: new Date() 
+        updatedAt: new Date()
       }
     })
 
