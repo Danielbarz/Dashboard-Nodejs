@@ -42,3 +42,6 @@ prisma/migrations/
 # Prisma Temporary Files
 *.tmp*
 src/generated/**/*.tmp*
+
+# Generated Prisma Client
+src/generated/
