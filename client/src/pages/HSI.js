@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
+import { useSearchParams } from 'react-router-dom';
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
@@ -49,14 +50,46 @@ const MultiSelectDropdown = ({ options, selected, onChange, placeholder, isMapCo
 };
 
 export default function DashboardHSI() {
-    // STATE
-    const [dateRange, setDateRange] = useState([null, null]);
-    const [startDate, endDate] = dateRange;
-    const [selectedWitels, setSelectedWitels] = useState([]);
-    const [selectedBranches, setSelectedBranches] = useState([]);
-    const [selectedMapStatus, setSelectedMapStatus] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+    // SEARCH PARAMS
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Helper to update search params
+    const updateFilters = (newFilters) => {
+        const params = Object.fromEntries(searchParams.entries());
+        setSearchParams({ ...params, ...newFilters }, { replace: true });
+    };
+
+    // Derived states from URL
+    const startDateParam = searchParams.get('start_date');
+    const endDateParam = searchParams.get('end_date');
+    const startDate = startDateParam ? new Date(startDateParam) : null;
+    const endDate = endDateParam ? new Date(endDateParam) : null;
+    const dateRange = [startDate, endDate];
+
+    const selectedWitels = searchParams.get('witels')?.split(',').filter(Boolean) || [];
+    const selectedBranches = searchParams.get('branches')?.split(',').filter(Boolean) || [];
+    const selectedMapStatus = searchParams.get('map_status')?.split(',').filter(Boolean) || [];
+    const searchQuery = searchParams.get('search') || '';
+    const currentPage = parseInt(searchParams.get('page') || '1');
+
+    // Setters that update URL
+    const setDateRange = (range) => {
+        const [start, end] = range;
+        updateFilters({
+            start_date: start ? start.toISOString() : '',
+            end_date: end ? end.toISOString() : '',
+            page: '1'
+        });
+    };
+    const setSelectedWitels = (val) => updateFilters({ witels: val.join(','), page: '1' });
+    const setSelectedBranches = (val) => updateFilters({ branches: val.join(','), page: '1' });
+    const setSelectedMapStatus = (val) => updateFilters({ map_status: val.join(','), page: '1' });
+    const setSearchQuery = (val) => updateFilters({ search: val }); // search query state is usually local for input but user wants "stay" on refresh
+    const setCurrentPage = (val) => {
+        const pageNum = typeof val === 'function' ? val(currentPage) : val;
+        updateFilters({ page: pageNum.toString() });
+    };
+
     const [loading, setLoading] = useState(false);
 
     // DATA STATE
@@ -109,20 +142,34 @@ export default function DashboardHSI() {
                 setBranchMap(result.branchMap);
                 setTableData({ data: result.tableData, meta: result.pagination });
             }
-        } catch (error) { console.error("Error:", error); } 
+        } catch (error) { console.error("Error:", error); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, [startDate, endDate, selectedWitels, selectedBranches, selectedMapStatus, currentPage]);
+    const [localSearch, setLocalSearch] = useState(searchQuery);
 
-    const handleSearch = (e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchData(); } };
-    const resetFilter = () => { setDateRange([null, null]); setSelectedWitels([]); setSelectedBranches([]); setSelectedMapStatus([]); setSearchQuery(''); setCurrentPage(1); };
+    useEffect(() => {
+        setLocalSearch(searchQuery);
+    }, [searchQuery]);
+
+    useEffect(() => { fetchData(); }, [startDateParam, endDateParam, searchParams.get('witels'), searchParams.get('branches'), searchParams.get('map_status'), currentPage, searchParams.get('search')]);
+
+    const handleSearch = (e) => {
+        if (e.key === 'Enter') {
+            updateFilters({ search: localSearch, page: '1' });
+        }
+    };
+
+    const resetFilter = () => {
+        setSearchParams({}, { replace: true });
+        setLocalSearch('');
+    };
     const dimensionLabel = selectedBranches.length > 0 || selectedWitels.length > 0 ? 'Distrik (Branch)' : 'Regional (Witel)';
 
     return (
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-                    
+
                     {/* FILTER */}
                     <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -147,14 +194,14 @@ export default function DashboardHSI() {
                             <div className="flex-1 w-full min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie 
-                                            data={chartData.chart1} 
-                                            dataKey="value" 
-                                            nameKey="product" 
-                                            cx="50%" cy="50%" 
-                                            outerRadius={80} 
-                                            fill="#8884d8" 
-                                            label 
+                                        <Pie
+                                            data={chartData.chart1}
+                                            dataKey="value"
+                                            nameKey="product"
+                                            cx="50%" cy="50%"
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            label
                                             isAnimationActive={false} // MATIKAN ANIMASI (Fix Double)
                                         >
                                             {chartData.chart1?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
@@ -170,15 +217,15 @@ export default function DashboardHSI() {
                             <div className="flex-1 w-full min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie 
-                                            data={chartData.chart4} 
-                                            dataKey="value" 
-                                            nameKey="product" 
-                                            cx="50%" cy="50%" 
-                                            outerRadius={80} 
-                                            fill="#82ca9d" 
-                                            label 
-                                            isAnimationActive={false} 
+                                        <Pie
+                                            data={chartData.chart4}
+                                            dataKey="value"
+                                            nameKey="product"
+                                            cx="50%" cy="50%"
+                                            outerRadius={80}
+                                            fill="#82ca9d"
+                                            label
+                                            isAnimationActive={false}
                                         >
                                             {chartData.chart4?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                         </Pie>
@@ -235,15 +282,15 @@ export default function DashboardHSI() {
                             <div className="flex-1 w-full min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie 
-                                            data={chartData.chart2} 
-                                            dataKey="value" 
-                                            nameKey="product" 
-                                            cx="50%" cy="50%" 
-                                            outerRadius={80} 
-                                            fill="#8884d8" 
-                                            label 
-                                            isAnimationActive={false} 
+                                        <Pie
+                                            data={chartData.chart2}
+                                            dataKey="value"
+                                            nameKey="product"
+                                            cx="50%" cy="50%"
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            label
+                                            isAnimationActive={false}
                                         >
                                             {chartData.chart2?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                         </Pie>
@@ -304,7 +351,7 @@ export default function DashboardHSI() {
 
                     {/* TABLE */}
                     <div className="bg-white p-6 rounded-lg shadow border mt-8">
-                        <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold">Data Preview</h3><input type="text" className="border rounded p-2 text-sm" placeholder="Cari..." value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} onKeyDown={handleSearch} /></div>
+                        <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold">Data Preview</h3><input type="text" className="border rounded p-2 text-sm" placeholder="Cari..." value={localSearch} onChange={(e)=>setLocalSearch(e.target.value)} onKeyDown={handleSearch} /></div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead className="bg-gray-50"><tr>{['Order ID', 'Date', 'Customer', 'Witel', 'STO', 'Layanan', 'Status', 'Detail'].map(h => <th key={h} className="px-6 py-3 text-left font-bold text-gray-500 uppercase">{h}</th>)}</tr></thead>

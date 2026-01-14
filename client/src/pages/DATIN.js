@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
 import DropdownCheckbox from '../components/DropdownCheckbox'
@@ -7,17 +8,43 @@ import PieDonutChart from '../components/PieDonutChart'
 import { FiSearch, FiRefreshCw } from 'react-icons/fi'
 
 const DATIN = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const currentRole = useCurrentRole()
   const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 
-  // Date defaults: 1 Jan 2025 to today
-  const [startDate, setStartDate] = useState('2025-01-01')
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
+  // Derived states from URL
+  const startDate = searchParams.get('start_date') || '2025-01-01'
+  const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0]
+  const selectedWitels = searchParams.get('witels')?.split(',').filter(Boolean) || []
+  const selectedSegments = searchParams.get('segments')?.split(',').filter(Boolean) || []
+  const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
+  const search = searchParams.get('search') || ''
+  const pageSize = parseInt(searchParams.get('limit') || '10')
+  const currentPage = parseInt(searchParams.get('page') || '1')
 
-  // Multi-select states
-  const [selectedWitels, setSelectedWitels] = useState([])
-  const [selectedSegments, setSelectedSegments] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
+  const [localSearch, setLocalSearch] = useState(search)
+
+  useEffect(() => {
+    setLocalSearch(search)
+  }, [search])
+
+  // Helper to update search params
+  const updateFilters = (newFilters) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, ...newFilters }, { replace: true })
+  }
+
+  // Setters that update URL
+  const setStartDate = (val) => updateFilters({ start_date: val, page: '1' })
+  const setEndDate = (val) => updateFilters({ end_date: val, page: '1' })
+  const setSelectedWitels = (val) => updateFilters({ witels: val.join(','), page: '1' })
+  const setSelectedSegments = (val) => updateFilters({ segments: val.join(','), page: '1' })
+  const setSelectedCategories = (val) => updateFilters({ categories: val.join(','), page: '1' })
+  const setPageSize = (val) => updateFilters({ limit: val.toString(), page: '1' })
+  const setCurrentPage = (val) => {
+    const pageNum = typeof val === 'function' ? val(currentPage) : val
+    updateFilters({ page: pageNum.toString() })
+  }
 
   // Options from API
   const [filterOptions, setFilterOptions] = useState({ witels: [], segments: [], categories: [] })
@@ -29,10 +56,6 @@ const DATIN = () => {
     witelDistribution: [],
     segmenDistribution: []
   })
-
-  const [search, setSearch] = useState('')
-  const [pageSize, setPageSize] = useState(10)
-  const [currentPage, setCurrentPage] = useState(1)
 
   const [tableData, setTableData] = useState([])
   const [loading, setLoading] = useState(false)
@@ -116,16 +139,14 @@ const DATIN = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize])
 
-  const handleApplyFilter = () => setRefreshKey(prev => prev + 1)
+  const handleApplyFilter = () => {
+    updateFilters({ search: localSearch, page: '1' })
+    setRefreshKey(prev => prev + 1)
+  }
 
   const handleResetFilter = () => {
-    setStartDate('2025-01-01')
-    setEndDate(new Date().toISOString().split('T')[0])
-    setSelectedWitels([])
-    setSelectedSegments([])
-    setSelectedCategories([])
-    setSearch('')
-    setCurrentPage(1)
+    setSearchParams({}, { replace: true })
+    setLocalSearch('')
   }
 
   // --- Chart 1: Jumlah Order Data Mapping ---
@@ -297,8 +318,8 @@ const DATIN = () => {
             <div className="relative">
               <input
                 placeholder="Cari Order ID / Pelanggan..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
                 className="pl-4 pr-10 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
               />

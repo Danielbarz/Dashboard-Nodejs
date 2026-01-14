@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import KPICard from '../components/KPICard'
 import FileUploadForm from '../components/FileUploadForm'
@@ -15,11 +16,28 @@ import {
 } from '../components/DigitalProductCharts'
 
 const DashboardPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: ''
-  })
+
+  // Derived states from URL
+  const startDate = searchParams.get('startDate') || ''
+  const endDate = searchParams.get('endDate') || ''
+  const selectedProduct = searchParams.get('product') || ''
+  const selectedWitel = searchParams.get('witel') || ''
+  const selectedSubType = searchParams.get('subType') || ''
+
+  // Helper to update search params
+  const updateFilters = (newFilters) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, ...newFilters }, { replace: true })
+  }
+
+  // Setters that update URL
+  const setStartDate = (val) => updateFilters({ startDate: val })
+  const setEndDate = (val) => updateFilters({ endDate: val })
+  const setSelectedProduct = (val) => updateFilters({ product: val })
+  const setSelectedWitel = (val) => updateFilters({ witel: val })
+  const setSelectedSubType = (val) => updateFilters({ subType: val })
 
   // Chart data - NEW: using digital product charts endpoint
   const [chartData, setChartData] = useState({
@@ -42,9 +60,6 @@ const DashboardPage = () => {
   })
 
   const [loading, setLoading] = useState(true)
-  const [selectedProduct, setSelectedProduct] = useState('')
-  const [selectedWitel, setSelectedWitel] = useState('')
-  const [selectedSubType, setSelectedSubType] = useState('')
   const [activeRole, setActiveRole] = useState(user?.role || 'user')
   const [adminMode, setAdminMode] = useState(false)
 
@@ -53,8 +68,8 @@ const DashboardPage = () => {
     setLoading(true)
     try {
       const queryParams = {
-        ...(filters.startDate && { startDate: filters.startDate }),
-        ...(filters.endDate && { endDate: filters.endDate }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
         ...(selectedProduct && { product: selectedProduct }),
         ...(selectedWitel && { witel: selectedWitel }),
         ...(selectedSubType && { subType: selectedSubType })
@@ -62,8 +77,8 @@ const DashboardPage = () => {
 
       // Fetch chart data from new endpoint
       const chartParams = {
-        ...(filters.startDate && { start_date: filters.startDate }),
-        ...(filters.endDate && { end_date: filters.endDate }),
+        ...(startDate && { start_date: startDate }),
+        ...(endDate && { end_date: endDate }),
         ...(selectedWitel && { witel: selectedWitel })
       }
 
@@ -91,7 +106,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData()
-  }, [filters, selectedProduct, selectedWitel, selectedSubType])
+  }, [startDate, endDate, selectedProduct, selectedWitel, selectedSubType])
 
   useEffect(() => {
     // fetch active role to control UI permissions
@@ -101,22 +116,8 @@ const DashboardPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleDateChange = (e) => {
-    const { name, value } = e.target
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
   const handleResetFilters = () => {
-    setFilters({
-      startDate: '',
-      endDate: ''
-    })
-    setSelectedProduct('')
-    setSelectedWitel('')
-    setSelectedSubType('')
+    setSearchParams({}, { replace: true })
   }
 
   const handleApplyFilters = () => {
@@ -157,8 +158,8 @@ const DashboardPage = () => {
             <input
               type="date"
               name="startDate"
-              value={filters.startDate}
-              onChange={handleDateChange}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
@@ -169,8 +170,8 @@ const DashboardPage = () => {
             <input
               type="date"
               name="endDate"
-              value={filters.endDate}
-              onChange={handleDateChange}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
@@ -249,28 +250,28 @@ const DashboardPage = () => {
 
       {/* CHARTS ROW 1: Revenue & Amount by Witel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueByWitelChart 
-          data={chartData.revenueByWitel} 
-          products={chartData.products} 
+        <RevenueByWitelChart
+          data={chartData.revenueByWitel}
+          products={chartData.products}
         />
-        <AmountByWitelChart 
-          data={chartData.amountByWitel} 
-          products={chartData.products} 
+        <AmountByWitelChart
+          data={chartData.amountByWitel}
+          products={chartData.products}
         />
       </div>
 
       {/* CHARTS ROW 2: Product by Segment, Channel, Share */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProductBySegmentChart 
-          data={chartData.productBySegment} 
-          segments={chartData.segments} 
+        <ProductBySegmentChart
+          data={chartData.productBySegment}
+          segments={chartData.segments}
         />
-        <ProductByChannelChart 
-          data={chartData.productByChannel} 
-          channels={chartData.channels} 
+        <ProductByChannelChart
+          data={chartData.productByChannel}
+          channels={chartData.channels}
         />
-        <ProductShareChart 
-          data={chartData.productShare} 
+        <ProductShareChart
+          data={chartData.productShare}
         />
       </div>
 

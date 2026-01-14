@@ -6,7 +6,6 @@ import AdminModeRoute from './components/AdminModeRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
-import Analysis from './pages/Analysis'
 import History from './pages/History'
 import Reports from './pages/Reports'
 import Connectivity from './pages/Connectivity'
@@ -52,14 +51,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analysis"
-            element={
-              <ProtectedRoute>
-                <Analysis />
               </ProtectedRoute>
             }
           />

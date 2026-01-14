@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 import api from '../services/api'
 import {
@@ -411,26 +412,50 @@ const KpiTable = ({ data = [] }) => {
 // KOMPONEN UTAMA DIGITAL PRODUCT
 // ===================================================================
 const DigitalProduct = () => {
-  const [activeDetailView, setActiveDetailView] = useState('inprogress')
-  const [currentSegment, setCurrentSegment] = useState('SME')
-  const [period, setPeriod] = useState('2024-01')
-  const [decimalPlaces, setDecimalPlaces] = useState(5)
-  const [witelFilter, setWitelFilter] = useState('ALL')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Helper to update search params
+  const updateFilters = (newFilters) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, ...newFilters }, { replace: true })
+  }
+
+  // Derived states from URL
+  const activeDetailView = searchParams.get('tab') || 'inprogress'
+  const currentSegment = searchParams.get('segment') || 'SME'
+  const period = searchParams.get('period') || '2024-01'
+  const decimalPlaces = parseInt(searchParams.get('decimals') || '5')
+  const witelFilter = searchParams.get('witelFilter') || 'ALL'
+
   const [isCompleteSectionExpanded, setIsCompleteSectionExpanded] = useState(false)
   const [isCancelSectionExpanded, setIsCancelSectionExpanded] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
 
-  // Chart state
+  // Chart state defaults
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-  const [chartStartDate, setChartStartDate] = useState(firstDay.toISOString().split('T')[0])
-  const [chartEndDate, setChartEndDate] = useState(now.toISOString().split('T')[0])
+
+  const chartStartDate = searchParams.get('start_date') || firstDay.toISOString().split('T')[0]
+  const chartEndDate = searchParams.get('end_date') || now.toISOString().split('T')[0]
   const [chartLoading, setChartLoading] = useState(false)
-  
-  // Filters State
-  const [selectedWitels, setSelectedWitels] = useState([])
-  const [selectedBranches, setSelectedBranches] = useState([])
-  const [selectedProducts, setSelectedProducts] = useState([])
+
+  // Filters State derived from URL
+  const selectedWitels = searchParams.get('witels')?.split(',').filter(Boolean) || []
+  const selectedBranches = searchParams.get('branches')?.split(',').filter(Boolean) || []
+  const selectedProducts = searchParams.get('products')?.split(',').filter(Boolean) || []
+
+  // URL State Setters
+  const setActiveDetailView = (val) => updateFilters({ tab: val })
+  const setCurrentSegment = (val) => updateFilters({ segment: val })
+  const setPeriod = (val) => updateFilters({ period: val })
+  const setDecimalPlaces = (val) => updateFilters({ decimals: val.toString() })
+  const setWitelFilter = (val) => updateFilters({ witelFilter: val })
+  const setChartStartDate = (val) => updateFilters({ start_date: val })
+  const setChartEndDate = (val) => updateFilters({ end_date: val })
+  const setSelectedWitels = (val) => updateFilters({ witels: val.join(',') })
+  const setSelectedBranches = (val) => updateFilters({ branches: val.join(',') })
+  const setSelectedProducts = (val) => updateFilters({ products: val.join(',') })
+
   const [filterOptions, setFilterOptions] = useState({
     witels: [],
     products: [],
@@ -466,7 +491,7 @@ const DigitalProduct = () => {
   // Derived Branch Options based on Selected Witels
   const availableBranchOptions = useMemo(() => {
     if (selectedWitels.length === 0) {
-      // If no witel selected, show all branches or none? Usually all or none. 
+      // If no witel selected, show all branches or none? Usually all or none.
       // Let's show all available branches if needed, or better, dependent on witel.
       // If no witel selected, maybe show nothing or all. Let's show all.
       return Object.values(filterOptions.branchMap).flat().sort()
@@ -487,11 +512,11 @@ const DigitalProduct = () => {
   const fetchChartData = async () => {
     setChartLoading(true)
     try {
-      const params = { 
-        start_date: chartStartDate, 
-        end_date: chartEndDate 
+      const params = {
+        start_date: chartStartDate,
+        end_date: chartEndDate
       }
-      
+
       if (selectedWitels.length > 0) params.witel = selectedWitels.join(',')
       if (selectedBranches.length > 0) params.branch = selectedBranches.join(',')
       if (selectedProducts.length > 0) params.product = selectedProducts.join(',')
@@ -594,7 +619,7 @@ const DigitalProduct = () => {
           {/* Chart Filters */}
           <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
             <div className="flex flex-wrap items-center gap-4">
-              
+
               {/* Product Filter */}
               <div className="w-48">
                 <label className="block text-xs font-medium text-gray-500 mb-1">Product</label>
