@@ -1069,17 +1069,46 @@ export const getReportDatinDetails = async (req, res, next) => {
 
 export const getReportDatinSummary = async (req, res, next) => {
   try {
-    const { start_date, end_date, witel } = req.query;
-    let whereClause = {};
-    if (start_date && end_date)
-      whereClause.orderCreatedDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
-      };
+    const { start_date, end_date, witel: witelFilter } = req.query
+
+    let whereClause = {}
+
+    if (start_date && end_date) {
+      const parseDate = (dateStr) => {
+        if (!dateStr) return null
+        const parts = dateStr.split('-') // Expecting YYYY-MM-DD from frontend
+        if (parts.length === 3) {
+           return new Date(`${parts[0]}-${parts[1]}-${parts[2]}`)
+        }
+        return new Date(dateStr)
+      }
+
+      const startDateObj = parseDate(start_date)
+      const endDateObj = parseDate(end_date)
+
+      if (startDateObj && !isNaN(startDateObj) && endDateObj && !isNaN(endDateObj)) {
+        endDateObj.setHours(23, 59, 59, 999)
+        whereClause.orderCreatedDate = {
+          gte: startDateObj,
+          lte: endDateObj
+        }
+      }
+    }
+
+    // Mapping Constants
+    const witelMappings = {
+      'BALI': ['DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+    }
+
     const data = await prisma.sosData.findMany({
       where: whereClause,
       select: {
         segmen: true,
+        custWitel: true,
         custCity: true,
         serviceWitel: true,
         orderCreatedDate: true,
@@ -1087,15 +1116,411 @@ export const getReportDatinSummary = async (req, res, next) => {
         liStatus: true,
         revenue: true,
         poName: true,
-        nipnas: true,
-      },
-    });
-    successResponse(
-      res,
-      { table1Data: [], table2Data: [], galaksiData: [] },
-      "Report Datin Summary retrieved successfully"
-    );
+        nipnas: true
+      }
+    })
+
+    // Helper Functions
+    const getCategory = (segmen) => {
+      const s = (segmen || '').toUpperCase()
+      // SOE check first to catch "State-Owned Enterprise" before it matches "Enterprise" in GOV
+      if (['BUMN', 'SOE', 'STATE-OWNED'].some(k => s.includes(k))) return 'SOE'
+      if (['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'REGIONAL', 'REG'].some(k => s.includes(k))) return 'SME'
+      if (['GOV', 'LEGS', 'DGS', 'DPS', 'ENTERPRISE'].some(k => s.includes(k))) return 'GOV'
+      return 'PRIVATE'
+    }
+
+    // Determine Grouping Strategy
+    let targetWitels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+    let isBranchMode = false
+
+    if (witelFilter) {
+      const selected = witelFilter.split(',').filter(w => w.trim() !== '')
+
+      // Case 1: Single Region Selected -> Drilldown to Branches
+      if (selected.length === 1 && witelMappings[selected[0]]) {
+        targetWitels = witelMappings[selected[0]]
+        isBranchMode = true
+      }
+      // Case 2: Multiple Regions Selected -> Filter the list of Major Witels
+      else if (selected.length > 0) {
+        // Filter targetWitels to only keep the selected ones
+        // Note: Use the original list as source of truth for valid regions
+        const originalRegions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+        const validSelections = selected.filter(s => originalRegions.includes(s))
+
+        if (validSelections.length > 0) {
+          targetWitels = validSelections
+        }
+      }
+    }
+
+    const getWitelKey = (witelStr) => {
+      const w = (witelStr || '').toUpperCase()
+
+      // If filtering by specific witel (e.g. BALI), we map to the exact branch (e.g. DENPASAR)
+      if (isBranchMode) {
+        // Find which branch it matches in the selected list
+        const match = targetWitels.find(k => w.includes(k))
+        return match || 'OTHER'
+      }
+
+      // Default: Map to Major Witel (Frontend witelList: BALI, JATIM BARAT, JATIM TIMUR, NUSA TENGGARA, SURAMADU)
+      if (['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'].some(k => w.includes(k))) return 'BALI'
+      if (['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'].some(k => w.includes(k))) return 'JATIM BARAT'
+      if (['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'].some(k => w.includes(k))) return 'JATIM TIMUR'
+      if (['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'].some(k => w.includes(k))) return 'NUSA TENGGARA'
+      if (['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES'].some(k => w.includes(k))) return 'SURAMADU'
+
+      // Fallback: Check if the string itself contains the major region names
+      if (w.includes('BALI')) return 'BALI'
+      if (w.includes('BARAT')) return 'JATIM BARAT'
+      if (w.includes('TIMUR')) return 'JATIM TIMUR'
+      if (w.includes('NUSA') || w.includes('NTB') || w.includes('NTT')) return 'NUSA TENGGARA'
+      if (w.includes('SURAMADU') || w.includes('MADURA') || w.includes('SURABAYA')) return 'SURAMADU'
+
+      return 'OTHER'
+    }
+
+    const getOrderType = (actionCd) => {
+      const a = (actionCd || '').toUpperCase()
+      if (a.startsWith('A') || a.startsWith('NEW') || a.startsWith('INST')) return 'AO' // Add -> AO
+      if (a.startsWith('S')) return 'SO' // Suspend -> SO
+      if (a.startsWith('D') || a.startsWith('TERM')) return 'DO' // Delete -> DO
+      if (a.startsWith('M') || a.startsWith('U') || a.startsWith('CH')) return 'MO' // Modify/Move/Update/Change -> MO
+      if (a.startsWith('R')) return 'RO' // Resume -> RO
+      return 'OTHER'
+    }
+
+    // Helper to normalize PO name - just uppercase, nothing else
+    const normalizePOName = (poName) => {
+      if (!poName) return null
+      const trimmed = (poName || '').trim()
+      return trimmed.length > 0 ? trimmed.toUpperCase() : null
+    }
+
+    const getStatusGroup = (status) => {
+      const s = (status || '').toUpperCase()
+      if (s.includes('PROVIDE')) return 'PROVIDE_ORDER'
+      if (s.includes('BILL') || s.includes('COMPLETED') || s.includes('CLOSED') || s.includes('LIVE')) return 'READY_BILL'
+      return 'IN_PROCESS'
+    }
+
+    // Initialize Data Structures
+    const categories = ['SME', 'GOV', 'PRIVATE', 'SOE']
+
+    // Table 1 Structure
+    const table1Map = {}
+    categories.forEach(cat => {
+      table1Map[cat] = {
+        category: cat,
+        witels: {}
+      }
+      targetWitels.forEach(w => {
+        table1Map[cat].witels[w] = {
+          ao_3bln: 0, est_ao_3bln: 0,
+          so_3bln: 0, est_so_3bln: 0,
+          do_3bln: 0, est_do_3bln: 0,
+          mo_3bln: 0, est_mo_3bln: 0,
+          ro_3bln: 0, est_ro_3bln: 0,
+          total_3bln: 0, est_3bln: 0,
+
+          ao_3bln2: 0, est_ao_3bln2: 0,
+          so_3bln2: 0, est_so_3bln2: 0,
+          do_3bln2: 0, est_do_3bln2: 0,
+          mo_3bln2: 0, est_mo_3bln2: 0,
+          ro_3bln2: 0, est_ro_3bln2: 0,
+          total_3bln2: 0, est_3bln2: 0,
+
+          grand_total: 0
+        }
+      })
+    })
+
+    // Table 2 Structure
+    const table2Map = {}
+    categories.forEach(cat => {
+      table2Map[cat] = {
+        category: cat,
+        witels: {}
+      }
+      targetWitels.forEach(w => {
+        table2Map[cat].witels[w] = {
+          provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0,
+          provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0,
+          grand_total: 0
+        }
+      })
+    })
+
+    // Galaksi Structure
+    const galaksiMap = {}
+
+    // Process Data
+    const now = new Date()
+
+    data.forEach(row => {
+      const category = getCategory(row.segmen)
+
+      // Process Galaksi FIRST (before witel validation skip)
+      const orderDate = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
+      const diffTime = Math.abs(now - orderDate)
+      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30))
+      const isLessThan3Months = diffMonths <= 3
+      const orderType = getOrderType(row.actionCd)
+
+      // Update Galaksi - process this BEFORE witel validation
+      let poKey = row.poName
+
+      // If poName is not available, try to map from NIPNAS
+      if (!poKey && row.nipnas) {
+         const mappedName = PO_MAPPING[row.nipnas]
+         if (mappedName) {
+            poKey = mappedName
+         }
+      }
+
+      // Only process if we have a valid PO name
+      if (poKey) {
+        const poName = normalizePOName(poKey)
+
+        if (poName) {
+          if (!galaksiMap[poName]) {
+            galaksiMap[poName] = {
+               po: poName,
+               ao_3bln: 0, so_3bln: 0, do_3bln: 0, mo_3bln: 0, ro_3bln: 0, total_3bln: 0,
+               ao_3bln2: 0, so_3bln2: 0, do_3bln2: 0, mo_3bln2: 0, ro_3bln2: 0, total_3bln2: 0
+            }
+          }
+
+          const g = galaksiMap[poName]
+          if (isLessThan3Months) {
+            if (orderType === 'AO') g.ao_3bln++
+            else if (orderType === 'SO') g.so_3bln++
+            else if (orderType === 'DO') g.do_3bln++
+            else if (orderType === 'MO') g.mo_3bln++
+            else if (orderType === 'RO') g.ro_3bln++
+
+            g.total_3bln++
+          } else {
+            if (orderType === 'AO') g.ao_3bln2++
+            else if (orderType === 'SO') g.so_3bln2++
+            else if (orderType === 'DO') g.do_3bln2++
+            else if (orderType === 'MO') g.mo_3bln2++
+            else if (orderType === 'RO') g.ro_3bln2++
+
+            g.total_3bln2++
+          }
+        }
+      }
+
+      // ============ NOW do witel validation for tables 1 & 2 ============
+      // Try to resolve Witel/Branch from most specific source (City) to least specific (Region)
+      // Check City first (often contains granular branch data like 'Denpasar', 'Malang')
+      let witel = getWitelKey(row.custCity)
+
+      if (row.custCity && (row.custCity.includes('MADIUN') || row.custCity.includes('KEDIRI'))) {
+          // console.log(`DEBUG: City=${row.custCity}, ResolvedWitel=${witel}, isBranchMode=${isBranchMode}`)
+      }
+
+      // If City didn't yield a valid branch (returned OTHER) or just returned the generic Region name
+      // Try the Witel columns
+      const isGeneric = (w) => ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'].includes(w)
+
+      if (witel === 'OTHER') {
+         witel = getWitelKey(row.serviceWitel || row.custWitel)
+      } else if (isBranchMode && isGeneric(witel)) {
+         // If City returned a generic name (unlikely but possible), see if Witel col has something different?
+         // Actually usually if City is generic, Witel is also generic.
+         // But let's check just in case Witel has a specific override (unlikely).
+         const alt = getWitelKey(row.serviceWitel || row.custWitel)
+         if (alt !== 'OTHER' && !isGeneric(alt)) {
+             witel = alt
+         }
+      }
+
+      if (witel === 'OTHER') return // Skip unknown witels for table processing
+
+      const orderDate2 = row.orderCreatedDate ? new Date(row.orderCreatedDate) : now
+      const diffTime2 = Math.abs(now - orderDate2)
+      const diffMonths2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24 * 30))
+      const isLessThan3Months2 = diffMonths2 <= 3
+      const orderType2 = getOrderType(row.actionCd)
+
+      const status = getStatusGroup(row.liStatus)
+      const revenue = parseFloat(row.revenue || 0)
+
+      // Update Table 1
+      const t1 = table1Map[category].witels[witel]
+      if (t1) {
+        if (isLessThan3Months2) {
+          if (orderType2 === 'AO') {
+            t1.ao_3bln++; t1.est_ao_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'DO') {
+            t1.do_3bln++; t1.est_do_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'MO') {
+            t1.mo_3bln++; t1.est_mo_3bln += revenue;
+            t1.est_3bln += revenue; t1.total_3bln++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln++; t1.est_so_3bln += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln++; t1.est_ro_3bln += revenue; }
+
+          // Grand Total should match visible total for consistency
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
+        } else {
+          if (orderType2 === 'AO') {
+            t1.ao_3bln2++; t1.est_ao_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'DO') {
+            t1.do_3bln2++; t1.est_do_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'MO') {
+            t1.mo_3bln2++; t1.est_mo_3bln2 += revenue;
+            t1.est_3bln2 += revenue; t1.total_3bln2++;
+          }
+          else if (orderType2 === 'SO') { t1.so_3bln2++; t1.est_so_3bln2 += revenue; }
+          else if (orderType2 === 'RO') { t1.ro_3bln2++; t1.est_ro_3bln2 += revenue; }
+
+          if (['AO', 'DO', 'MO'].includes(orderType2)) {
+             t1.grand_total++
+          }
+        }
+      }
+
+      // Update Table 2
+      const t2 = table2Map[category].witels[witel]
+      if (t2) {
+        if (isLessThan3Months2) {
+          if (status === 'PROVIDE_ORDER') t2.provide_order++
+          else if (status === 'IN_PROCESS') t2.in_process++
+          else if (status === 'READY_BILL') t2.ready_bill++
+
+          t2.total_3bln++
+        } else {
+          if (status === 'PROVIDE_ORDER') t2.provide_order2++
+          else if (status === 'IN_PROCESS') t2.in_process2++
+          else if (status === 'READY_BILL') t2.ready_bill2++
+
+          t2.total_3bln2++
+        }
+        t2.grand_total++
+      }
+    })
+
+    // Format Output for Frontend
+    const table1Data = []
+    const table2Data = []
+    let idCounter = 1
+
+    categories.forEach(cat => {
+      // Header Row for Category
+      const catHeader1 = {
+        id: idCounter++,
+        category: cat,
+        witel: '',
+        ao_3bln: 0, est_ao_3bln: 0, so_3bln: 0, est_so_3bln: 0, do_3bln: 0, est_do_3bln: 0, mo_3bln: 0, est_mo_3bln: 0, ro_3bln: 0, est_ro_3bln: 0, est_3bln: 0, total_3bln: 0,
+        ao_3bln2: 0, est_ao_3bln2: 0, so_3bln2: 0, est_so_3bln2: 0, do_3bln2: 0, est_do_3bln2: 0, mo_3bln2: 0, est_mo_3bln2: 0, ro_3bln2: 0, est_ro_3bln2: 0, est_3bln2: 0, total_3bln2: 0,
+        grand_total: 0,
+        isCategoryHeader: true
+      }
+
+      const catHeader2 = {
+        id: idCounter++,
+        witel: cat, // In Table 2, category is shown in witel column for header
+        provide_order: 0, in_process: 0, ready_bill: 0, total_3bln: 0,
+        provide_order2: 0, in_process2: 0, ready_bill2: 0, total_3bln2: 0,
+        grand_total: 0,
+        isCategoryHeader: true
+      }
+
+      const witelRows1 = []
+      const witelRows2 = []
+
+      targetWitels.forEach(w => {
+        const d1 = table1Map[cat].witels[w]
+        const d2 = table2Map[cat].witels[w]
+
+        // Add to Category Header Totals
+        catHeader1.ao_3bln += d1.ao_3bln; catHeader1.est_ao_3bln += d1.est_ao_3bln;
+        catHeader1.so_3bln += d1.so_3bln; catHeader1.est_so_3bln += d1.est_so_3bln;
+        catHeader1.do_3bln += d1.do_3bln; catHeader1.est_do_3bln += d1.est_do_3bln;
+        catHeader1.mo_3bln += d1.mo_3bln; catHeader1.est_mo_3bln += d1.est_mo_3bln;
+        catHeader1.ro_3bln += d1.ro_3bln; catHeader1.est_ro_3bln += d1.est_ro_3bln;
+        catHeader1.est_3bln += d1.est_3bln; catHeader1.total_3bln += d1.total_3bln;
+
+        catHeader1.ao_3bln2 += d1.ao_3bln2; catHeader1.est_ao_3bln2 += d1.est_ao_3bln2;
+        catHeader1.so_3bln2 += d1.so_3bln2; catHeader1.est_so_3bln2 += d1.est_so_3bln2;
+        catHeader1.do_3bln2 += d1.do_3bln2; catHeader1.est_do_3bln2 += d1.est_do_3bln2;
+        catHeader1.mo_3bln2 += d1.mo_3bln2; catHeader1.est_mo_3bln2 += d1.est_mo_3bln2;
+        catHeader1.ro_3bln2 += d1.ro_3bln2; catHeader1.est_ro_3bln2 += d1.est_ro_3bln2;
+        catHeader1.est_3bln2 += d1.est_3bln2; catHeader1.total_3bln2 += d1.total_3bln2;
+
+        catHeader1.grand_total += d1.grand_total;
+
+        catHeader2.provide_order += d2.provide_order; catHeader2.in_process += d2.in_process; catHeader2.ready_bill += d2.ready_bill; catHeader2.total_3bln += d2.total_3bln;
+        catHeader2.provide_order2 += d2.provide_order2; catHeader2.in_process2 += d2.in_process2; catHeader2.ready_bill2 += d2.ready_bill2; catHeader2.total_3bln2 += d2.total_3bln2;
+        catHeader2.grand_total += d2.grand_total;
+
+        witelRows1.push({
+          id: idCounter++,
+          category: '',
+          witel: w,
+          ...d1,
+          est_ao_3bln: (d1.est_ao_3bln / 1000000).toFixed(2),
+          est_do_3bln: (d1.est_do_3bln / 1000000).toFixed(2),
+          est_mo_3bln: (d1.est_mo_3bln / 1000000).toFixed(2),
+          est_3bln: (d1.est_3bln / 1000000).toFixed(2),
+
+          est_ao_3bln2: (d1.est_ao_3bln2 / 1000000).toFixed(2),
+          est_do_3bln2: (d1.est_do_3bln2 / 1000000).toFixed(2),
+          est_mo_3bln2: (d1.est_mo_3bln2 / 1000000).toFixed(2),
+          est_3bln2: (d1.est_3bln2 / 1000000).toFixed(2),
+          isCategoryHeader: false
+        })
+
+        witelRows2.push({
+          id: idCounter++,
+          witel: w,
+          ...d2
+        })
+      })
+
+      // Format Header Money
+      catHeader1.est_ao_3bln = (catHeader1.est_ao_3bln / 1000000).toFixed(2)
+      catHeader1.est_do_3bln = (catHeader1.est_do_3bln / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln = (catHeader1.est_mo_3bln / 1000000).toFixed(2)
+      catHeader1.est_3bln = (catHeader1.est_3bln / 1000000).toFixed(2)
+
+      catHeader1.est_ao_3bln2 = (catHeader1.est_ao_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_do_3bln2 = (catHeader1.est_do_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_mo_3bln2 = (catHeader1.est_mo_3bln2 / 1000000).toFixed(2)
+      catHeader1.est_3bln2 = (catHeader1.est_3bln2 / 1000000).toFixed(2)
+
+      table1Data.push(catHeader1, ...witelRows1)
+      table2Data.push(catHeader2, ...witelRows2)
+    })
+
+    const galaksiData = Object.values(galaksiMap).map((item, index) => ({
+      ...item,
+      id: index + 1,
+      achievement: '0%' // Placeholder
+    })).sort((a, b) => a.po.localeCompare(b.po))
+
+    successResponse(res, {
+      table1Data,
+      table2Data,
+      galaksiData
+    }, 'Report Datin Summary retrieved successfully')
+
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
