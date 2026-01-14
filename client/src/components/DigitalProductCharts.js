@@ -96,16 +96,16 @@ export const RevenueByWitelChart = ({ data, products = [] }) => {
   const productKeys = products.length > 0 ? products : ['Antares', 'Netmonk', 'OCA', 'Pijar']
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-white p-6 pb-2 rounded-lg shadow">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis 
             dataKey="witel" 
             angle={-45} 
             textAnchor="end" 
-            height={80}
+            height={60}
             tick={{ fontSize: 11 }}
             interval={0}
           />
@@ -150,16 +150,16 @@ export const AmountByWitelChart = ({ data, products = [] }) => {
   const productKeys = products.length > 0 ? products : ['Antares', 'Netmonk', 'OCA', 'Pijar']
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-white p-6 pb-2 rounded-lg shadow">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Amount by Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis 
             dataKey="witel" 
             angle={-45} 
             textAnchor="end" 
-            height={80}
+            height={60}
             tick={{ fontSize: 11 }}
             interval={0}
           />

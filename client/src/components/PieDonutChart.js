@@ -32,7 +32,7 @@ const PieDonutChart = ({ title, data, type = 'pie' }) => {
             outerRadius={120}
             paddingAngle={2}
             dataKey="value"
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            label={({ name, value }) => `${name}: ${value.toLocaleString('id-ID')}`}
           >
             {topData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
