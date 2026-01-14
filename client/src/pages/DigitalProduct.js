@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { FiChevronDown } from 'react-icons/fi'
 import api from '../services/api'
 import {
   RevenueByWitelChart,
@@ -12,51 +13,6 @@ import {
 // ===================================================================
 // KOMPONEN REUSABLE
 // ===================================================================
-const MultiSelectDropdown = ({ options, selected, onChange, placeholder }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false)
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const toggleOption = (value) => {
-    const newSelected = selected.includes(value)
-      ? selected.filter((item) => item !== value)
-      : [...selected, value]
-    onChange(newSelected)
-  }
-
-  return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <div
-        className="w-full border border-gray-300 rounded-md p-2 bg-white cursor-pointer flex justify-between items-center text-sm shadow-sm"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="truncate text-gray-700 select-none">
-          {selected.length > 0 ? `${selected.length} Dipilih` : placeholder}
-        </span>
-        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      </div>
-      {isOpen && (
-        <div className="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto z-50">
-          {options.map((option) => (
-            <div key={option} className="flex items-center p-2 hover:bg-gray-100 cursor-pointer" onClick={() => toggleOption(option)}>
-              <input type="checkbox" checked={selected.includes(option)} readOnly className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded pointer-events-none" />
-              <span className="text-sm text-gray-700 select-none">{option}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 const CollapsibleCard = ({ title, isExpanded, onToggle, children }) => {
   return (
@@ -431,6 +387,12 @@ const DigitalProduct = () => {
   const [selectedWitels, setSelectedWitels] = useState([])
   const [selectedBranches, setSelectedBranches] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([])
+  
+  // Filter Dropdown Open State
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false)
+  const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false)
+
   const [filterOptions, setFilterOptions] = useState({
     witels: [],
     products: [],
@@ -466,9 +428,6 @@ const DigitalProduct = () => {
   // Derived Branch Options based on Selected Witels
   const availableBranchOptions = useMemo(() => {
     if (selectedWitels.length === 0) {
-      // If no witel selected, show all branches or none? Usually all or none. 
-      // Let's show all available branches if needed, or better, dependent on witel.
-      // If no witel selected, maybe show nothing or all. Let's show all.
       return Object.values(filterOptions.branchMap).flat().sort()
     }
     return selectedWitels.flatMap(witel => filterOptions.branchMap[witel] || []).sort()
@@ -511,6 +470,15 @@ const DigitalProduct = () => {
     fetchChartData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartStartDate, chartEndDate, selectedWitels, selectedBranches, selectedProducts])
+
+  // Helpers for Filters
+  const toggleSelection = (option, selectedList, setter) => {
+    if (selectedList.includes(option)) {
+      setter(selectedList.filter(item => item !== option))
+    } else {
+      setter([...selectedList, option])
+    }
+  }
 
   // Mock data - all empty
   const reportData = []
@@ -593,67 +561,134 @@ const DigitalProduct = () => {
         <div className="mb-8">
           {/* Chart Filters */}
           <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col lg:flex-row gap-4">
               
+              {/* Date Filter */}
+              <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
+                <div className="flex flex-col justify-center px-1">
+                  <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+                  <input 
+                    type="date" 
+                    value={chartStartDate} 
+                    onChange={(e) => setChartStartDate(e.target.value)} 
+                    className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" 
+                  />
+                </div>
+                <span className="text-gray-400 font-light">|</span>
+                <div className="flex flex-col justify-center px-1">
+                  <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+                  <input 
+                    type="date" 
+                    value={chartEndDate} 
+                    onChange={(e) => setChartEndDate(e.target.value)} 
+                    className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" 
+                  />
+                </div>
+              </div>
+
               {/* Product Filter */}
-              <div className="w-48">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Product</label>
-                <MultiSelectDropdown
-                  options={filterOptions.products}
-                  selected={selectedProducts}
-                  onChange={setSelectedProducts}
-                  placeholder="Semua Produk"
-                />
+              <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+                <div className="flex flex-col justify-center px-2 h-full w-40">
+                  <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Product</span>
+                  <div
+                    className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                    onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
+                  >
+                    <span className="truncate">{selectedProducts.length > 0 ? `${selectedProducts.length} Selected` : 'Semua Product'}</span>
+                    <FiChevronDown className={`ml-1 transition-transform ${isProductDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+                {isProductDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {filterOptions.products.map(option => (
+                      <div
+                        key={option}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                        onClick={() => toggleSelection(option, selectedProducts, setSelectedProducts)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(option)}
+                          readOnly
+                          className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                        />
+                        <span className="text-sm text-gray-700">{option}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Witel Filter */}
-              <div className="w-48">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Witel</label>
-                <MultiSelectDropdown
-                  options={filterOptions.witels}
-                  selected={selectedWitels}
-                  onChange={setSelectedWitels}
-                  placeholder="Semua Witel"
-                />
+              <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+                <div className="flex flex-col justify-center px-2 h-full w-40">
+                  <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
+                  <div
+                    className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                    onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
+                  >
+                    <span className="truncate">{selectedWitels.length > 0 ? `${selectedWitels.length} Selected` : 'Semua Witel'}</span>
+                    <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+                {isWitelDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {filterOptions.witels.map(option => (
+                      <div
+                        key={option}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                        onClick={() => toggleSelection(option, selectedWitels, setSelectedWitels)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedWitels.includes(option)}
+                          readOnly
+                          className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                        />
+                        <span className="text-sm text-gray-700">{option}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Branch Filter */}
-              <div className="w-48">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
-                <MultiSelectDropdown
-                  options={availableBranchOptions}
-                  selected={selectedBranches}
-                  onChange={setSelectedBranches}
-                  placeholder="Semua Branch"
-                />
+              <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+                <div className="flex flex-col justify-center px-2 h-full w-40">
+                  <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Branch</span>
+                  <div
+                    className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                    onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                  >
+                    <span className="truncate">{selectedBranches.length > 0 ? `${selectedBranches.length} Selected` : 'Semua Branch'}</span>
+                    <FiChevronDown className={`ml-1 transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+                {isBranchDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {availableBranchOptions.map(option => (
+                      <div
+                        key={option}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                        onClick={() => toggleSelection(option, selectedBranches, setSelectedBranches)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBranches.includes(option)}
+                          readOnly
+                          className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                        />
+                        <span className="text-sm text-gray-700">{option}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Date Filter */}
-              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border mt-5">
-                <div className="flex flex-col">
-                  <label className="text-[10px] font-medium text-gray-400 uppercase">Dari</label>
-                  <input
-                    type="date"
-                    value={chartStartDate}
-                    onChange={(e) => setChartStartDate(e.target.value)}
-                    className="border-none p-0 text-sm font-medium text-gray-700 bg-transparent focus:ring-0"
-                  />
-                </div>
-                <span className="text-gray-300">|</span>
-                <div className="flex flex-col">
-                  <label className="text-[10px] font-medium text-gray-400 uppercase">Sampai</label>
-                  <input
-                    type="date"
-                    value={chartEndDate}
-                    onChange={(e) => setChartEndDate(e.target.value)}
-                    className="border-none p-0 text-sm font-medium text-gray-700 bg-transparent focus:ring-0"
-                  />
-                </div>
-              </div>
               <button
                 onClick={fetchChartData}
                 disabled={chartLoading}
-                className="px-4 py-2 mt-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 whitespace-nowrap h-10 disabled:opacity-50"
               >
                 {chartLoading ? 'Loading...' : 'Refresh'}
               </button>

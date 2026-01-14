@@ -7214,6 +7214,44 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     batchId: string | null
+    prevOrder: string | null
+    liSid: string | null
+    sid: string | null
+    custAccntNum: string | null
+    custAccntName: string | null
+    custAddr: string | null
+    custRegion: string | null
+    servAccntNum: string | null
+    servAccntName: string | null
+    servAddr: string | null
+    serviceRegion: string | null
+    billAccntNum: string | null
+    accountNas: string | null
+    billAccntName: string | null
+    billAddr: string | null
+    billRegion: string | null
+    liId: string | null
+    liProductId: string | null
+    productDigital: string | null
+    liBandwidth: string | null
+    billcomDate: Date | null
+    liFulfillmentStatus: string | null
+    scaling: string | null
+    liPaymentTerm: string | null
+    liBillingStartDate: Date | null
+    agreeItemNum: string | null
+    agreeName: string | null
+    orderCreatedBy: string | null
+    liCreatedDate: Date | null
+    orderCreatedByName: string | null
+    currentBandwidth: string | null
+    beforeBandwidth: string | null
+    productActivationDate: Date | null
+    quoteRowId: string | null
+    lineItemDescription: string | null
+    assetIntegId: string | null
+    am: string | null
+    xBillcompDt: Date | null
   }
 
   export type SosDataMaxAggregateOutputType = {
@@ -7261,6 +7299,44 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     batchId: string | null
+    prevOrder: string | null
+    liSid: string | null
+    sid: string | null
+    custAccntNum: string | null
+    custAccntName: string | null
+    custAddr: string | null
+    custRegion: string | null
+    servAccntNum: string | null
+    servAccntName: string | null
+    servAddr: string | null
+    serviceRegion: string | null
+    billAccntNum: string | null
+    accountNas: string | null
+    billAccntName: string | null
+    billAddr: string | null
+    billRegion: string | null
+    liId: string | null
+    liProductId: string | null
+    productDigital: string | null
+    liBandwidth: string | null
+    billcomDate: Date | null
+    liFulfillmentStatus: string | null
+    scaling: string | null
+    liPaymentTerm: string | null
+    liBillingStartDate: Date | null
+    agreeItemNum: string | null
+    agreeName: string | null
+    orderCreatedBy: string | null
+    liCreatedDate: Date | null
+    orderCreatedByName: string | null
+    currentBandwidth: string | null
+    beforeBandwidth: string | null
+    productActivationDate: Date | null
+    quoteRowId: string | null
+    lineItemDescription: string | null
+    assetIntegId: string | null
+    am: string | null
+    xBillcompDt: Date | null
   }
 
   export type SosDataCountAggregateOutputType = {
@@ -7308,6 +7384,44 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     batchId: number
+    prevOrder: number
+    liSid: number
+    sid: number
+    custAccntNum: number
+    custAccntName: number
+    custAddr: number
+    custRegion: number
+    servAccntNum: number
+    servAccntName: number
+    servAddr: number
+    serviceRegion: number
+    billAccntNum: number
+    accountNas: number
+    billAccntName: number
+    billAddr: number
+    billRegion: number
+    liId: number
+    liProductId: number
+    productDigital: number
+    liBandwidth: number
+    billcomDate: number
+    liFulfillmentStatus: number
+    scaling: number
+    liPaymentTerm: number
+    liBillingStartDate: number
+    agreeItemNum: number
+    agreeName: number
+    orderCreatedBy: number
+    liCreatedDate: number
+    orderCreatedByName: number
+    currentBandwidth: number
+    beforeBandwidth: number
+    productActivationDate: number
+    quoteRowId: number
+    lineItemDescription: number
+    assetIntegId: number
+    am: number
+    xBillcompDt: number
     _all: number
   }
 
@@ -7375,6 +7489,44 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     batchId?: true
+    prevOrder?: true
+    liSid?: true
+    sid?: true
+    custAccntNum?: true
+    custAccntName?: true
+    custAddr?: true
+    custRegion?: true
+    servAccntNum?: true
+    servAccntName?: true
+    servAddr?: true
+    serviceRegion?: true
+    billAccntNum?: true
+    accountNas?: true
+    billAccntName?: true
+    billAddr?: true
+    billRegion?: true
+    liId?: true
+    liProductId?: true
+    productDigital?: true
+    liBandwidth?: true
+    billcomDate?: true
+    liFulfillmentStatus?: true
+    scaling?: true
+    liPaymentTerm?: true
+    liBillingStartDate?: true
+    agreeItemNum?: true
+    agreeName?: true
+    orderCreatedBy?: true
+    liCreatedDate?: true
+    orderCreatedByName?: true
+    currentBandwidth?: true
+    beforeBandwidth?: true
+    productActivationDate?: true
+    quoteRowId?: true
+    lineItemDescription?: true
+    assetIntegId?: true
+    am?: true
+    xBillcompDt?: true
   }
 
   export type SosDataMaxAggregateInputType = {
@@ -7422,6 +7574,44 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     batchId?: true
+    prevOrder?: true
+    liSid?: true
+    sid?: true
+    custAccntNum?: true
+    custAccntName?: true
+    custAddr?: true
+    custRegion?: true
+    servAccntNum?: true
+    servAccntName?: true
+    servAddr?: true
+    serviceRegion?: true
+    billAccntNum?: true
+    accountNas?: true
+    billAccntName?: true
+    billAddr?: true
+    billRegion?: true
+    liId?: true
+    liProductId?: true
+    productDigital?: true
+    liBandwidth?: true
+    billcomDate?: true
+    liFulfillmentStatus?: true
+    scaling?: true
+    liPaymentTerm?: true
+    liBillingStartDate?: true
+    agreeItemNum?: true
+    agreeName?: true
+    orderCreatedBy?: true
+    liCreatedDate?: true
+    orderCreatedByName?: true
+    currentBandwidth?: true
+    beforeBandwidth?: true
+    productActivationDate?: true
+    quoteRowId?: true
+    lineItemDescription?: true
+    assetIntegId?: true
+    am?: true
+    xBillcompDt?: true
   }
 
   export type SosDataCountAggregateInputType = {
@@ -7469,6 +7659,44 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     batchId?: true
+    prevOrder?: true
+    liSid?: true
+    sid?: true
+    custAccntNum?: true
+    custAccntName?: true
+    custAddr?: true
+    custRegion?: true
+    servAccntNum?: true
+    servAccntName?: true
+    servAddr?: true
+    serviceRegion?: true
+    billAccntNum?: true
+    accountNas?: true
+    billAccntName?: true
+    billAddr?: true
+    billRegion?: true
+    liId?: true
+    liProductId?: true
+    productDigital?: true
+    liBandwidth?: true
+    billcomDate?: true
+    liFulfillmentStatus?: true
+    scaling?: true
+    liPaymentTerm?: true
+    liBillingStartDate?: true
+    agreeItemNum?: true
+    agreeName?: true
+    orderCreatedBy?: true
+    liCreatedDate?: true
+    orderCreatedByName?: true
+    currentBandwidth?: true
+    beforeBandwidth?: true
+    productActivationDate?: true
+    quoteRowId?: true
+    lineItemDescription?: true
+    assetIntegId?: true
+    am?: true
+    xBillcompDt?: true
     _all?: true
   }
 
@@ -7603,6 +7831,44 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     batchId: string | null
+    prevOrder: string | null
+    liSid: string | null
+    sid: string | null
+    custAccntNum: string | null
+    custAccntName: string | null
+    custAddr: string | null
+    custRegion: string | null
+    servAccntNum: string | null
+    servAccntName: string | null
+    servAddr: string | null
+    serviceRegion: string | null
+    billAccntNum: string | null
+    accountNas: string | null
+    billAccntName: string | null
+    billAddr: string | null
+    billRegion: string | null
+    liId: string | null
+    liProductId: string | null
+    productDigital: string | null
+    liBandwidth: string | null
+    billcomDate: Date | null
+    liFulfillmentStatus: string | null
+    scaling: string | null
+    liPaymentTerm: string | null
+    liBillingStartDate: Date | null
+    agreeItemNum: string | null
+    agreeName: string | null
+    orderCreatedBy: string | null
+    liCreatedDate: Date | null
+    orderCreatedByName: string | null
+    currentBandwidth: string | null
+    beforeBandwidth: string | null
+    productActivationDate: Date | null
+    quoteRowId: string | null
+    lineItemDescription: string | null
+    assetIntegId: string | null
+    am: string | null
+    xBillcompDt: Date | null
     _count: SosDataCountAggregateOutputType | null
     _avg: SosDataAvgAggregateOutputType | null
     _sum: SosDataSumAggregateOutputType | null
@@ -7669,6 +7935,44 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     batchId?: boolean
+    prevOrder?: boolean
+    liSid?: boolean
+    sid?: boolean
+    custAccntNum?: boolean
+    custAccntName?: boolean
+    custAddr?: boolean
+    custRegion?: boolean
+    servAccntNum?: boolean
+    servAccntName?: boolean
+    servAddr?: boolean
+    serviceRegion?: boolean
+    billAccntNum?: boolean
+    accountNas?: boolean
+    billAccntName?: boolean
+    billAddr?: boolean
+    billRegion?: boolean
+    liId?: boolean
+    liProductId?: boolean
+    productDigital?: boolean
+    liBandwidth?: boolean
+    billcomDate?: boolean
+    liFulfillmentStatus?: boolean
+    scaling?: boolean
+    liPaymentTerm?: boolean
+    liBillingStartDate?: boolean
+    agreeItemNum?: boolean
+    agreeName?: boolean
+    orderCreatedBy?: boolean
+    liCreatedDate?: boolean
+    orderCreatedByName?: boolean
+    currentBandwidth?: boolean
+    beforeBandwidth?: boolean
+    productActivationDate?: boolean
+    quoteRowId?: boolean
+    lineItemDescription?: boolean
+    assetIntegId?: boolean
+    am?: boolean
+    xBillcompDt?: boolean
   }, ExtArgs["result"]["sosData"]>
 
   export type SosDataSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -7716,6 +8020,44 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     batchId?: boolean
+    prevOrder?: boolean
+    liSid?: boolean
+    sid?: boolean
+    custAccntNum?: boolean
+    custAccntName?: boolean
+    custAddr?: boolean
+    custRegion?: boolean
+    servAccntNum?: boolean
+    servAccntName?: boolean
+    servAddr?: boolean
+    serviceRegion?: boolean
+    billAccntNum?: boolean
+    accountNas?: boolean
+    billAccntName?: boolean
+    billAddr?: boolean
+    billRegion?: boolean
+    liId?: boolean
+    liProductId?: boolean
+    productDigital?: boolean
+    liBandwidth?: boolean
+    billcomDate?: boolean
+    liFulfillmentStatus?: boolean
+    scaling?: boolean
+    liPaymentTerm?: boolean
+    liBillingStartDate?: boolean
+    agreeItemNum?: boolean
+    agreeName?: boolean
+    orderCreatedBy?: boolean
+    liCreatedDate?: boolean
+    orderCreatedByName?: boolean
+    currentBandwidth?: boolean
+    beforeBandwidth?: boolean
+    productActivationDate?: boolean
+    quoteRowId?: boolean
+    lineItemDescription?: boolean
+    assetIntegId?: boolean
+    am?: boolean
+    xBillcompDt?: boolean
   }, ExtArgs["result"]["sosData"]>
 
   export type SosDataSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -7763,6 +8105,44 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     batchId?: boolean
+    prevOrder?: boolean
+    liSid?: boolean
+    sid?: boolean
+    custAccntNum?: boolean
+    custAccntName?: boolean
+    custAddr?: boolean
+    custRegion?: boolean
+    servAccntNum?: boolean
+    servAccntName?: boolean
+    servAddr?: boolean
+    serviceRegion?: boolean
+    billAccntNum?: boolean
+    accountNas?: boolean
+    billAccntName?: boolean
+    billAddr?: boolean
+    billRegion?: boolean
+    liId?: boolean
+    liProductId?: boolean
+    productDigital?: boolean
+    liBandwidth?: boolean
+    billcomDate?: boolean
+    liFulfillmentStatus?: boolean
+    scaling?: boolean
+    liPaymentTerm?: boolean
+    liBillingStartDate?: boolean
+    agreeItemNum?: boolean
+    agreeName?: boolean
+    orderCreatedBy?: boolean
+    liCreatedDate?: boolean
+    orderCreatedByName?: boolean
+    currentBandwidth?: boolean
+    beforeBandwidth?: boolean
+    productActivationDate?: boolean
+    quoteRowId?: boolean
+    lineItemDescription?: boolean
+    assetIntegId?: boolean
+    am?: boolean
+    xBillcompDt?: boolean
   }, ExtArgs["result"]["sosData"]>
 
   export type SosDataSelectScalar = {
@@ -7810,9 +8190,47 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     batchId?: boolean
+    prevOrder?: boolean
+    liSid?: boolean
+    sid?: boolean
+    custAccntNum?: boolean
+    custAccntName?: boolean
+    custAddr?: boolean
+    custRegion?: boolean
+    servAccntNum?: boolean
+    servAccntName?: boolean
+    servAddr?: boolean
+    serviceRegion?: boolean
+    billAccntNum?: boolean
+    accountNas?: boolean
+    billAccntName?: boolean
+    billAddr?: boolean
+    billRegion?: boolean
+    liId?: boolean
+    liProductId?: boolean
+    productDigital?: boolean
+    liBandwidth?: boolean
+    billcomDate?: boolean
+    liFulfillmentStatus?: boolean
+    scaling?: boolean
+    liPaymentTerm?: boolean
+    liBillingStartDate?: boolean
+    agreeItemNum?: boolean
+    agreeName?: boolean
+    orderCreatedBy?: boolean
+    liCreatedDate?: boolean
+    orderCreatedByName?: boolean
+    currentBandwidth?: boolean
+    beforeBandwidth?: boolean
+    productActivationDate?: boolean
+    quoteRowId?: boolean
+    lineItemDescription?: boolean
+    assetIntegId?: boolean
+    am?: boolean
+    xBillcompDt?: boolean
   }
 
-  export type SosDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "standardName" | "orderId" | "orderSubtype" | "order_description" | "segmen" | "subSegmen" | "custCity" | "custWitel" | "servCity" | "serviceWitel" | "billWitel" | "liProductName" | "liBilldate" | "liMilestone" | "kategori" | "liStatus" | "liStatusDate" | "isTermin" | "biayaPasang" | "hrgBulanan" | "revenue" | "orderCreatedDate" | "agreeType" | "agreeStartDate" | "agreeEndDate" | "lamaKontrakHari" | "amortisasi" | "actionCd" | "kategoriUmur" | "umurOrder" | "billCity" | "poName" | "tipeOrder" | "segmenBaru" | "scalling1" | "scalling2" | "tipeGrup" | "witelBaru" | "kategoriBaru" | "createdAt" | "updatedAt" | "batchId", ExtArgs["result"]["sosData"]>
+  export type SosDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "standardName" | "orderId" | "orderSubtype" | "order_description" | "segmen" | "subSegmen" | "custCity" | "custWitel" | "servCity" | "serviceWitel" | "billWitel" | "liProductName" | "liBilldate" | "liMilestone" | "kategori" | "liStatus" | "liStatusDate" | "isTermin" | "biayaPasang" | "hrgBulanan" | "revenue" | "orderCreatedDate" | "agreeType" | "agreeStartDate" | "agreeEndDate" | "lamaKontrakHari" | "amortisasi" | "actionCd" | "kategoriUmur" | "umurOrder" | "billCity" | "poName" | "tipeOrder" | "segmenBaru" | "scalling1" | "scalling2" | "tipeGrup" | "witelBaru" | "kategoriBaru" | "createdAt" | "updatedAt" | "batchId" | "prevOrder" | "liSid" | "sid" | "custAccntNum" | "custAccntName" | "custAddr" | "custRegion" | "servAccntNum" | "servAccntName" | "servAddr" | "serviceRegion" | "billAccntNum" | "accountNas" | "billAccntName" | "billAddr" | "billRegion" | "liId" | "liProductId" | "productDigital" | "liBandwidth" | "billcomDate" | "liFulfillmentStatus" | "scaling" | "liPaymentTerm" | "liBillingStartDate" | "agreeItemNum" | "agreeName" | "orderCreatedBy" | "liCreatedDate" | "orderCreatedByName" | "currentBandwidth" | "beforeBandwidth" | "productActivationDate" | "quoteRowId" | "lineItemDescription" | "assetIntegId" | "am" | "xBillcompDt", ExtArgs["result"]["sosData"]>
 
   export type $SosDataPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SosData"
@@ -7862,6 +8280,44 @@ export namespace Prisma {
       createdAt: Date | null
       updatedAt: Date | null
       batchId: string | null
+      prevOrder: string | null
+      liSid: string | null
+      sid: string | null
+      custAccntNum: string | null
+      custAccntName: string | null
+      custAddr: string | null
+      custRegion: string | null
+      servAccntNum: string | null
+      servAccntName: string | null
+      servAddr: string | null
+      serviceRegion: string | null
+      billAccntNum: string | null
+      accountNas: string | null
+      billAccntName: string | null
+      billAddr: string | null
+      billRegion: string | null
+      liId: string | null
+      liProductId: string | null
+      productDigital: string | null
+      liBandwidth: string | null
+      billcomDate: Date | null
+      liFulfillmentStatus: string | null
+      scaling: string | null
+      liPaymentTerm: string | null
+      liBillingStartDate: Date | null
+      agreeItemNum: string | null
+      agreeName: string | null
+      orderCreatedBy: string | null
+      liCreatedDate: Date | null
+      orderCreatedByName: string | null
+      currentBandwidth: string | null
+      beforeBandwidth: string | null
+      productActivationDate: Date | null
+      quoteRowId: string | null
+      lineItemDescription: string | null
+      assetIntegId: string | null
+      am: string | null
+      xBillcompDt: Date | null
     }, ExtArgs["result"]["sosData"]>
     composites: {}
   }
@@ -8329,6 +8785,44 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"SosData", 'DateTime'>
     readonly updatedAt: FieldRef<"SosData", 'DateTime'>
     readonly batchId: FieldRef<"SosData", 'String'>
+    readonly prevOrder: FieldRef<"SosData", 'String'>
+    readonly liSid: FieldRef<"SosData", 'String'>
+    readonly sid: FieldRef<"SosData", 'String'>
+    readonly custAccntNum: FieldRef<"SosData", 'String'>
+    readonly custAccntName: FieldRef<"SosData", 'String'>
+    readonly custAddr: FieldRef<"SosData", 'String'>
+    readonly custRegion: FieldRef<"SosData", 'String'>
+    readonly servAccntNum: FieldRef<"SosData", 'String'>
+    readonly servAccntName: FieldRef<"SosData", 'String'>
+    readonly servAddr: FieldRef<"SosData", 'String'>
+    readonly serviceRegion: FieldRef<"SosData", 'String'>
+    readonly billAccntNum: FieldRef<"SosData", 'String'>
+    readonly accountNas: FieldRef<"SosData", 'String'>
+    readonly billAccntName: FieldRef<"SosData", 'String'>
+    readonly billAddr: FieldRef<"SosData", 'String'>
+    readonly billRegion: FieldRef<"SosData", 'String'>
+    readonly liId: FieldRef<"SosData", 'String'>
+    readonly liProductId: FieldRef<"SosData", 'String'>
+    readonly productDigital: FieldRef<"SosData", 'String'>
+    readonly liBandwidth: FieldRef<"SosData", 'String'>
+    readonly billcomDate: FieldRef<"SosData", 'DateTime'>
+    readonly liFulfillmentStatus: FieldRef<"SosData", 'String'>
+    readonly scaling: FieldRef<"SosData", 'String'>
+    readonly liPaymentTerm: FieldRef<"SosData", 'String'>
+    readonly liBillingStartDate: FieldRef<"SosData", 'DateTime'>
+    readonly agreeItemNum: FieldRef<"SosData", 'String'>
+    readonly agreeName: FieldRef<"SosData", 'String'>
+    readonly orderCreatedBy: FieldRef<"SosData", 'String'>
+    readonly liCreatedDate: FieldRef<"SosData", 'DateTime'>
+    readonly orderCreatedByName: FieldRef<"SosData", 'String'>
+    readonly currentBandwidth: FieldRef<"SosData", 'String'>
+    readonly beforeBandwidth: FieldRef<"SosData", 'String'>
+    readonly productActivationDate: FieldRef<"SosData", 'DateTime'>
+    readonly quoteRowId: FieldRef<"SosData", 'String'>
+    readonly lineItemDescription: FieldRef<"SosData", 'String'>
+    readonly assetIntegId: FieldRef<"SosData", 'String'>
+    readonly am: FieldRef<"SosData", 'String'>
+    readonly xBillcompDt: FieldRef<"SosData", 'DateTime'>
   }
     
 
@@ -36861,7 +37355,45 @@ export namespace Prisma {
     kategoriBaru: 'kategoriBaru',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    batchId: 'batchId'
+    batchId: 'batchId',
+    prevOrder: 'prevOrder',
+    liSid: 'liSid',
+    sid: 'sid',
+    custAccntNum: 'custAccntNum',
+    custAccntName: 'custAccntName',
+    custAddr: 'custAddr',
+    custRegion: 'custRegion',
+    servAccntNum: 'servAccntNum',
+    servAccntName: 'servAccntName',
+    servAddr: 'servAddr',
+    serviceRegion: 'serviceRegion',
+    billAccntNum: 'billAccntNum',
+    accountNas: 'accountNas',
+    billAccntName: 'billAccntName',
+    billAddr: 'billAddr',
+    billRegion: 'billRegion',
+    liId: 'liId',
+    liProductId: 'liProductId',
+    productDigital: 'productDigital',
+    liBandwidth: 'liBandwidth',
+    billcomDate: 'billcomDate',
+    liFulfillmentStatus: 'liFulfillmentStatus',
+    scaling: 'scaling',
+    liPaymentTerm: 'liPaymentTerm',
+    liBillingStartDate: 'liBillingStartDate',
+    agreeItemNum: 'agreeItemNum',
+    agreeName: 'agreeName',
+    orderCreatedBy: 'orderCreatedBy',
+    liCreatedDate: 'liCreatedDate',
+    orderCreatedByName: 'orderCreatedByName',
+    currentBandwidth: 'currentBandwidth',
+    beforeBandwidth: 'beforeBandwidth',
+    productActivationDate: 'productActivationDate',
+    quoteRowId: 'quoteRowId',
+    lineItemDescription: 'lineItemDescription',
+    assetIntegId: 'assetIntegId',
+    am: 'am',
+    xBillcompDt: 'xBillcompDt'
   };
 
   export type SosDataScalarFieldEnum = (typeof SosDataScalarFieldEnum)[keyof typeof SosDataScalarFieldEnum]
@@ -37962,6 +38494,44 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"SosData"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"SosData"> | Date | string | null
     batchId?: StringNullableFilter<"SosData"> | string | null
+    prevOrder?: StringNullableFilter<"SosData"> | string | null
+    liSid?: StringNullableFilter<"SosData"> | string | null
+    sid?: StringNullableFilter<"SosData"> | string | null
+    custAccntNum?: StringNullableFilter<"SosData"> | string | null
+    custAccntName?: StringNullableFilter<"SosData"> | string | null
+    custAddr?: StringNullableFilter<"SosData"> | string | null
+    custRegion?: StringNullableFilter<"SosData"> | string | null
+    servAccntNum?: StringNullableFilter<"SosData"> | string | null
+    servAccntName?: StringNullableFilter<"SosData"> | string | null
+    servAddr?: StringNullableFilter<"SosData"> | string | null
+    serviceRegion?: StringNullableFilter<"SosData"> | string | null
+    billAccntNum?: StringNullableFilter<"SosData"> | string | null
+    accountNas?: StringNullableFilter<"SosData"> | string | null
+    billAccntName?: StringNullableFilter<"SosData"> | string | null
+    billAddr?: StringNullableFilter<"SosData"> | string | null
+    billRegion?: StringNullableFilter<"SosData"> | string | null
+    liId?: StringNullableFilter<"SosData"> | string | null
+    liProductId?: StringNullableFilter<"SosData"> | string | null
+    productDigital?: StringNullableFilter<"SosData"> | string | null
+    liBandwidth?: StringNullableFilter<"SosData"> | string | null
+    billcomDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    liFulfillmentStatus?: StringNullableFilter<"SosData"> | string | null
+    scaling?: StringNullableFilter<"SosData"> | string | null
+    liPaymentTerm?: StringNullableFilter<"SosData"> | string | null
+    liBillingStartDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    agreeItemNum?: StringNullableFilter<"SosData"> | string | null
+    agreeName?: StringNullableFilter<"SosData"> | string | null
+    orderCreatedBy?: StringNullableFilter<"SosData"> | string | null
+    liCreatedDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    orderCreatedByName?: StringNullableFilter<"SosData"> | string | null
+    currentBandwidth?: StringNullableFilter<"SosData"> | string | null
+    beforeBandwidth?: StringNullableFilter<"SosData"> | string | null
+    productActivationDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    quoteRowId?: StringNullableFilter<"SosData"> | string | null
+    lineItemDescription?: StringNullableFilter<"SosData"> | string | null
+    assetIntegId?: StringNullableFilter<"SosData"> | string | null
+    am?: StringNullableFilter<"SosData"> | string | null
+    xBillcompDt?: DateTimeNullableFilter<"SosData"> | Date | string | null
   }
 
   export type SosDataOrderByWithRelationInput = {
@@ -38009,6 +38579,44 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    prevOrder?: SortOrderInput | SortOrder
+    liSid?: SortOrderInput | SortOrder
+    sid?: SortOrderInput | SortOrder
+    custAccntNum?: SortOrderInput | SortOrder
+    custAccntName?: SortOrderInput | SortOrder
+    custAddr?: SortOrderInput | SortOrder
+    custRegion?: SortOrderInput | SortOrder
+    servAccntNum?: SortOrderInput | SortOrder
+    servAccntName?: SortOrderInput | SortOrder
+    servAddr?: SortOrderInput | SortOrder
+    serviceRegion?: SortOrderInput | SortOrder
+    billAccntNum?: SortOrderInput | SortOrder
+    accountNas?: SortOrderInput | SortOrder
+    billAccntName?: SortOrderInput | SortOrder
+    billAddr?: SortOrderInput | SortOrder
+    billRegion?: SortOrderInput | SortOrder
+    liId?: SortOrderInput | SortOrder
+    liProductId?: SortOrderInput | SortOrder
+    productDigital?: SortOrderInput | SortOrder
+    liBandwidth?: SortOrderInput | SortOrder
+    billcomDate?: SortOrderInput | SortOrder
+    liFulfillmentStatus?: SortOrderInput | SortOrder
+    scaling?: SortOrderInput | SortOrder
+    liPaymentTerm?: SortOrderInput | SortOrder
+    liBillingStartDate?: SortOrderInput | SortOrder
+    agreeItemNum?: SortOrderInput | SortOrder
+    agreeName?: SortOrderInput | SortOrder
+    orderCreatedBy?: SortOrderInput | SortOrder
+    liCreatedDate?: SortOrderInput | SortOrder
+    orderCreatedByName?: SortOrderInput | SortOrder
+    currentBandwidth?: SortOrderInput | SortOrder
+    beforeBandwidth?: SortOrderInput | SortOrder
+    productActivationDate?: SortOrderInput | SortOrder
+    quoteRowId?: SortOrderInput | SortOrder
+    lineItemDescription?: SortOrderInput | SortOrder
+    assetIntegId?: SortOrderInput | SortOrder
+    am?: SortOrderInput | SortOrder
+    xBillcompDt?: SortOrderInput | SortOrder
   }
 
   export type SosDataWhereUniqueInput = Prisma.AtLeast<{
@@ -38059,6 +38667,44 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"SosData"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"SosData"> | Date | string | null
     batchId?: StringNullableFilter<"SosData"> | string | null
+    prevOrder?: StringNullableFilter<"SosData"> | string | null
+    liSid?: StringNullableFilter<"SosData"> | string | null
+    sid?: StringNullableFilter<"SosData"> | string | null
+    custAccntNum?: StringNullableFilter<"SosData"> | string | null
+    custAccntName?: StringNullableFilter<"SosData"> | string | null
+    custAddr?: StringNullableFilter<"SosData"> | string | null
+    custRegion?: StringNullableFilter<"SosData"> | string | null
+    servAccntNum?: StringNullableFilter<"SosData"> | string | null
+    servAccntName?: StringNullableFilter<"SosData"> | string | null
+    servAddr?: StringNullableFilter<"SosData"> | string | null
+    serviceRegion?: StringNullableFilter<"SosData"> | string | null
+    billAccntNum?: StringNullableFilter<"SosData"> | string | null
+    accountNas?: StringNullableFilter<"SosData"> | string | null
+    billAccntName?: StringNullableFilter<"SosData"> | string | null
+    billAddr?: StringNullableFilter<"SosData"> | string | null
+    billRegion?: StringNullableFilter<"SosData"> | string | null
+    liId?: StringNullableFilter<"SosData"> | string | null
+    liProductId?: StringNullableFilter<"SosData"> | string | null
+    productDigital?: StringNullableFilter<"SosData"> | string | null
+    liBandwidth?: StringNullableFilter<"SosData"> | string | null
+    billcomDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    liFulfillmentStatus?: StringNullableFilter<"SosData"> | string | null
+    scaling?: StringNullableFilter<"SosData"> | string | null
+    liPaymentTerm?: StringNullableFilter<"SosData"> | string | null
+    liBillingStartDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    agreeItemNum?: StringNullableFilter<"SosData"> | string | null
+    agreeName?: StringNullableFilter<"SosData"> | string | null
+    orderCreatedBy?: StringNullableFilter<"SosData"> | string | null
+    liCreatedDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    orderCreatedByName?: StringNullableFilter<"SosData"> | string | null
+    currentBandwidth?: StringNullableFilter<"SosData"> | string | null
+    beforeBandwidth?: StringNullableFilter<"SosData"> | string | null
+    productActivationDate?: DateTimeNullableFilter<"SosData"> | Date | string | null
+    quoteRowId?: StringNullableFilter<"SosData"> | string | null
+    lineItemDescription?: StringNullableFilter<"SosData"> | string | null
+    assetIntegId?: StringNullableFilter<"SosData"> | string | null
+    am?: StringNullableFilter<"SosData"> | string | null
+    xBillcompDt?: DateTimeNullableFilter<"SosData"> | Date | string | null
   }, "id" | "orderId">
 
   export type SosDataOrderByWithAggregationInput = {
@@ -38106,6 +38752,44 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    prevOrder?: SortOrderInput | SortOrder
+    liSid?: SortOrderInput | SortOrder
+    sid?: SortOrderInput | SortOrder
+    custAccntNum?: SortOrderInput | SortOrder
+    custAccntName?: SortOrderInput | SortOrder
+    custAddr?: SortOrderInput | SortOrder
+    custRegion?: SortOrderInput | SortOrder
+    servAccntNum?: SortOrderInput | SortOrder
+    servAccntName?: SortOrderInput | SortOrder
+    servAddr?: SortOrderInput | SortOrder
+    serviceRegion?: SortOrderInput | SortOrder
+    billAccntNum?: SortOrderInput | SortOrder
+    accountNas?: SortOrderInput | SortOrder
+    billAccntName?: SortOrderInput | SortOrder
+    billAddr?: SortOrderInput | SortOrder
+    billRegion?: SortOrderInput | SortOrder
+    liId?: SortOrderInput | SortOrder
+    liProductId?: SortOrderInput | SortOrder
+    productDigital?: SortOrderInput | SortOrder
+    liBandwidth?: SortOrderInput | SortOrder
+    billcomDate?: SortOrderInput | SortOrder
+    liFulfillmentStatus?: SortOrderInput | SortOrder
+    scaling?: SortOrderInput | SortOrder
+    liPaymentTerm?: SortOrderInput | SortOrder
+    liBillingStartDate?: SortOrderInput | SortOrder
+    agreeItemNum?: SortOrderInput | SortOrder
+    agreeName?: SortOrderInput | SortOrder
+    orderCreatedBy?: SortOrderInput | SortOrder
+    liCreatedDate?: SortOrderInput | SortOrder
+    orderCreatedByName?: SortOrderInput | SortOrder
+    currentBandwidth?: SortOrderInput | SortOrder
+    beforeBandwidth?: SortOrderInput | SortOrder
+    productActivationDate?: SortOrderInput | SortOrder
+    quoteRowId?: SortOrderInput | SortOrder
+    lineItemDescription?: SortOrderInput | SortOrder
+    assetIntegId?: SortOrderInput | SortOrder
+    am?: SortOrderInput | SortOrder
+    xBillcompDt?: SortOrderInput | SortOrder
     _count?: SosDataCountOrderByAggregateInput
     _avg?: SosDataAvgOrderByAggregateInput
     _max?: SosDataMaxOrderByAggregateInput
@@ -38161,6 +38845,44 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
     batchId?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    prevOrder?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liSid?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    sid?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    custAccntNum?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    custAccntName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    custAddr?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    custRegion?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    servAccntNum?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    servAccntName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    servAddr?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    serviceRegion?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    billAccntNum?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    accountNas?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    billAccntName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    billAddr?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    billRegion?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liId?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liProductId?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    productDigital?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liBandwidth?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    billcomDate?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
+    liFulfillmentStatus?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    scaling?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liPaymentTerm?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liBillingStartDate?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
+    agreeItemNum?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    agreeName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    orderCreatedBy?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    liCreatedDate?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
+    orderCreatedByName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    currentBandwidth?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    beforeBandwidth?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    productActivationDate?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
+    quoteRowId?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    lineItemDescription?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    assetIntegId?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    am?: StringNullableWithAggregatesFilter<"SosData"> | string | null
+    xBillcompDt?: DateTimeNullableWithAggregatesFilter<"SosData"> | Date | string | null
   }
 
   export type HsiDataWhereInput = {
@@ -41200,6 +41922,44 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     batchId?: string | null
+    prevOrder?: string | null
+    liSid?: string | null
+    sid?: string | null
+    custAccntNum?: string | null
+    custAccntName?: string | null
+    custAddr?: string | null
+    custRegion?: string | null
+    servAccntNum?: string | null
+    servAccntName?: string | null
+    servAddr?: string | null
+    serviceRegion?: string | null
+    billAccntNum?: string | null
+    accountNas?: string | null
+    billAccntName?: string | null
+    billAddr?: string | null
+    billRegion?: string | null
+    liId?: string | null
+    liProductId?: string | null
+    productDigital?: string | null
+    liBandwidth?: string | null
+    billcomDate?: Date | string | null
+    liFulfillmentStatus?: string | null
+    scaling?: string | null
+    liPaymentTerm?: string | null
+    liBillingStartDate?: Date | string | null
+    agreeItemNum?: string | null
+    agreeName?: string | null
+    orderCreatedBy?: string | null
+    liCreatedDate?: Date | string | null
+    orderCreatedByName?: string | null
+    currentBandwidth?: string | null
+    beforeBandwidth?: string | null
+    productActivationDate?: Date | string | null
+    quoteRowId?: string | null
+    lineItemDescription?: string | null
+    assetIntegId?: string | null
+    am?: string | null
+    xBillcompDt?: Date | string | null
   }
 
   export type SosDataUncheckedCreateInput = {
@@ -41247,6 +42007,44 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     batchId?: string | null
+    prevOrder?: string | null
+    liSid?: string | null
+    sid?: string | null
+    custAccntNum?: string | null
+    custAccntName?: string | null
+    custAddr?: string | null
+    custRegion?: string | null
+    servAccntNum?: string | null
+    servAccntName?: string | null
+    servAddr?: string | null
+    serviceRegion?: string | null
+    billAccntNum?: string | null
+    accountNas?: string | null
+    billAccntName?: string | null
+    billAddr?: string | null
+    billRegion?: string | null
+    liId?: string | null
+    liProductId?: string | null
+    productDigital?: string | null
+    liBandwidth?: string | null
+    billcomDate?: Date | string | null
+    liFulfillmentStatus?: string | null
+    scaling?: string | null
+    liPaymentTerm?: string | null
+    liBillingStartDate?: Date | string | null
+    agreeItemNum?: string | null
+    agreeName?: string | null
+    orderCreatedBy?: string | null
+    liCreatedDate?: Date | string | null
+    orderCreatedByName?: string | null
+    currentBandwidth?: string | null
+    beforeBandwidth?: string | null
+    productActivationDate?: Date | string | null
+    quoteRowId?: string | null
+    lineItemDescription?: string | null
+    assetIntegId?: string | null
+    am?: string | null
+    xBillcompDt?: Date | string | null
   }
 
   export type SosDataUpdateInput = {
@@ -41294,6 +42092,44 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    prevOrder?: NullableStringFieldUpdateOperationsInput | string | null
+    liSid?: NullableStringFieldUpdateOperationsInput | string | null
+    sid?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    custAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    custRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    servAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    serviceRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    accountNas?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    billAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    billRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    liId?: NullableStringFieldUpdateOperationsInput | string | null
+    liProductId?: NullableStringFieldUpdateOperationsInput | string | null
+    productDigital?: NullableStringFieldUpdateOperationsInput | string | null
+    liBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    billcomDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    liFulfillmentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    scaling?: NullableStringFieldUpdateOperationsInput | string | null
+    liPaymentTerm?: NullableStringFieldUpdateOperationsInput | string | null
+    liBillingStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agreeItemNum?: NullableStringFieldUpdateOperationsInput | string | null
+    agreeName?: NullableStringFieldUpdateOperationsInput | string | null
+    orderCreatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    liCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    currentBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    beforeBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    productActivationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quoteRowId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItemDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    assetIntegId?: NullableStringFieldUpdateOperationsInput | string | null
+    am?: NullableStringFieldUpdateOperationsInput | string | null
+    xBillcompDt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SosDataUncheckedUpdateInput = {
@@ -41341,6 +42177,44 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    prevOrder?: NullableStringFieldUpdateOperationsInput | string | null
+    liSid?: NullableStringFieldUpdateOperationsInput | string | null
+    sid?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    custAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    custRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    servAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    serviceRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    accountNas?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    billAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    billRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    liId?: NullableStringFieldUpdateOperationsInput | string | null
+    liProductId?: NullableStringFieldUpdateOperationsInput | string | null
+    productDigital?: NullableStringFieldUpdateOperationsInput | string | null
+    liBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    billcomDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    liFulfillmentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    scaling?: NullableStringFieldUpdateOperationsInput | string | null
+    liPaymentTerm?: NullableStringFieldUpdateOperationsInput | string | null
+    liBillingStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agreeItemNum?: NullableStringFieldUpdateOperationsInput | string | null
+    agreeName?: NullableStringFieldUpdateOperationsInput | string | null
+    orderCreatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    liCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    currentBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    beforeBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    productActivationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quoteRowId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItemDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    assetIntegId?: NullableStringFieldUpdateOperationsInput | string | null
+    am?: NullableStringFieldUpdateOperationsInput | string | null
+    xBillcompDt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SosDataCreateManyInput = {
@@ -41388,6 +42262,44 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     batchId?: string | null
+    prevOrder?: string | null
+    liSid?: string | null
+    sid?: string | null
+    custAccntNum?: string | null
+    custAccntName?: string | null
+    custAddr?: string | null
+    custRegion?: string | null
+    servAccntNum?: string | null
+    servAccntName?: string | null
+    servAddr?: string | null
+    serviceRegion?: string | null
+    billAccntNum?: string | null
+    accountNas?: string | null
+    billAccntName?: string | null
+    billAddr?: string | null
+    billRegion?: string | null
+    liId?: string | null
+    liProductId?: string | null
+    productDigital?: string | null
+    liBandwidth?: string | null
+    billcomDate?: Date | string | null
+    liFulfillmentStatus?: string | null
+    scaling?: string | null
+    liPaymentTerm?: string | null
+    liBillingStartDate?: Date | string | null
+    agreeItemNum?: string | null
+    agreeName?: string | null
+    orderCreatedBy?: string | null
+    liCreatedDate?: Date | string | null
+    orderCreatedByName?: string | null
+    currentBandwidth?: string | null
+    beforeBandwidth?: string | null
+    productActivationDate?: Date | string | null
+    quoteRowId?: string | null
+    lineItemDescription?: string | null
+    assetIntegId?: string | null
+    am?: string | null
+    xBillcompDt?: Date | string | null
   }
 
   export type SosDataUpdateManyMutationInput = {
@@ -41435,6 +42347,44 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    prevOrder?: NullableStringFieldUpdateOperationsInput | string | null
+    liSid?: NullableStringFieldUpdateOperationsInput | string | null
+    sid?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    custAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    custRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    servAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    serviceRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    accountNas?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    billAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    billRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    liId?: NullableStringFieldUpdateOperationsInput | string | null
+    liProductId?: NullableStringFieldUpdateOperationsInput | string | null
+    productDigital?: NullableStringFieldUpdateOperationsInput | string | null
+    liBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    billcomDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    liFulfillmentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    scaling?: NullableStringFieldUpdateOperationsInput | string | null
+    liPaymentTerm?: NullableStringFieldUpdateOperationsInput | string | null
+    liBillingStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agreeItemNum?: NullableStringFieldUpdateOperationsInput | string | null
+    agreeName?: NullableStringFieldUpdateOperationsInput | string | null
+    orderCreatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    liCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    currentBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    beforeBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    productActivationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quoteRowId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItemDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    assetIntegId?: NullableStringFieldUpdateOperationsInput | string | null
+    am?: NullableStringFieldUpdateOperationsInput | string | null
+    xBillcompDt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SosDataUncheckedUpdateManyInput = {
@@ -41482,6 +42432,44 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    prevOrder?: NullableStringFieldUpdateOperationsInput | string | null
+    liSid?: NullableStringFieldUpdateOperationsInput | string | null
+    sid?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    custAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    custAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    custRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    servAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    servAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    serviceRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntNum?: NullableStringFieldUpdateOperationsInput | string | null
+    accountNas?: NullableStringFieldUpdateOperationsInput | string | null
+    billAccntName?: NullableStringFieldUpdateOperationsInput | string | null
+    billAddr?: NullableStringFieldUpdateOperationsInput | string | null
+    billRegion?: NullableStringFieldUpdateOperationsInput | string | null
+    liId?: NullableStringFieldUpdateOperationsInput | string | null
+    liProductId?: NullableStringFieldUpdateOperationsInput | string | null
+    productDigital?: NullableStringFieldUpdateOperationsInput | string | null
+    liBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    billcomDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    liFulfillmentStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    scaling?: NullableStringFieldUpdateOperationsInput | string | null
+    liPaymentTerm?: NullableStringFieldUpdateOperationsInput | string | null
+    liBillingStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    agreeItemNum?: NullableStringFieldUpdateOperationsInput | string | null
+    agreeName?: NullableStringFieldUpdateOperationsInput | string | null
+    orderCreatedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    liCreatedDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    orderCreatedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    currentBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    beforeBandwidth?: NullableStringFieldUpdateOperationsInput | string | null
+    productActivationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quoteRowId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineItemDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    assetIntegId?: NullableStringFieldUpdateOperationsInput | string | null
+    am?: NullableStringFieldUpdateOperationsInput | string | null
+    xBillcompDt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type HsiDataCreateInput = {
@@ -45033,6 +46021,44 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     batchId?: SortOrder
+    prevOrder?: SortOrder
+    liSid?: SortOrder
+    sid?: SortOrder
+    custAccntNum?: SortOrder
+    custAccntName?: SortOrder
+    custAddr?: SortOrder
+    custRegion?: SortOrder
+    servAccntNum?: SortOrder
+    servAccntName?: SortOrder
+    servAddr?: SortOrder
+    serviceRegion?: SortOrder
+    billAccntNum?: SortOrder
+    accountNas?: SortOrder
+    billAccntName?: SortOrder
+    billAddr?: SortOrder
+    billRegion?: SortOrder
+    liId?: SortOrder
+    liProductId?: SortOrder
+    productDigital?: SortOrder
+    liBandwidth?: SortOrder
+    billcomDate?: SortOrder
+    liFulfillmentStatus?: SortOrder
+    scaling?: SortOrder
+    liPaymentTerm?: SortOrder
+    liBillingStartDate?: SortOrder
+    agreeItemNum?: SortOrder
+    agreeName?: SortOrder
+    orderCreatedBy?: SortOrder
+    liCreatedDate?: SortOrder
+    orderCreatedByName?: SortOrder
+    currentBandwidth?: SortOrder
+    beforeBandwidth?: SortOrder
+    productActivationDate?: SortOrder
+    quoteRowId?: SortOrder
+    lineItemDescription?: SortOrder
+    assetIntegId?: SortOrder
+    am?: SortOrder
+    xBillcompDt?: SortOrder
   }
 
   export type SosDataAvgOrderByAggregateInput = {
@@ -45089,6 +46115,44 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     batchId?: SortOrder
+    prevOrder?: SortOrder
+    liSid?: SortOrder
+    sid?: SortOrder
+    custAccntNum?: SortOrder
+    custAccntName?: SortOrder
+    custAddr?: SortOrder
+    custRegion?: SortOrder
+    servAccntNum?: SortOrder
+    servAccntName?: SortOrder
+    servAddr?: SortOrder
+    serviceRegion?: SortOrder
+    billAccntNum?: SortOrder
+    accountNas?: SortOrder
+    billAccntName?: SortOrder
+    billAddr?: SortOrder
+    billRegion?: SortOrder
+    liId?: SortOrder
+    liProductId?: SortOrder
+    productDigital?: SortOrder
+    liBandwidth?: SortOrder
+    billcomDate?: SortOrder
+    liFulfillmentStatus?: SortOrder
+    scaling?: SortOrder
+    liPaymentTerm?: SortOrder
+    liBillingStartDate?: SortOrder
+    agreeItemNum?: SortOrder
+    agreeName?: SortOrder
+    orderCreatedBy?: SortOrder
+    liCreatedDate?: SortOrder
+    orderCreatedByName?: SortOrder
+    currentBandwidth?: SortOrder
+    beforeBandwidth?: SortOrder
+    productActivationDate?: SortOrder
+    quoteRowId?: SortOrder
+    lineItemDescription?: SortOrder
+    assetIntegId?: SortOrder
+    am?: SortOrder
+    xBillcompDt?: SortOrder
   }
 
   export type SosDataMinOrderByAggregateInput = {
@@ -45136,6 +46200,44 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     batchId?: SortOrder
+    prevOrder?: SortOrder
+    liSid?: SortOrder
+    sid?: SortOrder
+    custAccntNum?: SortOrder
+    custAccntName?: SortOrder
+    custAddr?: SortOrder
+    custRegion?: SortOrder
+    servAccntNum?: SortOrder
+    servAccntName?: SortOrder
+    servAddr?: SortOrder
+    serviceRegion?: SortOrder
+    billAccntNum?: SortOrder
+    accountNas?: SortOrder
+    billAccntName?: SortOrder
+    billAddr?: SortOrder
+    billRegion?: SortOrder
+    liId?: SortOrder
+    liProductId?: SortOrder
+    productDigital?: SortOrder
+    liBandwidth?: SortOrder
+    billcomDate?: SortOrder
+    liFulfillmentStatus?: SortOrder
+    scaling?: SortOrder
+    liPaymentTerm?: SortOrder
+    liBillingStartDate?: SortOrder
+    agreeItemNum?: SortOrder
+    agreeName?: SortOrder
+    orderCreatedBy?: SortOrder
+    liCreatedDate?: SortOrder
+    orderCreatedByName?: SortOrder
+    currentBandwidth?: SortOrder
+    beforeBandwidth?: SortOrder
+    productActivationDate?: SortOrder
+    quoteRowId?: SortOrder
+    lineItemDescription?: SortOrder
+    assetIntegId?: SortOrder
+    am?: SortOrder
+    xBillcompDt?: SortOrder
   }
 
   export type SosDataSumOrderByAggregateInput = {

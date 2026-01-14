@@ -13,22 +13,22 @@ const fixCoordinate = (val, isLat) => {
   // Hapus karakter non-numerik kecuali minus dan titik
   const c = val.toString().replace(/[^0-9\-.]/g, '')
   if (isNaN(c) || c === '') return null
-  
+
   let f = parseFloat(c)
   if (f === 0) return null
 
   let loop = 0
   if (isLat) {
     // Latitude Indonesia kira-kira -11 sampai 6
-    while ((f < -12 || f > 10) && loop < 15) { 
+    while ((f < -12 || f > 10) && loop < 15) {
       f /= 10
-      loop++ 
+      loop++
     }
   } else {
     // Longitude Indonesia kira-kira 95 sampai 141
-    while (Math.abs(f) > 142 && loop < 15) { 
+    while (Math.abs(f) > 142 && loop < 15) {
       f /= 10
-      loop++ 
+      loop++
     }
   }
   return f
@@ -63,14 +63,14 @@ export const getDashboardData = async (req, res, next) => {
     const { startDate, endDate, witel } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
         lte: new Date(endDate)
       }
     }
-    
+
     if (witel) {
       whereClause.billWitel = witel
     }
@@ -92,7 +92,7 @@ export const getRevenueByWitel = async (req, res, next) => {
     const { startDate, endDate } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
@@ -130,7 +130,7 @@ export const getAmountByWitel = async (req, res, next) => {
     const { startDate, endDate } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
@@ -160,34 +160,135 @@ export const getAmountByWitel = async (req, res, next) => {
   }
 }
 
-// Get KPI data from SOS data
+// Get KPI data from Digital Product data
 export const getKPIData = async (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query
+    const { startDate, endDate, witel, branch, product } = req.query
 
-    let whereClause = {}
-    
+    // Define Date Filter
+    let dateFilter = ''
+    const params = []
+    let pIdx = 1
+
     if (startDate && endDate) {
-      whereClause.orderCreatedDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      params.push(startDate, endDate)
+      pIdx += 2
+    }
+
+    // Reuse the same CTE for consistency
+    const normalizedDataCTE = `
+      WITH normalized_data AS (
+        SELECT
+          *,
+          CASE
+            WHEN witel IN ('BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG') THEN 'BALI'
+            WHEN witel IN ('JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO') THEN 'JATIM TIMUR'
+            WHEN witel IN ('NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES') THEN 'SURAMADU'
+            ELSE 'OTHER' 
+          END as region_norm,
+          CASE
+            WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+            WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+            WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+            WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+            ELSE 'OTHER'
+          END as product_norm,
+          CASE
+            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
+            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
+            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
+            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
+            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
+            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
+            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
+            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
+            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
+            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
+            WHEN UPPER(branch) IN ('MLG') THEN 'MALANG'
+            WHEN UPPER(branch) IN ('KDR') THEN 'KEDIRI'
+            WHEN UPPER(branch) IN ('MDN') THEN 'MADIUN'
+            WHEN UPPER(branch) IN ('BJN') THEN 'BOJONEGORO'
+            WHEN UPPER(branch) IN ('PON') THEN 'PONOROGO'
+            WHEN UPPER(branch) IN ('SDO') THEN 'SIDOARJO'
+            WHEN UPPER(branch) IN ('BWI') THEN 'BANYUWANGI'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JEMBER'
+            WHEN UPPER(branch) IN ('PSR') THEN 'PASURUAN'
+            WHEN UPPER(branch) IN ('MTR') THEN 'MATARAM'
+            WHEN UPPER(branch) IN ('KPG') THEN 'KUPANG'
+            WHEN UPPER(branch) IN ('LBJ') THEN 'LABOAN BAJO'
+            WHEN UPPER(branch) IN ('BMA') THEN 'BIMA'
+            WHEN UPPER(branch) IN ('SBS') THEN 'SURABAYA'
+            WHEN UPPER(branch) IN ('SBU') THEN 'SURABAYA'
+            WHEN UPPER(branch) IN ('GSK') THEN 'GRESIK'
+            WHEN UPPER(branch) IN ('PMK') THEN 'PAMEKASAN'
+            WHEN UPPER(branch) IN ('BKL') THEN 'BANGKALAN'
+            ELSE UPPER(branch)
+          END as branch_norm,
+          channel as channel_norm
+        FROM digital_products
+        WHERE 1=1
+        ${dateFilter}
+      )
+    `
+
+    let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
+
+    // 1. Witel Filter
+    if (witel && witel !== 'ALL') {
+      const witelArr = witel.split(',').filter(w => w)
+      if (witelArr.length > 0) {
+        const placeholders = witelArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND region_norm IN (${placeholders})`
+        params.push(...witelArr)
       }
     }
 
-    const totalOrders = await prisma.sosData.count({ where: whereClause })
-    const completedOrders = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        liStatus: { in: ['completed', 'activated', 'live'] }
+    // 2. Branch Filter
+    if (branch) {
+      const branchArr = branch.split(',').filter(b => b)
+      if (branchArr.length > 0) {
+        const placeholders = branchArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND branch_norm IN (${placeholders})`
+        params.push(...branchArr)
       }
-    })
+    }
+
+    // 3. Product Filter
+    if (product) {
+      const productArr = product.split(',').filter(p => p)
+      if (productArr.length > 0) {
+        const placeholders = productArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND product_norm IN (${placeholders})`
+        params.push(...productArr)
+      }
+    }
+
+    const stats = await prisma.$queryRawUnsafe(`
+      ${normalizedDataCTE}
+      SELECT
+        COUNT(*)::int as total,
+        SUM(CASE 
+          WHEN status ILIKE '%completed%' OR status ILIKE '%activated%' OR status ILIKE '%live%' OR status ILIKE '%done%' OR status ILIKE '%closed%' OR status ILIKE '%ps%' 
+          THEN 1 ELSE 0 
+        END)::int as completed
+      FROM normalized_data
+      ${filterCondition}
+    `, ...params)
+
+    const totalOrders = stats[0]?.total || 0
+    const completedOrders = stats[0]?.completed || 0
+    const progressOrders = totalOrders - completedOrders
 
     successResponse(
       res,
       {
-        totalOrders,
-        completedOrders,
-        progressOrders: totalOrders - completedOrders,
+        totalOrder: totalOrders,
+        completed: completedOrders,
+        openProgress: progressOrders,
         completionRate: totalOrders > 0 ? ((completedOrders / totalOrders) * 100).toFixed(2) : 0
       },
       'KPI data retrieved successfully'
@@ -203,7 +304,7 @@ export const getTotalOrderByRegional = async (req, res, next) => {
     const { startDate, endDate } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
@@ -238,7 +339,7 @@ export const getSebaranDataPS = async (req, res, next) => {
     const { startDate, endDate } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
@@ -273,7 +374,7 @@ export const getCancelByFCC = async (req, res, next) => {
     const { startDate, endDate } = req.query
 
     let whereClause = {}
-    
+
     if (startDate && endDate) {
       whereClause.orderCreatedDate = {
         gte: new Date(startDate),
@@ -354,67 +455,302 @@ export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    let whereClause = {}
-
+    // Date filter
+    let dateFilter = ''
+    const params = []
     if (start_date && end_date) {
-      whereClause.tanggalMom = {
-        gte: new Date(start_date),
-        lte: new Date(end_date)
-      }
+      dateFilter = 'WHERE tanggal_mom BETWEEN $1 AND $2'
+      params.push(new Date(start_date))
+      params.push(new Date(end_date))
     }
 
-    const tableData = await prisma.spmkMom.groupBy({
-      by: ['witelBaru'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      _sum: {
-        revenuePlan: true
+
+
+    // Aggregate per witel + region
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT
+        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
+        TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
+        SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS jumlah_lop,
+        SUM(COALESCE(revenue_plan,0)) AS rev_all,
+        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
+        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
+        SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END)::int AS drop_cnt,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' AND populasi_non_drop = 'Y' AND go_live = 'N' THEN 1 ELSE 0 END)::int AS dalam_toc,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' AND populasi_non_drop = 'Y' AND go_live = 'N' THEN 1 ELSE 0 END)::int AS lewat_toc,
+        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
+        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
+        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
+        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
+        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
+      FROM spmk_mom
+      ${dateFilter}
+      GROUP BY witel_baru, witel_lama, region
+      ORDER BY witel_baru, witel_lama` ,
+      ...params
+    )
+
+    const WITEL_HIERARCHY = {
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA'],
+      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB'],
+      'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA']
+    }
+
+    const findParent = (w) => {
+      for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
+        if (children.includes(w)) return p
       }
+      return w
+    }
+
+    // Build table data with parent (region) rows
+    const parents = new Map()
+    const tableData = []
+
+    rows.forEach((row) => {
+      const witelNorm = row.witel
+      const parentKey = row.parent_witel || findParent(witelNorm)
+
+      const jumlahLop = Number(row.jumlah_lop || 0)
+      const goliveJml = Number(row.golive_jml || 0)
+      const dropCnt = Number(row.drop_cnt || 0)
+      const revAll = Number(row.rev_all || 0)
+      const goliveRev = Number(row.golive_rev || 0)
+
+      const cntInitial = Number(row.cnt_initial || 0)
+      const cntSurvey = Number(row.cnt_survey || 0)
+      const cntPerizinan = Number(row.cnt_perizinan || 0)
+      const cntInstalasi = Number(row.cnt_instalasi || 0)
+      const cntFi = Number(row.cnt_fi || 0)
+
+      // child row
+      tableData.push({
+        isParent: false,
+        parentWitel: parentKey,
+        witel: witelNorm,
+        jumlahLop,
+        revAll,
+        initial: cntInitial,
+        survey: cntSurvey,
+        perizinan: cntPerizinan,
+        instalasi: cntInstalasi,
+        piOgp: cntFi,
+        golive_jml: goliveJml,
+        golive_rev: goliveRev,
+        drop: dropCnt,
+        persen_close: jumlahLop > 0 ? ((goliveJml / jumlahLop) * 100).toFixed(2) : '0.00'
+      })
+
+      // accumulate parent
+      if (!parents.has(parentKey)) {
+        parents.set(parentKey, {
+          isParent: true,
+          parentWitel: parentKey,
+          witel: parentKey,
+          jumlahLop: 0,
+          revAll: 0,
+          initial: 0,
+          survey: 0,
+          perizinan: 0,
+          instalasi: 0,
+          piOgp: 0,
+          golive_jml: 0,
+          golive_rev: 0,
+          drop: 0
+        })
+      }
+      const p = parents.get(parentKey)
+      p.jumlahLop += jumlahLop
+      p.revAll += revAll
+      p.golive_jml += goliveJml
+      p.golive_rev += goliveRev
+      p.drop += dropCnt
+      p.initial += cntInitial
+      p.survey += cntSurvey
+      p.perizinan += cntPerizinan
+      p.instalasi += cntInstalasi
+      p.piOgp += cntFi
     })
 
-    const formattedTableData = tableData.map(row => ({
-      witel: row.witelBaru || 'Unknown',
-      jumlahLop: row._count.id,
-      revAll: parseFloat(row._sum.revenuePlan || 0),
-      initial: 0,
-      survey: 0,
-      perizinan: 0,
-      instalasi: 0,
-      piOgp: 0,
-      golive: row.goLive === 'Y' ? row._count.id : 0,
-      drop: 0
+    // finalize parent rows and interleave
+    const groupedByParent = new Map()
+    tableData.forEach(row => {
+      if (!groupedByParent.has(row.parentWitel)) {
+        groupedByParent.set(row.parentWitel, [])
+      }
+      groupedByParent.get(row.parentWitel).push(row)
+    })
+
+    const finalTable = []
+    parents.forEach((p, key) => {
+      p.persen_close = p.jumlahLop > 0 ? ((p.golive_jml / p.jumlahLop) * 100).toFixed(2) : '0.00'
+      finalTable.push(p)
+      finalTable.push(...(groupedByParent.get(key) || []))
+    })
+
+    // Project data (belum GO LIVE)
+    const projectRows = await prisma.$queryRawUnsafe(
+      `SELECT
+        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
+        TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
+        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
+        SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
+      FROM spmk_mom
+      ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}
+      GROUP BY witel_baru, witel_lama
+      ORDER BY witel_baru, witel_lama`,
+      ...params
+    )
+
+    const parentProjects = new Map()
+    const projectData = []
+
+    projectRows.forEach((row) => {
+      const witelNorm = row.witel
+      const parentKey = row.parent_witel || findParent(witelNorm)
+      const dalam = Number(row.dalam_toc || 0)
+      const lewat = Number(row.lewat_toc || 0)
+      const progress = Number(row.lop_progress || 0)
+
+      projectData.push({
+        isParent: false,
+        parentWitel: parentKey,
+        witel: witelNorm,
+        dalam_toc: dalam,
+        lewat_toc: lewat,
+        jumlah_lop_progress: progress,
+        persen_dalam_toc: (dalam + lewat) > 0 ? ((dalam / (dalam + lewat)) * 100).toFixed(2) : '0.00'
+      })
+
+      if (!parentProjects.has(parentKey)) {
+        parentProjects.set(parentKey, {
+          isParent: true,
+          parentWitel: parentKey,
+          witel: parentKey,
+          dalam_toc: 0,
+          lewat_toc: 0,
+          jumlah_lop_progress: 0
+        })
+      }
+      const p = parentProjects.get(parentKey)
+      p.dalam_toc += dalam
+      p.lewat_toc += lewat
+      p.jumlah_lop_progress += progress
+    })
+
+    const groupedProject = new Map()
+    projectData.forEach(r => {
+      if (!groupedProject.has(r.parentWitel)) groupedProject.set(r.parentWitel, [])
+      groupedProject.get(r.parentWitel).push(r)
+    })
+
+    const finalProjects = []
+    parentProjects.forEach((p, key) => {
+      p.persen_dalam_toc = (p.dalam_toc + p.lewat_toc) > 0 ? ((p.dalam_toc / (p.dalam_toc + p.lewat_toc)) * 100).toFixed(2) : '0.00'
+      finalProjects.push(p)
+      finalProjects.push(...(groupedProject.get(key) || []))
+    })
+
+    // --- TOP 3 AGING (Tanpa batasan dateFilter agar project lama tetap muncul) ---
+    const top3WitelRaw = await prisma.$queryRawUnsafe(
+      `WITH Ranked AS (
+         SELECT
+           TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) as witel_norm,
+           id_i_hld,
+           tanggal_mom,
+           revenue_plan,
+           status_tomps_new,
+           usia,
+           uraian_kegiatan,
+           ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) ORDER BY usia DESC) as rn
+         FROM spmk_mom
+         WHERE go_live = 'N' AND populasi_non_drop = 'Y'
+       )
+       SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`
+    )
+
+    const top3PoRaw = await prisma.$queryRawUnsafe(
+      `WITH Ranked AS (
+         SELECT
+           po_name,
+           uraian_kegiatan,
+           id_i_hld,
+           tanggal_mom,
+           revenue_plan,
+           status_tomps_new,
+           usia,
+           ROW_NUMBER() OVER (PARTITION BY po_name ORDER BY usia DESC) as rn
+         FROM spmk_mom
+         WHERE go_live = 'N' AND populasi_non_drop = 'Y'
+       )
+       SELECT * FROM Ranked WHERE rn <= 3 ORDER BY po_name, rn`
+    )
+
+    // --- NEW: Distribution of Project Age (Bucket Usia) ---
+    const bucketUsiaRaw = await prisma.$queryRawUnsafe(
+      `SELECT
+        CASE
+          WHEN usia < 30 THEN '< 30 Hari'
+          WHEN usia BETWEEN 30 AND 60 THEN '30 - 60 Hari'
+          WHEN usia BETWEEN 61 AND 90 THEN '61 - 90 Hari'
+          ELSE '> 90 Hari'
+        END as range,
+        COUNT(*)::int as count
+      FROM spmk_mom
+      WHERE go_live = 'N' AND populasi_non_drop = 'Y'
+      GROUP BY range
+      ORDER BY range`
+    )
+
+    // --- NEW: Trend Order vs Go-Live (Monthly) ---
+    const trendRaw = await prisma.$queryRawUnsafe(
+      `SELECT
+        TO_CHAR(tanggal_mom, 'YYYY-MM') as month,
+        COUNT(*)::int as total_order,
+        SUM(CASE WHEN go_live = 'Y' THEN 1 ELSE 0 END)::int as total_golive
+      FROM spmk_mom
+      ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"}
+      GROUP BY month
+      ORDER BY month`,
+      ...params
+    )
+
+    // Helper formatting
+    const formatRaw = (rows) => rows.map(r => ({
+      ...r,
+      region: findParent(r.witel_norm || ''), // Untuk Top 3 Witel, gunakan parent
+      revenue_plan: Number(r.revenue_plan || 0),
+      usia: Number(r.usia || 0),
+      rn: Number(r.rn)
     }))
-
-    // Get project data (belum GO LIVE)
-    const projectData = await prisma.spmkMom.findMany({
-      where: {
-        ...whereClause,
-        goLive: 'N'
-      },
-      select: {
-        witelBaru: true,
-        region: true,
-        revenuePlan: true,
-        usia: true
-      }
-    })
 
     successResponse(
       res,
       {
-        tableData: formattedTableData,
-        projectData
+        tableData: finalTable,
+        projectData: finalProjects,
+        top3Witel: formatRaw(top3WitelRaw),
+        top3Po: formatRaw(top3PoRaw),
+        bucketUsiaData: bucketUsiaRaw,
+        trendGolive: trendRaw,
+        topMitraRevenue: []
       },
       'Report Tambahan data retrieved successfully'
     )
   } catch (error) {
-    next(error)
+    console.error("GET REPORT TAMBAHAN ERROR:", error)
+    return res.status(500).json({
+      success: false,
+      message: `Error fetching report: ${error.message}`,
+      error: error.toString()
+    })
   }
 }
 
-// Get Report Datin - from SPMK MOM data  
+// Get Report Datin - from SPMK MOM data
 export const getReportDatin = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
@@ -463,96 +799,153 @@ export const getReportDatin = async (req, res, next) => {
 }
 
 // Get Report Analysis - from SOS data segmentation
+// Get Report Analysis - from Digital Product data segmentation
 export const getReportAnalysis = async (req, res, next) => {
   try {
-    const { start_date, end_date } = req.query
+    const { start_date, end_date, witel } = req.query
 
     let whereClause = {}
-
     if (start_date && end_date) {
-      whereClause.orderCreatedDate = {
+      whereClause.orderDate = {
         gte: new Date(start_date),
         lte: new Date(end_date)
       }
     }
 
-    // Get SME data
-    const smeData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'SME' }
-      }
-    })
+    // Region Mapping
+    const regionMapping = {
+      'BALI': ['BALI', 'DENPASAR', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'Non-Telda (NCX)', 'SANUR', 'SINGARAJA', 'TABANAN', 'UBUNG'],
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'Non-Telda (NCX)', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'INNER - JATIM TIMUR', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'Non-Telda (NCX)', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'INNER - NUSA TENGGARA', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'Non-Telda (NCX)', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU'],
+      'SURAMADU': ['SURAMADU', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'Non-Telda (NCX)', 'PAMEKASAN', 'TANDES']
+    }
 
-    const smeBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'SME' }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+    let selectedRegion = null
+    let targetRows = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
-    // Get Government data
-    const govData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'GOV' }
+    if (witel) {
+      const witelList = witel.split(',').map(w => w.trim()).filter(w => w)
+      if (witelList.length === 1 && regionMapping[witelList[0]]) {
+        selectedRegion = witelList[0]
+        targetRows = regionMapping[selectedRegion]
+      } else if (witelList.length > 0) {
+        targetRows = targetRows.filter(r => witelList.includes(r))
       }
-    })
+    }
 
-    const govBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { contains: 'GOV' }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+    // Helper to get data for a segment
+    const getSegmentData = async (segmentKeywords) => {
+      const keywords = Array.isArray(segmentKeywords) ? segmentKeywords : [segmentKeywords]
+      
+      const data = await prisma.digitalProduct.findMany({
+        where: {
+          ...whereClause,
+          OR: keywords.map(k => ({ segment: { contains: k, mode: 'insensitive' } }))
+        },
+        select: {
+          witel: true,
+          productName: true,
+          status: true,
+          revenue: true,
+          netPrice: true
+        }
+      })
 
-    // Get Private data
-    const privateData = await prisma.sosData.count({
-      where: {
-        ...whereClause,
-        segmen: { notIn: ['SME', 'GOVERNMENT', 'GOV', 'SOE'] }
-      }
-    })
+      // Process data
+      const witelMap = {}
+      
+      targetRows.forEach(w => {
+        witelMap[w] = {
+          witel: w, // Standardize key for frontend
+          nama_witel: w,
+          in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0,
+          prov_comp_n_realisasi: 0, prov_comp_o_realisasi: 0, prov_comp_ae_realisasi: 0, prov_comp_ps_realisasi: 0,
+          revenue_n_ach: 0, revenue_o_ach: 0, revenue_ae_ach: 0, revenue_ps_ach: 0
+        }
+      })
 
-    const privateBillAmount = await prisma.sosData.aggregate({
-      where: {
-        ...whereClause,
-        segmen: { notIn: ['SME', 'GOVERNMENT', 'GOV', 'SOE'] }
-      },
-      _sum: {
-        revenue: true
-      }
-    })
+      let totalOgp = 0
+      let totalClosed = 0
 
-    const tableData = [
-      {
-        kategori: 'SME',
-        jumlah: smeData,
-        totalRevenue: parseFloat(smeBillAmount._sum.revenue || 0)
-      },
-      {
-        kategori: 'GOVERNMENT',
-        jumlah: govData,
-        totalRevenue: parseFloat(govBillAmount._sum.revenue || 0)
-      },
-      {
-        kategori: 'PRIVATE',
-        jumlah: privateData,
-        totalRevenue: parseFloat(privateBillAmount._sum.revenue || 0)
+      data.forEach(row => {
+        let rawWitel = (row.witel || '').toUpperCase()
+        let mappedName = null
+
+        if (selectedRegion) {
+          const branches = regionMapping[selectedRegion] || []
+          const foundBranch = branches.find(b => rawWitel.includes(b))
+          if (foundBranch) mappedName = foundBranch
+        } else {
+          for (const [region, branches] of Object.entries(regionMapping)) {
+            if (branches.some(b => rawWitel.includes(b))) {
+              mappedName = region
+              break
+            }
+          }
+          if (!mappedName) {
+             if (rawWitel.includes('BALI') || rawWitel.includes('DENPASAR') || rawWitel.includes('SINGARAJA') || rawWitel.includes('BADUNG')) mappedName = 'BALI'
+             else if (rawWitel.includes('BARAT') || rawWitel.includes('KEDIRI') || rawWitel.includes('MADIUN') || rawWitel.includes('MALANG')) mappedName = 'JATIM BARAT'
+             else if (rawWitel.includes('TIMUR') || rawWitel.includes('JEMBER') || rawWitel.includes('PASURUAN') || rawWitel.includes('SIDOARJO')) mappedName = 'JATIM TIMUR'
+             else if (rawWitel.includes('NUSA') || rawWitel.includes('NTB') || rawWitel.includes('NTT') || rawWitel.includes('KUPANG') || rawWitel.includes('MATARAM')) mappedName = 'NUSA TENGGARA'
+             else if (rawWitel.includes('SURAMADU') || rawWitel.includes('MADURA') || rawWitel.includes('SURABAYA') || rawWitel.includes('GRESIK')) mappedName = 'SURAMADU'
+          }
+        }
+        
+        if (!mappedName) {
+           mappedName = targetRows.find(t => rawWitel.includes(t))
+        }
+
+        if (!mappedName || !witelMap[mappedName]) return 
+
+        let productCode = ''
+        const pName = (row.productName || '').toLowerCase()
+        if (pName.includes('netmonk')) productCode = 'n'
+        else if (pName.includes('oca')) productCode = 'o'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording') || pName.includes('eazy')) productCode = 'ae'
+        else if (pName.includes('pijar')) productCode = 'ps'
+        
+        if (!productCode) return
+
+        const status = (row.status || '').toLowerCase()
+        const isCompleted = ['completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isInProgress = !isCompleted
+
+        if (isInProgress) {
+          witelMap[mappedName][`in_progress_${productCode}`]++
+          totalOgp++
+        } else {
+          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
+          // Use netPrice if available, otherwise revenue. 
+          // Handle Prisma Decimal/Object by converting to Number explicitly
+          const np = row.netPrice
+          const rev = row.revenue
+          const amount = (np !== null && np !== undefined) ? Number(np) : (rev !== null && rev !== undefined ? Number(rev) : 0)
+          
+          witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta
+          totalClosed++
+        }
+      })
+
+      return {
+        data: Object.values(witelMap),
+        details: { total: totalOgp + totalClosed, ogp: totalOgp, closed: totalClosed }
       }
-    ]
+    }
+
+    const legsData = await getSegmentData(['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT']) 
+    const smeData = await getSegmentData(['SME', 'DSS', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'ERM', 'MEDIA'])
 
     successResponse(
       res,
-      { tableData },
-      'Report Analysis data retrieved successfully'
-    )
+      {
+        legs: legsData.data,
+        sme: smeData.data,
+        detailsLegs: legsData.details,
+        detailsSme: smeData.details,
+        // For legacy frontend support if needed
+        tableData: [...legsData.data, ...smeData.data] 
+      }, 'Report Analysis data retrieved successfully')
   } catch (error) {
     next(error)
   }
@@ -1129,38 +1522,33 @@ export const exportJTReport = async (req, res, next) => {
 // 1. DASHBOARD HSI (Charts, Map, Table)
 export const getHSIDashboard = async (req, res, next) => {
   try {
-    const { 
-      start_date, end_date, 
-      global_witel, global_branch, 
+    const {
+      start_date, end_date,
+      global_witel, global_branch,
       map_status, search,
-      page = 1, limit = 10 
+      page = 1, limit = 10
     } = req.query
 
     // 1. FILTERING
-    const selectedWitels = global_witel ? global_witel.split(',') : []
-    const selectedBranches = global_branch ? global_branch.split(',') : []
-    const mapStatusArr = map_status ? map_status.split(',') : []
+    const selectedWitels = global_witel ? global_witel.split(',').filter(w => w) : []
+    const selectedBranches = global_branch ? global_branch.split(',').filter(b => b) : []
+    const mapStatusArr = map_status ? map_status.split(',').filter(s => s) : []
 
     // Base Filter (Scope RSO2)
-    let whereClause = {
+    let baseWhere = {
       witel: { in: RSO2_WITELS }
     }
 
     if (selectedWitels.length > 0) {
-      whereClause.witel = { in: selectedWitels }
+      baseWhere.witel = { in: selectedWitels }
     }
     if (selectedBranches.length > 0) {
-      whereClause.witelOld = { in: selectedBranches }
+      baseWhere.witelOld = { in: selectedBranches }
     }
-    if (start_date && end_date) {
-      whereClause.orderDate = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
-      }
-    }
-
+    
+    // Search
     if (search) {
-      whereClause.OR = [
+      baseWhere.OR = [
         { orderId: { contains: search, mode: 'insensitive' } },
         { customerName: { contains: search, mode: 'insensitive' } },
         { nomor: { contains: search, mode: 'insensitive' } }
@@ -1173,24 +1561,40 @@ export const getHSIDashboard = async (req, res, next) => {
       dimension = 'witelOld'
     }
 
-    // --- CHART 1: Total Order per Dimensi ---
+    // --- CLAUSE 1: Order Date (For Charts 1, 2, 3, Trend, Table) ---
+    let whereOrderDate = { ...baseWhere }
+    if (start_date && end_date) {
+      whereOrderDate.orderDate = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    // --- CLAUSE 2: PS Date (For Charts 4, 5, 6 - Requested TGL_PS, using lastUpdatedDate as proxy due to nulls) ---
+    let wherePsDate = { ...baseWhere }
+    if (start_date && end_date) {
+      wherePsDate.lastUpdatedDate = { 
+        gte: new Date(start_date), 
+        lte: new Date(end_date) 
+      }
+    }
+
+    // --- CHART 1: Total Order per Dimensi (Order Date) ---
     const chart1Raw = await prisma.hsiData.groupBy({
       by: [dimension],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
-    const chart1 = chart1Raw.map(i => ({ 
-      product: i[dimension] || 'Unknown', 
-      value: i._count.id 
+    const chart1 = chart1Raw.map(i => ({
+      product: i[dimension] || 'Unknown',
+      value: i._count.id
     }))
 
-    // --- CHART 2: Komposisi Status (Mapping manual) ---
-    // Prisma tidak support Case When di GroupBy, jadi tarik dulu lalu grouping di JS
-    // Alternatif: Query Raw jika performa lambat, tapi untuk dashboard overview ini masih aman
+    // --- CHART 2: Komposisi Status (Order Date) ---
     const chart2Raw = await prisma.hsiData.groupBy({
       by: ['kelompokStatus'],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true }
     })
     const statusGroups = { Completed: 0, Cancel: 0, Open: 0 }
@@ -1204,101 +1608,103 @@ export const getHSIDashboard = async (req, res, next) => {
         statusGroups.Open += item._count.id
       }
     })
-    const chart2 = Object.keys(statusGroups).map(key => ({ 
-      product: key, 
-      value: statusGroups[key] 
+    const chart2 = Object.keys(statusGroups).map(key => ({
+      product: key,
+      value: statusGroups[key]
     }))
 
-    // --- CHART 3: Tren Jenis Layanan ---
+    // --- CHART 3: Tren Jenis Layanan (Order Date) ---
     const chart3Raw = await prisma.hsiData.groupBy({
       by: ['typeLayanan'],
-      where: whereClause,
+      where: whereOrderDate,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10
     })
-    const chart3 = chart3Raw.map(i => ({ 
-      sub_type: i.typeLayanan, 
-      product: 'Total', 
-      total_amount: i._count.id 
+    const chart3 = chart3Raw.map(i => ({
+      sub_type: i.typeLayanan,
+      product: 'Total',
+      total_amount: i._count.id
     }))
 
-    // --- CHART 4: Sebaran PS per Dimensi ---
+    // --- CHART 4: Sebaran PS per Dimensi (PS Date) ---
     const chart4Raw = await prisma.hsiData.groupBy({
       by: [dimension],
-      where: { ...whereClause, kelompokStatus: 'PS' },
+      where: { ...wherePsDate, kelompokStatus: 'PS' },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
-    const chart4 = chart4Raw.map(i => ({ 
-      product: i[dimension] || 'Unknown', 
-      value: i._count.id 
+    const chart4 = chart4Raw.map(i => ({
+      product: i[dimension] || 'Unknown',
+      value: i._count.id
     }))
 
-    // --- CHART 5: Cancel FCC (Categorized) ---
+    // --- CHART 5: Cancel FCC (Updated: Read directly from suberrorcode) ---
+    // Menggunakan wherePsDate sesuai request filter "TGL_PS"
     const chart5Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'],
-      where: { ...whereClause, kelompokStatus: 'REJECT_FCC' },
+      where: { ...wherePsDate, kelompokStatus: 'REJECT_FCC' },
       _count: { id: true }
     })
-
-    const getFccCategory = (code) => {
-        if (!code) return 'Null';
-        const c = code.toUpperCase();
-        if (c.includes('FULL')) return 'ODP FULL';
-        if (c.includes('JAUH')) return 'ODP JAUH';
-        if (c.includes('TIDAK ADA') || c.includes('NO ODP')) return 'TIDAK ADA ODP';
-        return 'Lainnya';
-    }
 
     const chart5Map = {}
+    // Gunakan Set untuk menampung semua unique error code yang muncul di DB
+    const chart5KeySet = new Set()
+
     chart5Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
-      const category = getFccCategory(i.suberrorcode)
       
-      if (!chart5Map[dim]) chart5Map[dim] = { name: dim }
-      chart5Map[dim][category] = (chart5Map[dim][category] || 0) + i._count.id
+      // AMBIL RAW DATA: Jika null/kosong ganti string 'NULL', lalu uppercase agar seragam
+      const errorCode = i.suberrorcode ? i.suberrorcode.toUpperCase() : 'NULL'
+
+      // Masukkan ke koleksi keys (untuk dikirim ke frontend)
+      chart5KeySet.add(errorCode)
+
+      // Inisialisasi object per wilayah jika belum ada
+      if (!chart5Map[dim]) chart5Map[dim] = { name: dim, total: 0 }
+      
+      // Assign jumlah count langsung ke kode error aslinya
+      chart5Map[dim][errorCode] = (chart5Map[dim][errorCode] || 0) + i._count.id
+      chart5Map[dim].total += i._count.id
     })
     
-    // Fixed keys for consistent legend
-    const chart5Keys = ['ODP FULL', 'ODP JAUH', 'TIDAK ADA ODP', 'Null', 'Lainnya']
-    const chart5Data = Object.values(chart5Map)
-
-    // --- CHART 6: Cancel Non-FCC (Special Filter by TGL_PS) ---
-    // Logika khusus: Cancel Non-FCC biasanya difilter berdasarkan tgl_ps, bukan order_date
-    let cancelWhere = { ...whereClause }
-    delete cancelWhere.orderDate
+    // Sort Data: Urutkan wilayah berdasarkan total error terbanyak (Descending)
+    const chart5Data = Object.values(chart5Map).sort((a, b) => b.total - a.total)
     
-    cancelWhere.kelompokStatus = 'CANCEL'
-    if (start_date && end_date) {
-      cancelWhere.tglPs = { 
-        gte: new Date(start_date), 
-        lte: new Date(end_date) 
-      }
-    }
+    // Sort Keys: Ubah Set ke Array agar bisa dibaca frontend
+    const chart5Keys = Array.from(chart5KeySet).sort()
 
+    // --- CHART 6: Cancel Non-FCC (PS Date, Sorted) ---
     const chart6Raw = await prisma.hsiData.groupBy({
       by: [dimension, 'suberrorcode'], 
-      where: cancelWhere,
+      where: { ...wherePsDate, kelompokStatus: 'CANCEL' },
       _count: { id: true }
     })
-    const chart6Keys = [...new Set(chart6Raw.map(i => i.suberrorcode || 'Null'))]
+    
     const chart6Map = {}
+    const chart6KeySet = new Set()
+    
     chart6Raw.forEach(i => {
       const dim = i[dimension] || 'Unknown'
       const err = i.suberrorcode || 'Null'
-      if (!chart6Map[dim]) chart6Map[dim] = { name: dim }
+      chart6KeySet.add(err)
+      
+      if (!chart6Map[dim]) chart6Map[dim] = { name: dim, total: 0 }
       chart6Map[dim][err] = (chart6Map[dim][err] || 0) + i._count.id
+      chart6Map[dim].total += i._count.id
     })
-    const chart6Data = Object.values(chart6Map)
+    
+    // Sort Descending by Total Record Count
+    const chart6Data = Object.values(chart6Map).sort((a, b) => b.total - a.total)
+    const chart6Keys = [...chart6KeySet]
 
-    // --- MAP DATA ---
+    // --- MAP DATA (Order Date) ---
     const mapWhere = { 
-      ...whereClause, 
+      ...whereOrderDate, 
       gpsLatitude: { not: null }, 
       gpsLongitude: { not: null } 
     }
-    
+
     if (mapStatusArr.length > 0) {
       const statusConditions = []
       if (mapStatusArr.includes('Completed')) {
@@ -1310,7 +1716,7 @@ export const getHSIDashboard = async (req, res, next) => {
       if (mapStatusArr.includes('Open')) {
         statusConditions.push({ NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } })
       }
-      
+
       const specificStatuses = mapStatusArr.filter(s => !['Completed', 'Cancel', 'Open'].includes(s))
       if (specificStatuses.length > 0) {
         statusConditions.push({ statusResume: { in: specificStatuses } })
@@ -1324,13 +1730,13 @@ export const getHSIDashboard = async (req, res, next) => {
     // Ambil data peta (Limit 2000 agar tidak berat)
     const mapRaw = await prisma.hsiData.findMany({
       where: mapWhere,
-      select: { 
-        orderId: true, 
-        gpsLatitude: true, 
-        gpsLongitude: true, 
-        customerName: true, 
-        witel: true, 
-        kelompokStatus: true 
+      select: {
+        orderId: true,
+        gpsLatitude: true,
+        gpsLongitude: true,
+        customerName: true,
+        witel: true,
+        kelompokStatus: true
       },
       take: 2000
     })
@@ -1344,23 +1750,23 @@ export const getHSIDashboard = async (req, res, next) => {
       if (item.kelompokStatus === 'PS') statusGroup = 'Completed'
       else if (['CANCEL', 'REJECT_FCC'].includes(item.kelompokStatus)) statusGroup = 'Cancel'
 
-      return { 
-        id: item.orderId, 
-        lat, 
-        lng, 
-        status_group: statusGroup, 
-        name: item.customerName, 
-        witel: (item.witel || '').toUpperCase() 
+      return {
+        id: item.orderId,
+        lat,
+        lng,
+        status_group: statusGroup,
+        name: item.customerName,
+        witel: (item.witel || '').toUpperCase()
       }
     }).filter(i => i !== null)
 
-    // --- TREND CHART ---
+    // --- TREND CHART (Order Date) ---
     const trendRaw = await prisma.hsiData.findMany({ 
-      where: whereClause, 
+      where: whereOrderDate, 
       select: { orderDate: true, kelompokStatus: true }, 
       orderBy: { orderDate: 'asc' } 
     })
-    
+
     const trendMap = {}
     trendRaw.forEach(item => {
       if (!item.orderDate) return
@@ -1373,47 +1779,47 @@ export const getHSIDashboard = async (req, res, next) => {
     })
     const chartTrend = Object.values(trendMap)
 
-    // --- TABLE DATA ---
+    // --- TABLE DATA (Order Date) ---
     const skip = (Number(page) - 1) * Number(limit)
     const tableDataRaw = await prisma.hsiData.findMany({
-      where: whereClause, 
+      where: whereOrderDate, 
       take: Number(limit), 
       skip: skip, 
       orderBy: { orderDate: 'desc' },
-      select: { 
-        orderId: true, 
-        orderDate: true, 
-        customerName: true, 
-        witel: true, 
-        sto: true, 
-        typeLayanan: true, 
-        kelompokStatus: true, 
-        statusResume: true 
+      select: {
+        orderId: true,
+        orderDate: true,
+        customerName: true,
+        witel: true,
+        sto: true,
+        typeLayanan: true,
+        kelompokStatus: true,
+        statusResume: true
       }
     })
 
     const tableData = tableDataRaw.map(r => ({
-      order_id: r.orderId, 
-      order_date: r.orderDate, 
-      customer_name: r.customerName, 
-      witel: r.witel, 
-      sto: r.sto, 
-      type_layanan: r.typeLayanan, 
-      kelompok_status: r.kelompokStatus, 
+      order_id: r.orderId,
+      order_date: r.orderDate,
+      customer_name: r.customerName,
+      witel: r.witel,
+      sto: r.sto,
+      type_layanan: r.typeLayanan,
+      kelompok_status: r.kelompokStatus,
       status_resume: r.statusResume
     }))
 
     // Stats Cards
     const stats = {
-      total: await prisma.hsiData.count({ where: whereClause }),
-      completed: await prisma.hsiData.count({ where: { ...whereClause, kelompokStatus: 'PS' } }),
-      open: await prisma.hsiData.count({ where: { ...whereClause, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } } })
+      total: await prisma.hsiData.count({ where: whereOrderDate }),
+      completed: await prisma.hsiData.count({ where: { ...whereOrderDate, kelompokStatus: 'PS' } }),
+      open: await prisma.hsiData.count({ where: { ...whereOrderDate, NOT: { kelompokStatus: { in: ['PS', 'CANCEL', 'REJECT_FCC'] } } } })
     }
 
     // Branch Mapping (Untuk Dropdown)
-    const branchesRaw = await prisma.hsiData.groupBy({ 
-      by: ['witel', 'witelOld'], 
-      where: { witel: { in: RSO2_WITELS }, witelOld: { not: null } } 
+    const branchesRaw = await prisma.hsiData.groupBy({
+      by: ['witel', 'witelOld'],
+      where: { witel: { in: RSO2_WITELS }, witelOld: { not: null } }
     })
     const branchMap = {}
     branchesRaw.forEach(b => {
@@ -1428,10 +1834,10 @@ export const getHSIDashboard = async (req, res, next) => {
       chart1, chart2, chart3, chart4,
       chart5Data, chart5Keys, chart6Data, chart6Keys, chartTrend,
       branchMap, tableData,
-      pagination: { 
-        page: Number(page), 
-        total: stats.total, 
-        totalPages: Math.ceil(stats.total / Number(limit)) 
+      pagination: {
+        page: Number(page),
+        total: stats.total,
+        totalPages: Math.ceil(stats.total / Number(limit))
       }
     }, 'Dashboard data retrieved')
 
@@ -1446,8 +1852,8 @@ export const getHSIFlowStats = async (req, res, next) => {
     const { startDate, endDate, witel, branch } = req.query
 
     // FIX: Gunakan array RSO2 sebagai base filter, dan pastikan string escaping aman
-    let conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
-    
+    let conditions = [`witel IN ('${RSO2_WITELS.join("','")}')`]
+
     // FIX: Cek apakah witel ada dan bukan string kosong
     if (witel && witel.trim() !== '') {
       const witelArr = witel.split(',').map(w => w.trim().toUpperCase()).filter(w => w !== '')
@@ -1489,7 +1895,7 @@ export const getHSIFlowStats = async (req, res, next) => {
         SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP SURVEY') AND status_resume != 'MIA - INVALID SURVEY' THEN 1 ELSE 0 END) as valid_pi,
         SUM(CASE WHEN data_proses = 'OGP PROVI' THEN 1 ELSE 0 END) as ogp_provi,
         SUM(CASE WHEN data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP PROVI', 'OGP SURVEY') AND status_resume != 'MIA - INVALID SURVEY' THEN 1 ELSE 0 END) as ps_count,
-        SUM(CASE WHEN data_proses NOT IN ('CANCEL FCC', 'UNSC', 'REVOKE') AND (group_paket != 'WMS' OR group_paket IS NULL) THEN 1 ELSE 0 END) as ps_re_denominator,
+        SUM(CASE WHEN data_proses NOT IN ('CANCEL FCC', 'UNSC', 'REVOKE') THEN 1 ELSE 0 END) as ps_re_denominator,
         SUM(CASE WHEN kelompok_status IN ('PI', 'FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM', 'ACT_COM', 'PS') THEN 1 ELSE 0 END) as ps_pi_denominator,
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' THEN 1 ELSE 0 END) as followup_completed,
         SUM(CASE WHEN data_proses = 'REVOKE' AND status_resume = '100 | REVOKE COMPLETED' THEN 1 ELSE 0 END) as revoke_completed,
@@ -1521,106 +1927,140 @@ export const getHSIFlowStats = async (req, res, next) => {
 export const getHSIFlowDetail = async (req, res, next) => {
   try {
     const { startDate, endDate, witel, branch, detail_category, page = 1, limit = 10, export_detail } = req.query
-    
-    // --- BUILD SQL CONDITIONS ---
-    // (Consolidated logic for both Export and Preview to bypass schema mismatch)
-    console.log("[FLOW_DETAIL] Processing request...", { witel, branch, detail_category, export_detail });
 
-    let sqlConditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
+    // 1. BASE FILTER (Witel & Tanggal)
+    const baseWhere = { witel: { in: RSO2_WITELS } }
 
-    // Helper to escape values simply (not full injection proof but safer than direct interpolation for known patterns)
-    if (witel && witel.trim()) {
-        const witelArr = witel.split(',').map(w => w.trim().toUpperCase()).filter(w => w !== '')
-        if (witelArr.length > 0) sqlConditions.push(`UPPER(witel) IN (${witelArr.map(w => `'${w}'`).join(',')})`)
-    }
-    if (branch && branch.trim()) {
-        const branchArr = branch.split(',').map(b => b.trim().toUpperCase()).filter(b => b !== '')
-        if (branchArr.length > 0) sqlConditions.push(`UPPER(witel_old) IN (${branchArr.map(b => `'${b}'`).join(',')})`)
-    }
-    if (startDate && endDate) {
-        sqlConditions.push(`order_date >= '${startDate}'::date`)
-        sqlConditions.push(`order_date < ('${endDate}'::date + INTERVAL '1 day')`)
-    }
+    if (witel && witel.trim()) baseWhere.witel = { in: witel.split(',') }
+    if (branch && branch.trim()) baseWhere.witelOld = { in: branch.split(',') }
+    if (startDate && endDate) baseWhere.orderDate = { gte: new Date(startDate), lte: new Date(endDate) }
+
+    // 2. DETAIL CATEGORY FILTER (Specific Logic)
+    // Kita gunakan AND array agar bisa menumpuk kondisi kompleks dengan aman
+    let finalWhere = {
+        AND: [baseWhere]
+    };
 
     if (detail_category) {
-        switch (detail_category) {
-            case 'RE': break;
-            case 'Valid RE': 
-                sqlConditions.push("data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID')");
-                break;
-            case 'OGP Verif & Valid': 
-                sqlConditions.push("data_proses = 'OGP VERIFIKASI DAN VALID'"); 
-                break;
-            case 'Cancel QC 1': 
-                sqlConditions.push("data_proses = 'CANCEL QC1'"); 
-                break;
-            case 'Cancel FCC': 
-                sqlConditions.push("data_proses = 'CANCEL FCC'"); 
-                break;
-            case 'Valid WO':
-                sqlConditions.push("data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC')");
-                sqlConditions.push("NOT (data_proses = 'OGP SURVEY' AND status_resume = 'MIA - INVALID SURVEY')");
-                sqlConditions.push("NOT (data_proses = 'OGP SURVEY' AND status_message = 'MIE - SEND SURVEY')");
-                break;
-            case 'Cancel WO': 
-                sqlConditions.push("data_proses = 'OGP SURVEY' AND status_resume = 'MIA - INVALID SURVEY'"); 
-                break;
-            case 'UNSC': 
-                sqlConditions.push("data_proses = 'UNSC'"); 
-                break;
-            case 'OGP SURVEY': 
-                sqlConditions.push("data_proses = 'OGP SURVEY' AND status_message = 'MIE - SEND SURVEY'"); 
-                break;
-            case 'Valid PI':
-                sqlConditions.push("data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP SURVEY')");
-                sqlConditions.push("status_resume != 'MIA - INVALID SURVEY'");
-                break;
-            case 'Cancel Instalasi': 
-                sqlConditions.push("data_proses = 'CANCEL'"); 
-                break;
-            case 'Fallout': 
-                sqlConditions.push("data_proses = 'FALLOUT'"); 
-                break;
-            case 'Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE'"); 
-                break;
-            case 'PS (COMPLETED)': 
-            case 'PS':
-                sqlConditions.push("data_proses NOT IN ('CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP PROVI', 'OGP SURVEY')");
-                sqlConditions.push("status_resume != 'MIA - INVALID SURVEY'");
-                break;
-            case 'OGP Provisioning': 
-                sqlConditions.push("data_proses = 'OGP PROVI'"); 
-                break;
-            case 'Total Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE'"); 
-                break;
-            case 'Follow Up Completed': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED'"); 
-                break;
-            case 'Revoke Completed': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '100 | REVOKE COMPLETED'"); 
-                break;
-            case 'Revoke Order': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = 'REVOKE ORDER'"); 
-                break;
-            case 'PS Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'PS'"); 
-                break;
-            case 'OGP Provi Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('PI', 'ACT_COM')"); 
-                break;
-            case 'Fallout Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke IN ('FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM')"); 
-                break;
-            case 'Cancel Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED' AND data_ps_revoke = 'CANCEL'"); 
-                break;
-            case 'Lain-Lain Revoke': 
-                sqlConditions.push("data_proses = 'REVOKE' AND status_resume = '102 | FOLLOW UP COMPLETED'");
-                sqlConditions.push("(data_ps_revoke NOT IN ('PS', 'PI', 'ACT_COM', 'FO_WFM', 'FO_UIM', 'FO_ASAP', 'FO_OSM', 'CANCEL') OR data_ps_revoke IS NULL)");
-                break;
-        }
+      switch (detail_category) {
+        // --- RE & Validasi ---
+        case 'RE':
+            // Tidak ada filter tambahan
+            break;
+        case 'Valid RE':
+            finalWhere.AND.push({
+                dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID'] }
+            });
+            break;
+        case 'OGP Verif & Valid':
+            finalWhere.dataProses = 'OGP VERIFIKASI DAN VALID';
+            break;
+        case 'Cancel QC 1':
+            finalWhere.dataProses = 'CANCEL QC1';
+            break;
+        case 'Cancel FCC':
+            finalWhere.dataProses = 'CANCEL FCC';
+            break;
+
+        // --- WO & Survey ---
+        case 'Valid WO':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC'] } },
+                { NOT: { dataProses: 'OGP SURVEY', statusResume: 'MIA - INVALID SURVEY' } },
+                { NOT: { dataProses: 'OGP SURVEY', statusMessage: 'MIE - SEND SURVEY' } }
+            );
+            break;
+        case 'Cancel WO':
+            finalWhere.dataProses = 'OGP SURVEY';
+            finalWhere.statusResume = 'MIA - INVALID SURVEY';
+            break;
+        case 'UNSC':
+            finalWhere.dataProses = 'UNSC';
+            break;
+        case 'OGP SURVEY':
+            finalWhere.dataProses = 'OGP SURVEY';
+            finalWhere.statusMessage = 'MIE - SEND SURVEY';
+            break;
+
+        // --- PI & Instalasi ---
+        case 'Valid PI':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP SURVEY'] } },
+                { statusResume: { not: 'MIA - INVALID SURVEY' } }
+            );
+            break;
+        case 'Cancel Instalasi':
+            finalWhere.dataProses = 'CANCEL';
+            break;
+        case 'Fallout':
+            finalWhere.dataProses = 'FALLOUT';
+            break;
+        case 'Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            break;
+
+        // --- PS / Completed ---
+        case 'PS (COMPLETED)':
+        case 'PS':
+            finalWhere.AND.push(
+                { dataProses: { notIn: ['CANCEL QC1', 'CANCEL FCC', 'OGP VERIFIKASI DAN VALID', 'UNSC', 'CANCEL', 'FALLOUT', 'REVOKE', 'OGP PROVI', 'OGP SURVEY'] } },
+                { statusResume: { not: 'MIA - INVALID SURVEY' } }
+            );
+            break;
+        case 'OGP Provisioning':
+            finalWhere.dataProses = 'OGP PROVI';
+            break;
+
+        // --- REVOKE SPECIFICS (Sesuai Gambar Diagram Tree) ---
+        case 'Total Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            break;
+        case 'Follow Up Completed':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            break;
+        case 'Revoke Completed':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '100 | REVOKE COMPLETED';
+            break;
+        case 'Revoke Order':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = 'REVOKE ORDER';
+            break;
+
+        // --- DETAIL DARI FOLLOW UP COMPLETED ---
+        case 'PS Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            finalWhere.dataPsRevoke = 'PS'; // Pastikan kolom di DB bernama dataPsRevoke (camelCase)
+            break;
+        case 'OGP Provi Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            finalWhere.dataPsRevoke = { in: ['PI', 'ACT_COM'] };
+            break;
+        case 'Fallout Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            finalWhere.dataPsRevoke = { in: ['FO_WFM', 'FO_UIM', 'FO_ASAP'] };
+            break;
+        case 'Cancel Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            finalWhere.dataPsRevoke = 'CANCEL';
+            break;
+        case 'Lain-Lain Revoke':
+            finalWhere.dataProses = 'REVOKE';
+            finalWhere.statusResume = '102 | FOLLOW UP COMPLETED';
+            // Logika NULL atau N/A atau spesifik string
+            finalWhere.OR = [
+                { dataPsRevoke: null },
+                { dataPsRevoke: '#N/A' },
+                { dataPsRevoke: 'INPROGESS_SC' },
+                { dataPsRevoke: 'REVOKE' }
+            ];
+            break;
+      }
     }
 
     const whereSql = sqlConditions.length > 0 ? `WHERE ${sqlConditions.join(' AND ')}` : '';
@@ -1667,54 +2107,669 @@ export const getHSIFlowDetail = async (req, res, next) => {
 
         const buffer = await workbook.xlsx.writeBuffer();
         const fileName = `Detail_HSI_${detail_category ? detail_category.replace(/[^a-zA-Z0-9-_]/g, '_') : 'ALL'}.xlsx`;
-        
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         res.send(buffer);
-        console.log("[FLOW_DETAIL] Export sent.");
-        return; 
+        return;
     }
 
-    // 2. PREVIEW MODE (Pagination)
-    const offset = (Number(page) - 1) * Number(limit);
-    const query = `
-        SELECT 
-            order_id, order_date, customer_name, witel, sto, type_layanan, 
-            kelompok_status, status_resume, data_proses
-        FROM hsi_data 
-        ${whereSql}
-        ORDER BY order_date DESC
-        LIMIT ${Number(limit)} OFFSET ${offset}
-    `;
-    const data = await prisma.$queryRawUnsafe(query);
-    console.log(`[FLOW_DETAIL] Preview data fetched: ${data.length} rows`);
+    // --- 4. PREVIEW TABLE LOGIC ---
+    const skip = (Number(page) - 1) * Number(limit)
+    const tableDataRaw = await prisma.hsiData.findMany({
+      where: finalWhere,
+      take: Number(limit),
+      skip: skip,
+      orderBy: { orderDate: 'desc' },
+      select: {
+        orderId: true, orderDate: true, customerName: true,
+        witel: true, sto: true, typeLayanan: true,
+        kelompokStatus: true, statusResume: true, dataProses: true
+      }
+    })
 
-    // Serialize BigInt if any
-    const serializedData = data.map(row => {
-        const newRow = { ...row };
-        for (const key in newRow) {
-            if (typeof newRow[key] === 'bigint') {
-                newRow[key] = newRow[key].toString();
-            }
-        }
-        return newRow;
-    });
-    
-    // Get Total Count for Pagination
-    const countQuery = `SELECT COUNT(*) as total FROM hsi_data ${whereSql}`;
-    const countResult = await prisma.$queryRawUnsafe(countQuery);
-    const total = Number(countResult[0]?.total || 0);
+    const tableData = tableDataRaw.map(r => ({
+      order_id: r.orderId, order_date: r.orderDate, customer_name: r.customerName,
+      witel: r.witel, sto: r.sto, type_layanan: r.typeLayanan,
+      kelompok_status: r.kelompokStatus, status_resume: r.statusResume,
+      data_proses: r.dataProses
+    }))
 
-    successResponse(res, { 
-        table: serializedData, 
-        pagination: { page: Number(page), total, totalPages: Math.ceil(total / Number(limit)) } 
+    const total = await prisma.hsiData.count({ where: finalWhere })
+
+    successResponse(res, {
+        table: tableData,
+        pagination: { page: Number(page), total, totalPages: Math.ceil(total / Number(limit)) }
     }, 'Flow details retrieved')
 
-  } catch (error) { 
+  } catch (error) {
     console.error("FLOW DETAIL ERROR:", error)
-    next(error) 
+    next(error)
   }
 }
 
 
-// WOIIIIIIIIIIII
+// ==================== DASHBOARD SOS DATIN ====================
+
+export const getSOSDatinFilters = async (req, res, next) => {
+  try {
+    const baseWhere = {
+      AND: [
+        { OR: [{ witelBaru: { not: 'RSO1' } }, { witelBaru: null }] },
+        { orderCreatedDate: { gte: new Date('2000-01-01') } }
+      ]
+    }
+
+    const [witels, segments, categories] = await Promise.all([
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['witelBaru'], select: { witelBaru: true } }),
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['segmen'], select: { segmen: true } }),
+      prisma.sosData.findMany({ where: baseWhere, distinct: ['kategori'], select: { kategori: true } })
+    ])
+
+    successResponse(res, {
+      witels: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'],
+      segments: segments.map(i => i.segmen).filter(Boolean).sort(),
+      categories: categories.map(i => i.kategori).filter(Boolean).sort()
+    }, 'SOS Datin filter options retrieved')
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getSOSDatinDashboard = async (req, res, next) => {
+
+  try {
+
+        const { start_date, end_date, witels, segments, categories } = req.query
+
+    
+
+        const witelList = witels ? witels.split(',').filter(Boolean) : []
+
+    const isSingleWitel = witelList.length === 1
+
+
+
+    // 1. DEFINITIONS & MAPPINGS
+
+    
+
+    // City/Branch Mappings
+
+    const REGION_MAPPING = {
+
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO', 'INNER - JATIM TIMUR'],
+
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA', 'INNER - NUSA TENGGARA'],
+
+      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+
+    }
+
+
+
+    // Helper to generate SQL CASE statement for mapping
+
+    const generateRegionCase = (column) => {
+
+      let sql = '(CASE '
+
+      Object.entries(REGION_MAPPING).forEach(([region, cities]) => {
+
+        // Escape single quotes if necessary, though these are static lists
+
+        const list = cities.map(c => `'${c}'`).join(',')
+
+        sql += `WHEN COALESCE(TRIM(UPPER(${column})), '') IN (${list}) THEN '${region}' `
+
+      })
+
+      sql += "ELSE 'OTHER' END)"
+
+      return sql
+
+    }
+
+
+
+    const WITEL_COL_SOURCE = "COALESCE(TRIM(UPPER(witel_baru)), TRIM(UPPER(bill_witel)))"
+
+    const WITEL_EXPR = generateRegionCase(WITEL_COL_SOURCE)
+
+
+
+    // Branch Logic: Check if bill_city maps to the SAME region as the main Witel. If not, try cust_city.
+
+    const BILL_CITY_REGION_EXPR = generateRegionCase('bill_city')
+
+    const CUST_CITY_REGION_EXPR = generateRegionCase('cust_city')
+
+    
+
+    // Logic: If (Region of BillCity == Region of Row), use BillCity. Else if (Region of CustCity == Region of Row), use CustCity. Else 'UNKNOWN'
+
+    const RAW_BRANCH = `(CASE
+
+      WHEN ${BILL_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(bill_city)), 'UNKNOWN')
+
+      WHEN ${CUST_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(cust_city)), 'UNKNOWN')
+
+      ELSE 'UNKNOWN'
+
+    END)`
+
+
+
+    const STATUS_ORDER = ['IN PROCESS', 'PROV. COMPLETE', 'PROVIDE ORDER', 'READY TO BILL']
+
+    const WITEL_ORDER = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'NUSA TENGGARA']
+
+    
+
+    const GROUP_COL = isSingleWitel ? RAW_BRANCH : WITEL_EXPR
+
+    const ORDER_CLAUSE = isSingleWitel ? `${GROUP_COL} ASC` : `CASE 
+
+          ${WITEL_ORDER.map((w, idx) => `WHEN ${WITEL_EXPR} = '${w}' THEN ${idx + 1}`).join(' ')}
+
+          ELSE 99 END`
+
+
+
+    const SEGMENT_EXPR = "COALESCE(TRIM(UPPER(segmen)), TRIM(UPPER(segmen_baru)), 'UNKNOWN')"
+    const CATEGORY_EXPR = "COALESCE(TRIM(UPPER(kategori)), TRIM(UPPER(kategori_baru)), 'UNKNOWN')"
+
+    let conditions = [`${WITEL_EXPR} != 'OTHER'`, "order_created_date >= '2000-01-01'"]
+    const params = []
+    let pIdx = 1
+
+    if (start_date && end_date) {
+      conditions.push(`order_created_date BETWEEN $${pIdx} AND $${pIdx + 1}`)
+      params.push(new Date(start_date), new Date(end_date))
+      pIdx += 2
+    }
+
+    if (witels && witels.length > 0) {
+      const wArr = witels.split(',').filter(Boolean).map(w => w.trim().toUpperCase())
+      if (wArr.length > 0) {
+        conditions.push(`${WITEL_EXPR} IN (${wArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...wArr)
+      }
+    }
+
+    if (segments && segments.length > 0) {
+      const sArr = segments.split(',').filter(Boolean).map(s => s.trim().toUpperCase())
+      if (sArr.length > 0) {
+        conditions.push(`${SEGMENT_EXPR} IN (${sArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...sArr)
+      }
+    }
+
+    if (categories && categories.length > 0) {
+      const cArr = categories.split(',').filter(Boolean).map(c => c.trim().toUpperCase())
+      if (cArr.length > 0) {
+        conditions.push(`${CATEGORY_EXPR} IN (${cArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...cArr)
+      }
+    }
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // Helper Lists for Ordering
+    const STATUS_PRIORITY = ['READY TO BILL', 'PROVIDE ORDER', 'IN PROCESS', 'PROV. COMPLETE']
+    const STATUS_COL = "COALESCE(UPPER(kategori), 'UNKNOWN')"
+
+    // --- 2. EXECUTE QUERIES ---
+
+    const [
+      kpiData,
+      orderByStatus,
+      revenueByStatusAge,
+      statusPerWitel,
+      revenueTrend,
+      revenuePerWitel,
+      orderPerWitel,
+      revenuePerProduct
+    ] = await Promise.all([
+      
+      // 1. KPI Cards
+      prisma.$queryRawUnsafe(`
+        SELECT
+          COUNT(*)::int as total_order,
+          SUM(CASE WHEN ${STATUS_COL} = 'READY TO BILL' THEN COALESCE(revenue,0) ELSE 0 END) as realized_revenue,
+          SUM(CASE WHEN ${STATUS_COL} IN ('PROVIDE ORDER', 'IN PROCESS', 'PROV. COMPLETE') THEN COALESCE(revenue,0) ELSE 0 END) as pipeline_revenue
+        FROM sos_data ${whereSql}
+      `, ...params),
+
+      // 2.1 Order by Status (Donut)
+      prisma.$queryRawUnsafe(`
+        SELECT ${STATUS_COL} as name, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY ${STATUS_COL}
+        ORDER BY value DESC
+      `, ...params),
+
+      // 2.2 Revenue by Status (Stacked: <3 BLN, >3 BLN)
+      prisma.$queryRawUnsafe(`
+        SELECT ${STATUS_COL} as name,
+          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) as revenue_lt_3,
+          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) as revenue_gt_3
+        FROM sos_data ${whereSql}
+        GROUP BY ${STATUS_COL}
+        ORDER BY CASE 
+          ${STATUS_PRIORITY.map((s, idx) => `WHEN ${STATUS_COL} = '${s}' THEN ${idx + 1}`).join(' ')}
+          ELSE 99 END
+      `, ...params),
+
+      // 2.3 Status per Witel (Horizontal Stacked) - Count
+      prisma.$queryRawUnsafe(`
+        SELECT ${GROUP_COL} as witel, ${STATUS_COL} as status, COUNT(*)::int as count
+        FROM sos_data ${whereSql}
+        GROUP BY ${GROUP_COL}, ${STATUS_COL}
+        ORDER BY ${ORDER_CLAUSE}
+      `, ...params),
+
+      // 3.1 Revenue Trend Over Time (Multi-Line)
+      prisma.$queryRawUnsafe(`
+        SELECT TO_CHAR(order_created_date, 'YYYY-MM') as month, ${STATUS_COL} as status, SUM(COALESCE(revenue,0)) as revenue
+        FROM sos_data ${whereSql}
+        GROUP BY month, ${STATUS_COL}
+        ORDER BY month ASC
+      `, ...params),
+
+      // 3.2 Revenue per Witel (Stacked by Status)
+      prisma.$queryRawUnsafe(`
+        SELECT ${GROUP_COL} as witel, ${STATUS_COL} as status, SUM(COALESCE(revenue,0)) as revenue
+        FROM sos_data ${whereSql}
+        GROUP BY ${GROUP_COL}, ${STATUS_COL}
+        ORDER BY ${ORDER_CLAUSE}
+      `, ...params),
+
+      // 3.3 Order per Witel (Dynamic: Product if single witel, else Witel)
+      isSingleWitel ? prisma.$queryRawUnsafe(`
+        SELECT COALESCE(li_product_name, 'UNKNOWN') as name, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY li_product_name
+        ORDER BY value DESC
+      `, ...params) : prisma.$queryRawUnsafe(`
+        SELECT ${WITEL_EXPR} as name, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY ${WITEL_EXPR}
+        ORDER BY CASE 
+          ${WITEL_ORDER.map((w, idx) => `WHEN ${WITEL_EXPR} = '${w}' THEN ${idx + 1}`).join(' ')}
+          ELSE 99 END
+      `, ...params),
+
+      // 3.4 Revenue per Product (Simple Bar)
+      prisma.$queryRawUnsafe(`
+        SELECT li_product_name as name, SUM(COALESCE(revenue,0)) as value
+        FROM sos_data ${whereSql}
+        AND li_product_name IS NOT NULL
+        GROUP BY li_product_name
+        ORDER BY value DESC
+        LIMIT 10
+      `, ...params)
+    ])
+
+    // --- 3. DATA TRANSFORMATION ---
+
+    const kpi = {
+      realizedRevenue: Number(kpiData[0]?.realized_revenue || 0),
+      pipelineRevenue: Number(kpiData[0]?.pipeline_revenue || 0),
+      totalOrder: Number(kpiData[0]?.total_order || 0)
+    }
+
+    const transformToStacked = (data, groupKey, stackKey, valueKey, defaultGroups = []) => {
+      const grouped = {}
+      // Initialize with default groups to ensure they always appear
+      defaultGroups.forEach(g => {
+        grouped[g] = { name: g }
+      })
+
+      data.forEach(row => {
+        const group = row[groupKey]
+        if (!group || group === 'OTHER') return
+        if (!grouped[group]) grouped[group] = { name: group }
+        grouped[group][row[stackKey]] = Number(row[valueKey] || 0)
+      })
+      
+      // If no default groups, return as is. If default groups, ensure order matches WITEL_ORDER.
+      if (defaultGroups.length > 0) {
+        return defaultGroups.map(g => grouped[g] || { name: g })
+      }
+      return Object.values(grouped)
+    }
+
+    const section2 = {
+      orderByStatus: orderByStatus.filter(r => r.name !== 'UNKNOWN').map(r => ({ name: r.name, value: Number(r.value) })),
+      revenueByStatus: revenueByStatusAge.map(r => ({
+        name: r.name,
+        '< 3 Bulan': Number(r.revenue_lt_3 || 0),
+        '> 3 Bulan': Number(r.revenue_gt_3 || 0)
+      })),
+      statusPerWitel: transformToStacked(statusPerWitel, 'witel', 'status', 'count', isSingleWitel ? [] : WITEL_ORDER)
+    }
+
+    const section3 = {
+      revenueTrend: transformToStacked(revenueTrend, 'month', 'status', 'revenue').sort((a, b) => a.name.localeCompare(b.name)),
+      revenuePerWitel: transformToStacked(revenuePerWitel, 'witel', 'status', 'revenue', isSingleWitel ? [] : WITEL_ORDER),
+      orderPerWitel: isSingleWitel 
+        ? orderPerWitel.map(r => ({ name: r.name || 'UNKNOWN', value: Number(r.value || 0) }))
+        : WITEL_ORDER.map(w => {
+            const found = orderPerWitel.find(r => r.name === w)
+            return { name: w, value: Number(found?.value || 0) }
+          }),
+      revenuePerProduct: revenuePerProduct.map(r => ({ name: r.name, value: Number(r.value) }))
+    }
+
+    successResponse(res, { kpi, section2, section3 }, 'SOS Datin dashboard data retrieved')
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+// =================================================================
+
+// DIGITAL PRODUCT DASHBOARD CHARTS
+
+// =================================================================
+
+
+
+/**
+
+ * Get filter options for Digital Product Dashboard
+
+ */
+
+export const getDigitalProductFilters = async (req, res, next) => {
+  try {
+    // 1. Fixed Product List as requested
+    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
+
+    // 2. Define RSO2 Regions
+    const witels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
+
+    // 3. Define Branch Map (based on established RSO2 grouping)
+    const branchMap = {
+      'BALI': ['DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+    }
+
+    successResponse(res, {
+      witels,
+      branchMap,
+      products
+    }, 'Digital product filter options retrieved')
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
+/**
+
+ * Get chart data for Digital Product Dashboard
+
+ * Returns: revenueByWitel, amountByWitel, productBySegment, productByChannel, productShare
+
+ * NOTE: Using digital_products table (has data) instead of document_data (empty)
+
+ */
+
+export const getDigitalProductCharts = async (req, res, next) => {
+
+  try {
+
+    const { start_date, end_date, witel, branch, product } = req.query
+
+
+
+    // Define Date Filter
+
+    let dateFilter = ''
+
+    const params = []
+
+    let pIdx = 1
+
+
+
+    if (start_date && end_date) {
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      params.push(start_date, end_date)
+      pIdx += 2
+    }
+
+    // Common CTEs for normalization
+    // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
+    const normalizedDataCTE = `
+      WITH normalized_data AS (
+        SELECT
+          *,
+          CASE
+            WHEN witel IN ('BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG') THEN 'BALI'
+            WHEN witel IN ('JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG') THEN 'JATIM BARAT'
+            WHEN witel IN ('JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO') THEN 'JATIM TIMUR'
+            WHEN witel IN ('NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA') THEN 'NUSA TENGGARA'
+            WHEN witel IN ('SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES') THEN 'SURAMADU'
+            ELSE 'OTHER' 
+          END as region_norm,
+          CASE
+            WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
+            WHEN product_name ILIKE '%OCA%' THEN 'OCA'
+            WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
+            WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+            ELSE 'OTHER'
+          END as product_norm,
+          CASE
+            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
+            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
+            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
+            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
+            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
+            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
+            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
+            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
+            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
+            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
+            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
+            ELSE UPPER(branch)
+          END as branch_norm,
+          CASE
+            WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
+            ELSE 'SME'
+          END as segment_norm,
+          channel as channel_norm
+        FROM digital_products
+        WHERE 1=1
+        ${dateFilter}
+      )
+    `
+
+    // Build dynamic filters
+    let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
+    let isSingleWitel = false
+    let isSingleBranch = false
+
+    // 1. Witel Filter (Multiselect)
+    // If witel param exists and is not 'ALL', add condition
+    if (witel && witel !== 'ALL') {
+      const witelArr = witel.split(',').filter(w => w)
+      if (witelArr.length > 0) {
+        if (witelArr.length === 1) isSingleWitel = true
+        // Create placeholders $3, $4, etc.
+        const placeholders = witelArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND region_norm IN (${placeholders})`
+        params.push(...witelArr)
+      }
+    }
+
+    // 2. Branch Filter (Multiselect)
+    if (branch) {
+      const branchArr = branch.split(',').filter(b => b)
+      if (branchArr.length > 0) {
+        if (branchArr.length === 1) isSingleBranch = true
+        const placeholders = branchArr.map(() => `$${pIdx++}`).join(',')
+        // Use branch_norm for filtering to match the aggregation
+        filterCondition += ` AND branch_norm IN (${placeholders})`
+        params.push(...branchArr)
+      }
+    }
+
+    // 3. Product Filter (Multiselect)
+    if (product) {
+      const productArr = product.split(',').filter(p => p)
+      if (productArr.length > 0) {
+        const placeholders = productArr.map(() => `$${pIdx++}`).join(',')
+        filterCondition += ` AND product_norm IN (${placeholders})`
+        params.push(...productArr)
+      }
+    }
+
+    // Determine Grouping Column (Drill-down logic)
+    // 1. Single Branch -> Group by Product (Independent Bars)
+    // 2. Single Witel -> Group by Branch
+    // 3. Default -> Group by Region
+    let groupByCol = 'region_norm'
+    if (isSingleBranch) {
+      groupByCol = 'product_norm'
+    } else if (isSingleWitel) {
+      groupByCol = 'branch_norm'
+    }
+
+    // Run queries in parallel
+    const [
+      revenueByWitel,
+      amountByWitel,
+      productBySegment,
+      productByChannel,
+      productShare
+    ] = await Promise.all([
+      // 1. Revenue by Witel (or Branch) - Stacked Bar (Vertical)
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          ${groupByCol} as witel, 
+          product_norm as product, 
+          SUM(
+            COALESCE(
+              NULLIF(net_price, 0),
+              NULLIF(revenue, 0),
+              (substring(product_name from 'Total \\(Sebelum PPN\\)\\s*:\\s*([0-9]+)')::numeric),
+              0
+            )
+          )::numeric as revenue
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY ${groupByCol}, product_norm
+        ORDER BY ${groupByCol}, product_norm
+      `, ...params),
+
+      // 2. Amount by Witel (or Branch) - Stacked Bar (Vertical)
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT ${groupByCol} as witel, product_norm as product, COUNT(*)::int as amount
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY ${groupByCol}, product_norm
+        ORDER BY ${groupByCol}, product_norm
+      `, ...params),
+
+      // 3. Product by Segment - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          segment_norm as segment,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, segment_norm
+        ORDER BY product_norm, segment_norm
+      `, ...params),
+
+      // 4. Product by Channel - Horizontal Stacked Bar
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          channel_norm as channel,
+          COUNT(*)::int as total
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm, channel_norm
+        ORDER BY product_norm, channel_norm
+      `, ...params),
+
+      // 5. Product Share - Pie Chart
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT 
+          product_norm as product,
+          COUNT(*)::int as value
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY product_norm
+        ORDER BY value DESC
+      `, ...params)
+    ])
+
+    // Transform data for frontend charts
+    // 1 & 2: Transform to stacked bar format {witel: 'X', Antares: 10, Netmonk: 20, ...}
+    const transformStackedByWitel = (data, valueKey) => {
+      const result = {}
+      data.forEach(row => {
+        const witelName = row.witel || 'Unknown'
+        if (!result[witelName]) {
+          result[witelName] = { witel: witelName }
+        }
+        result[witelName][row.product] = Number(row[valueKey] || 0)
+      })
+      return Object.values(result)
+    }
+
+    // 3 & 4: Transform to horizontal stacked bar format {product: 'X', SME: 10, LEGS: 20, ...}
+    const transformStackedByProduct = (data, categoryKey) => {
+      const result = {}
+      data.forEach(row => {
+        const productName = row.product || 'Unknown'
+        if (!result[productName]) {
+          result[productName] = { product: productName }
+        }
+        result[productName][row[categoryKey]] = Number(row.total || 0)
+      })
+      return Object.values(result)
+    }
+
+    // Get unique products for color mapping
+    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
+    const segments = [...new Set(productBySegment.map(p => p.segment))]
+    const channels = [...new Set(productByChannel.map(p => p.channel))]
+
+    successResponse(res, {
+      revenueByWitel: transformStackedByWitel(revenueByWitel, 'revenue'),
+      amountByWitel: transformStackedByWitel(amountByWitel, 'amount'),
+      productBySegment: transformStackedByProduct(productBySegment, 'segment'),
+      productByChannel: transformStackedByProduct(productByChannel, 'channel'),
+      productShare: productShare.map(p => ({ name: p.product, value: Number(p.value) })),
+      // Metadata for chart rendering
+      products,
+      segments,
+      channels
+    }, 'Digital product charts data retrieved')
+
+  } catch (error) {
+    console.error('Error in getDigitalProductCharts:', error)
+    next(error)
+  }
+}

@@ -68,14 +68,14 @@ export class ProcessJTImport {
     try {
       await this.updateProgress(5, 'Parsing file...')
       console.log(`\n📥 Starting JT import: ${fileName}`)
-      
+
       const records = await this.parseFile(filePath, fileName)
       if (!records || records.length === 0) throw new Error('File is empty or invalid')
 
       console.log(`✅ File parsed: ${records.length} rows found\n`)
-      
+
       await this.updateProgress(15, `Found ${records.length} rows, clearing table...`)
-      
+
       // Delete all existing records instead of TRUNCATE (more efficient with connection pooling)
       await prisma.spmkMom.deleteMany({})
 
@@ -88,21 +88,21 @@ export class ProcessJTImport {
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize)
         console.log(`📦 Batch ${batchNum}: Processing ${chunk.length} JT rows`)
-        
+
         const result = await this.processChunk(chunk, batchId)
         successCount += result.success
         failedCount += result.failed
         errors.push(...result.errors)
 
         console.log(`✅ Batch ${batchNum}: Inserted ${result.success} JT rows`)
-        
+
         if (failedCount > 0) {
           console.log(`⚠️  Batch ${batchNum}: ${result.failed} rows failed`)
         }
 
         const progress = 15 + Math.floor((i / records.length) * 80)
         await this.updateProgress(progress, `Processed ${Math.min(i + chunk.length, records.length)}/${records.length} rows`)
-        
+
         batchNum++
       }
 
@@ -155,13 +155,13 @@ export class ProcessJTImport {
     for (const record of chunk) {
       try {
         const keyMap = buildKeyMap(record)
-        
+
         // Debug: log first record to see actual keys
         if (chunk.indexOf(record) === 0) {
           console.log('First record keys:', Object.keys(record).slice(0, 10))
           console.log('Normalized keyMap sample:', Object.keys(keyMap).slice(0, 10))
         }
-        
+
         const tanggalMom = parseDate(getValue(record, keyMap, 'tanggalmom', 'tanggal_mom', 'tgl_mom', 'tanggal mom'))
         const usia = tanggalMom ? dayjs().diff(dayjs(tanggalMom), 'day') : null
         const statusTompsNew = getValue(record, keyMap, 'statustompsnew', 'status_tomps_new', 'status tomps new') || ''

@@ -16,6 +16,7 @@ import {
   MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import ChatBot from '../components/ChatBot'
 
 // ==================== HELPER COMPONENTS ====================
 
@@ -652,6 +653,9 @@ const AppLayout = ({ children, pageTitle }) => {
           {children}
         </main>
       </div>
+
+      {/* AI ChatBot */}
+      <ChatBot />
     </div>
   )
 }

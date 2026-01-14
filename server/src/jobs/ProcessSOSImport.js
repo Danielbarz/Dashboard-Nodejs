@@ -47,13 +47,13 @@ export class ProcessSOSImport {
 
   async handle() {
     const { filePath, fileName, batchId, userId } = this.job.data
-    
+
     try {
       // Update progress: Parsing file
       await this.updateProgress(5, 'Parsing file...')
-      
+
       const records = await this.parseFile(filePath, fileName)
-      
+
       if (!records || records.length === 0) {
         throw new Error('File is empty or invalid')
       }
@@ -69,7 +69,7 @@ export class ProcessSOSImport {
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize)
         const result = await this.processChunk(chunk, batchId)
-        
+
         successCount += result.success
         failedCount += result.failed
         errors.push(...result.errors)
@@ -103,7 +103,7 @@ export class ProcessSOSImport {
 
   async parseFile(filePath, fileName) {
     const ext = fileName.toLowerCase().match(/\.(xlsx|xls|csv)$/)?.[1]
-    
+
     if (ext === 'xlsx' || ext === 'xls') {
       const workbook = XLSX.readFile(filePath)
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -118,7 +118,7 @@ export class ProcessSOSImport {
           .on('error', (err) => reject(err))
       })
     }
-    
+
     throw new Error('Unsupported file format')
   }
 
@@ -129,7 +129,7 @@ export class ProcessSOSImport {
 
     for (const record of records) {
       const keyMap = buildKeyMap(record)
-      
+
       try {
         const orderId = getValue(
           record,
@@ -167,7 +167,46 @@ export class ProcessSOSImport {
             revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'net price', 'netprice')),
             biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
             hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
-            batchId
+            batchId,
+            // New Fields
+            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
+            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
+            sid: getValue(record, keyMap, 'sid'),
+            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
+            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
+            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
+            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
+            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
+            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
+            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
+            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
+            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
+            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
+            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
+            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
+            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
+            liId: getValue(record, keyMap, 'li_id', 'liid'),
+            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
+            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
+            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
+            billcomDate: getValue(record, keyMap, 'billcom_date', 'billcomdate') ? new Date(getValue(record, keyMap, 'billcom_date', 'billcomdate')) : null,
+            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
+            scaling: getValue(record, keyMap, 'scaling'),
+            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
+            liBillingStartDate: getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate') ? new Date(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')) : null,
+            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
+            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
+            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
+            liCreatedDate: getValue(record, keyMap, 'li_created_date', 'licreateddate') ? new Date(getValue(record, keyMap, 'li_created_date', 'licreateddate')) : null,
+            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
+            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
+            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
+            productActivationDate: getValue(record, keyMap, 'product_activation_date', 'productactivationdate') ? new Date(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')) : null,
+            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
+            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
+            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
+            am: getValue(record, keyMap, 'am'),
+            xBillcompDt: getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt') ? new Date(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt')) : null
           },
           create: {
             orderId: orderId.toString(),
@@ -188,10 +227,49 @@ export class ProcessSOSImport {
             revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'net price', 'netprice')),
             biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
             hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
-            batchId
+            batchId,
+            // New Fields
+            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
+            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
+            sid: getValue(record, keyMap, 'sid'),
+            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
+            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
+            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
+            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
+            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
+            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
+            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
+            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
+            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
+            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
+            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
+            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
+            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
+            liId: getValue(record, keyMap, 'li_id', 'liid'),
+            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
+            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
+            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
+            billcomDate: getValue(record, keyMap, 'billcom_date', 'billcomdate') ? new Date(getValue(record, keyMap, 'billcom_date', 'billcomdate')) : null,
+            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
+            scaling: getValue(record, keyMap, 'scaling'),
+            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
+            liBillingStartDate: getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate') ? new Date(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')) : null,
+            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
+            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
+            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
+            liCreatedDate: getValue(record, keyMap, 'li_created_date', 'licreateddate') ? new Date(getValue(record, keyMap, 'li_created_date', 'licreateddate')) : null,
+            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
+            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
+            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
+            productActivationDate: getValue(record, keyMap, 'product_activation_date', 'productactivationdate') ? new Date(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')) : null,
+            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
+            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
+            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
+            am: getValue(record, keyMap, 'am'),
+            xBillcompDt: getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt') ? new Date(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt')) : null
           }
         })
-        
+
         success++
       } catch (error) {
         failed++
@@ -208,7 +286,7 @@ export class ProcessSOSImport {
       message,
       updatedAt: new Date().toISOString()
     }
-    
+
     await redis.setex(this.progressKey, 3600, JSON.stringify(progress))
     await this.job.progress(percent)
   }
