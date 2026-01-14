@@ -1991,7 +1991,7 @@ export const getSOSDatinFilters = async (req, res, next) => {
     ])
 
     successResponse(res, {
-      witels: witels.map(i => i.witelBaru).filter(Boolean).sort(),
+      witels: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'],
       segments: segments.map(i => i.segmen).filter(Boolean).sort(),
       categories: categories.map(i => i.kategori).filter(Boolean).sort()
     }, 'SOS Datin filter options retrieved')
@@ -2001,11 +2001,113 @@ export const getSOSDatinFilters = async (req, res, next) => {
 }
 
 export const getSOSDatinDashboard = async (req, res, next) => {
-  try {
-    const { start_date, end_date, witels, segments, categories } = req.query
 
-    // 1. Build Multi-select Filters
-    let conditions = ["(witel_baru != 'RSO1' OR witel_baru IS NULL)", "order_created_date >= '2000-01-01'"]
+  try {
+
+        const { start_date, end_date, witels, segments, categories } = req.query
+
+    
+
+        const witelList = witels ? witels.split(',').filter(Boolean) : []
+
+    const isSingleWitel = witelList.length === 1
+
+
+
+    // 1. DEFINITIONS & MAPPINGS
+
+    
+
+    // City/Branch Mappings
+
+    const REGION_MAPPING = {
+
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO', 'INNER - JATIM TIMUR'],
+
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA', 'INNER - NUSA TENGGARA'],
+
+      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+
+    }
+
+
+
+    // Helper to generate SQL CASE statement for mapping
+
+    const generateRegionCase = (column) => {
+
+      let sql = '(CASE '
+
+      Object.entries(REGION_MAPPING).forEach(([region, cities]) => {
+
+        // Escape single quotes if necessary, though these are static lists
+
+        const list = cities.map(c => `'${c}'`).join(',')
+
+        sql += `WHEN COALESCE(TRIM(UPPER(${column})), '') IN (${list}) THEN '${region}' `
+
+      })
+
+      sql += "ELSE 'OTHER' END)"
+
+      return sql
+
+    }
+
+
+
+    const WITEL_COL_SOURCE = "COALESCE(TRIM(UPPER(witel_baru)), TRIM(UPPER(bill_witel)))"
+
+    const WITEL_EXPR = generateRegionCase(WITEL_COL_SOURCE)
+
+
+
+    // Branch Logic: Check if bill_city maps to the SAME region as the main Witel. If not, try cust_city.
+
+    const BILL_CITY_REGION_EXPR = generateRegionCase('bill_city')
+
+    const CUST_CITY_REGION_EXPR = generateRegionCase('cust_city')
+
+    
+
+    // Logic: If (Region of BillCity == Region of Row), use BillCity. Else if (Region of CustCity == Region of Row), use CustCity. Else 'UNKNOWN'
+
+    const RAW_BRANCH = `(CASE
+
+      WHEN ${BILL_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(bill_city)), 'UNKNOWN')
+
+      WHEN ${CUST_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(cust_city)), 'UNKNOWN')
+
+      ELSE 'UNKNOWN'
+
+    END)`
+
+
+
+    const STATUS_ORDER = ['IN PROCESS', 'PROV. COMPLETE', 'PROVIDE ORDER', 'READY TO BILL']
+
+    const WITEL_ORDER = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'NUSA TENGGARA']
+
+    
+
+    const GROUP_COL = isSingleWitel ? RAW_BRANCH : WITEL_EXPR
+
+    const ORDER_CLAUSE = isSingleWitel ? `${GROUP_COL} ASC` : `CASE 
+
+          ${WITEL_ORDER.map((w, idx) => `WHEN ${WITEL_EXPR} = '${w}' THEN ${idx + 1}`).join(' ')}
+
+          ELSE 99 END`
+
+
+
+    const SEGMENT_EXPR = "COALESCE(TRIM(UPPER(segmen)), TRIM(UPPER(segmen_baru)), 'UNKNOWN')"
+    const CATEGORY_EXPR = "COALESCE(TRIM(UPPER(kategori)), TRIM(UPPER(kategori_baru)), 'UNKNOWN')"
+
+    let conditions = [`${WITEL_EXPR} != 'OTHER'`, "order_created_date >= '2000-01-01'"]
     const params = []
     let pIdx = 1
 
@@ -2016,69 +2118,179 @@ export const getSOSDatinDashboard = async (req, res, next) => {
     }
 
     if (witels && witels.length > 0) {
-      const wArr = witels.split(',')
-      conditions.push(`witel_baru IN (${wArr.map(() => `$${pIdx++}`).join(',')})`)
-      params.push(...wArr)
+      const wArr = witels.split(',').filter(Boolean).map(w => w.trim().toUpperCase())
+      if (wArr.length > 0) {
+        conditions.push(`${WITEL_EXPR} IN (${wArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...wArr)
+      }
     }
 
     if (segments && segments.length > 0) {
-      const sArr = segments.split(',')
-      conditions.push(`segmen IN (${sArr.map(() => `$${pIdx++}`).join(',')})`)
-      params.push(...sArr)
+      const sArr = segments.split(',').filter(Boolean).map(s => s.trim().toUpperCase())
+      if (sArr.length > 0) {
+        conditions.push(`${SEGMENT_EXPR} IN (${sArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...sArr)
+      }
     }
 
     if (categories && categories.length > 0) {
-      const cArr = categories.split(',')
-      conditions.push(`kategori IN (${cArr.map(() => `$${pIdx++}`).join(',')})`)
-      params.push(...cArr)
+      const cArr = categories.split(',').filter(Boolean).map(c => c.trim().toUpperCase())
+      if (cArr.length > 0) {
+        conditions.push(`${CATEGORY_EXPR} IN (${cArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...cArr)
+      }
     }
 
     const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-    // 2. Query execution
-    const [ordersByCategory, revenueByCategory, witelDistribution, segmenDistribution] = await Promise.all([
-      // Chart 1: Orders by Category & Age
-      prisma.$queryRawUnsafe(`
-        SELECT kategori,
-          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN 1 ELSE 0 END)::int as lt_3bln_total,
-          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN 1 ELSE 0 END)::int as gt_3bln_total
-        FROM sos_data ${whereSql} AND kategori IS NOT NULL
-        GROUP BY kategori ORDER BY kategori`, ...params),
+    // Helper Lists for Ordering
+    const STATUS_PRIORITY = ['READY TO BILL', 'PROVIDE ORDER', 'IN PROCESS', 'PROV. COMPLETE']
+    const STATUS_COL = "COALESCE(UPPER(kategori), 'UNKNOWN')"
 
-      // Chart 2: Revenue by Category & Age (in Millions)
-      prisma.$queryRawUnsafe(`
-        SELECT kategori,
-          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) / 1000000 as lt_3bln_revenue,
-          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) / 1000000 as gt_3bln_revenue
-        FROM sos_data ${whereSql} AND kategori IS NOT NULL
-        GROUP BY kategori ORDER BY kategori`, ...params),
+    // --- 2. EXECUTE QUERIES ---
 
-      // Chart 3: Witel Distribution
+    const [
+      kpiData,
+      orderByStatus,
+      revenueByStatusAge,
+      statusPerWitel,
+      revenueTrend,
+      revenuePerWitel,
+      orderPerWitel,
+      revenuePerProduct
+    ] = await Promise.all([
+      
+      // 1. KPI Cards
       prisma.$queryRawUnsafe(`
-        SELECT COALESCE(TRIM(UPPER(witel_baru)), 'UNKNOWN') as witel, COUNT(*)::int as value
+        SELECT
+          COUNT(*)::int as total_order,
+          SUM(CASE WHEN ${STATUS_COL} = 'READY TO BILL' THEN COALESCE(revenue,0) ELSE 0 END) as realized_revenue,
+          SUM(CASE WHEN ${STATUS_COL} IN ('PROVIDE ORDER', 'IN PROCESS', 'PROV. COMPLETE') THEN COALESCE(revenue,0) ELSE 0 END) as pipeline_revenue
         FROM sos_data ${whereSql}
-        GROUP BY witel ORDER BY value DESC`, ...params),
+      `, ...params),
 
-      // Chart 4: Segment Distribution (Alias witel for chart component compatibility)
+      // 2.1 Order by Status (Donut)
       prisma.$queryRawUnsafe(`
-        SELECT COALESCE(TRIM(UPPER(segmen)), 'UNKNOWN') as witel, COUNT(*)::int as value
+        SELECT ${STATUS_COL} as name, COUNT(*)::int as value
         FROM sos_data ${whereSql}
-        GROUP BY witel ORDER BY value DESC`, ...params)
+        GROUP BY ${STATUS_COL}
+        ORDER BY value DESC
+      `, ...params),
+
+      // 2.2 Revenue by Status (Stacked: <3 BLN, >3 BLN)
+      prisma.$queryRawUnsafe(`
+        SELECT ${STATUS_COL} as name,
+          SUM(CASE WHEN kategori_umur = '< 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) as revenue_lt_3,
+          SUM(CASE WHEN kategori_umur = '> 3 BLN' THEN COALESCE(revenue,0) ELSE 0 END) as revenue_gt_3
+        FROM sos_data ${whereSql}
+        GROUP BY ${STATUS_COL}
+        ORDER BY CASE 
+          ${STATUS_PRIORITY.map((s, idx) => `WHEN ${STATUS_COL} = '${s}' THEN ${idx + 1}`).join(' ')}
+          ELSE 99 END
+      `, ...params),
+
+      // 2.3 Status per Witel (Horizontal Stacked) - Count
+      prisma.$queryRawUnsafe(`
+        SELECT ${GROUP_COL} as witel, ${STATUS_COL} as status, COUNT(*)::int as count
+        FROM sos_data ${whereSql}
+        GROUP BY ${GROUP_COL}, ${STATUS_COL}
+        ORDER BY ${ORDER_CLAUSE}
+      `, ...params),
+
+      // 3.1 Revenue Trend Over Time (Multi-Line)
+      prisma.$queryRawUnsafe(`
+        SELECT TO_CHAR(order_created_date, 'YYYY-MM') as month, ${STATUS_COL} as status, SUM(COALESCE(revenue,0)) as revenue
+        FROM sos_data ${whereSql}
+        GROUP BY month, ${STATUS_COL}
+        ORDER BY month ASC
+      `, ...params),
+
+      // 3.2 Revenue per Witel (Stacked by Status)
+      prisma.$queryRawUnsafe(`
+        SELECT ${GROUP_COL} as witel, ${STATUS_COL} as status, SUM(COALESCE(revenue,0)) as revenue
+        FROM sos_data ${whereSql}
+        GROUP BY ${GROUP_COL}, ${STATUS_COL}
+        ORDER BY ${ORDER_CLAUSE}
+      `, ...params),
+
+      // 3.3 Order per Witel (Dynamic: Product if single witel, else Witel)
+      isSingleWitel ? prisma.$queryRawUnsafe(`
+        SELECT COALESCE(li_product_name, 'UNKNOWN') as name, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY li_product_name
+        ORDER BY value DESC
+      `, ...params) : prisma.$queryRawUnsafe(`
+        SELECT ${WITEL_EXPR} as name, COUNT(*)::int as value
+        FROM sos_data ${whereSql}
+        GROUP BY ${WITEL_EXPR}
+        ORDER BY CASE 
+          ${WITEL_ORDER.map((w, idx) => `WHEN ${WITEL_EXPR} = '${w}' THEN ${idx + 1}`).join(' ')}
+          ELSE 99 END
+      `, ...params),
+
+      // 3.4 Revenue per Product (Simple Bar)
+      prisma.$queryRawUnsafe(`
+        SELECT li_product_name as name, SUM(COALESCE(revenue,0)) as value
+        FROM sos_data ${whereSql}
+        AND li_product_name IS NOT NULL
+        GROUP BY li_product_name
+        ORDER BY value DESC
+        LIMIT 10
+      `, ...params)
     ])
 
-    // Format Decimal results to numbers
-    const formatRev = (rows) => rows.map(r => ({
-      ...r,
-      lt_3bln_revenue: Number(r.lt_3bln_revenue || 0),
-      gt_3bln_revenue: Number(r.gt_3bln_revenue || 0)
-    }))
+    // --- 3. DATA TRANSFORMATION ---
 
-    successResponse(res, {
-      ordersByCategory,
-      revenueByCategory: formatRev(revenueByCategory),
-      witelDistribution,
-      segmenDistribution
-    }, 'SOS Datin dashboard data retrieved')
+    const kpi = {
+      realizedRevenue: Number(kpiData[0]?.realized_revenue || 0),
+      pipelineRevenue: Number(kpiData[0]?.pipeline_revenue || 0),
+      totalOrder: Number(kpiData[0]?.total_order || 0)
+    }
+
+    const transformToStacked = (data, groupKey, stackKey, valueKey, defaultGroups = []) => {
+      const grouped = {}
+      // Initialize with default groups to ensure they always appear
+      defaultGroups.forEach(g => {
+        grouped[g] = { name: g }
+      })
+
+      data.forEach(row => {
+        const group = row[groupKey]
+        if (!group || group === 'OTHER') return
+        if (!grouped[group]) grouped[group] = { name: group }
+        grouped[group][row[stackKey]] = Number(row[valueKey] || 0)
+      })
+      
+      // If no default groups, return as is. If default groups, ensure order matches WITEL_ORDER.
+      if (defaultGroups.length > 0) {
+        return defaultGroups.map(g => grouped[g] || { name: g })
+      }
+      return Object.values(grouped)
+    }
+
+    const section2 = {
+      orderByStatus: orderByStatus.filter(r => r.name !== 'UNKNOWN').map(r => ({ name: r.name, value: Number(r.value) })),
+      revenueByStatus: revenueByStatusAge.map(r => ({
+        name: r.name,
+        '< 3 Bulan': Number(r.revenue_lt_3 || 0),
+        '> 3 Bulan': Number(r.revenue_gt_3 || 0)
+      })),
+      statusPerWitel: transformToStacked(statusPerWitel, 'witel', 'status', 'count', isSingleWitel ? [] : WITEL_ORDER)
+    }
+
+    const section3 = {
+      revenueTrend: transformToStacked(revenueTrend, 'month', 'status', 'revenue').sort((a, b) => a.name.localeCompare(b.name)),
+      revenuePerWitel: transformToStacked(revenuePerWitel, 'witel', 'status', 'revenue', isSingleWitel ? [] : WITEL_ORDER),
+      orderPerWitel: isSingleWitel 
+        ? orderPerWitel.map(r => ({ name: r.name || 'UNKNOWN', value: Number(r.value || 0) }))
+        : WITEL_ORDER.map(w => {
+            const found = orderPerWitel.find(r => r.name === w)
+            return { name: w, value: Number(found?.value || 0) }
+          }),
+      revenuePerProduct: revenuePerProduct.map(r => ({ name: r.name, value: Number(r.value) }))
+    }
+
+    successResponse(res, { kpi, section2, section3 }, 'SOS Datin dashboard data retrieved')
 
   } catch (error) {
     next(error)

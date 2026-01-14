@@ -404,7 +404,14 @@ export const uploadFile = async (req, res, next) => {
             'is_termin', 'agree_type', 'agree_start_date', 'agree_end_date',
             'lama_kontrak_hari', 'amortisasi', 'kategori_umur', 'umur_order',
             'bill_city', 'po_name', 'tipe_order', 'segmen_baru', 'scalling1',
-            'scalling2', 'tipe_grup', 'witel_baru', 'kategori_baru'
+            'scalling2', 'tipe_grup', 'witel_baru', 'kategori_baru',
+            'prev_order', 'li_sid', 'sid', 'cust_accnt_num', 'cust_accnt_name', 'cust_addr', 'cust_region',
+            'serv_accnt_num', 'serv_accnt_name', 'serv_addr', 'service_region', 'bill_accnt_num', 'account_nas',
+            'bill_accnt_name', 'bill_addr', 'bill_region', 'li_id', 'li_product_id', 'product_digital',
+            'li_bandwidth', 'billcom_date', 'li_fulfillment_status', 'scaling', 'li_payment_term',
+            'li_billing_start_date', 'agree_item_num', 'agree_name', 'order_created_by', 'li_created_date',
+            'order_created_by_name', 'current_bandwidth', 'before_bandwidth', 'product_activation_date',
+            'quote_row_id', 'line_item_description', 'asset_integ_id', 'am', 'x_billcomp_dt'
           ]
 
           // Deduplicate buffer by orderId to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time"
@@ -432,7 +439,14 @@ export const uploadFile = async (req, res, next) => {
               row.isTermin ?? null, row.agreeType ?? null, row.agreeStartDate ?? null, row.agreeEndDate ?? null,
               row.lamaKontrakHari ?? null, row.amortisasi ?? null, row.kategoriUmur ?? null, row.umurOrder ?? null,
               row.billCity ?? null, row.poName ?? null, row.tipeOrder ?? null, row.segmenBaru ?? null,
-              row.scalling1 ?? null, row.scalling2 ?? null, row.tipeGrup ?? null, row.witelBaru ?? null, row.kategoriBaru ?? null
+              row.scalling1 ?? null, row.scalling2 ?? null, row.tipeGrup ?? null, row.witelBaru ?? null, row.kategoriBaru ?? null,
+              row.prevOrder ?? null, row.liSid ?? null, row.sid ?? null, row.custAccntNum ?? null, row.custAccntName ?? null, row.custAddr ?? null, row.custRegion ?? null,
+              row.servAccntNum ?? null, row.servAccntName ?? null, row.servAddr ?? null, row.serviceRegion ?? null, row.billAccntNum ?? null, row.accountNas ?? null,
+              row.billAccntName ?? null, row.billAddr ?? null, row.billRegion ?? null, row.liId ?? null, row.liProductId ?? null, row.productDigital ?? null,
+              row.liBandwidth ?? null, row.billcomDate ?? null, row.liFulfillmentStatus ?? null, row.scaling ?? null, row.liPaymentTerm ?? null,
+              row.liBillingStartDate ?? null, row.agreeItemNum ?? null, row.agreeName ?? null, row.orderCreatedBy ?? null, row.liCreatedDate ?? null,
+              row.orderCreatedByName ?? null, row.currentBandwidth ?? null, row.beforeBandwidth ?? null, row.productActivationDate ?? null,
+              row.quoteRowId ?? null, row.lineItemDescription ?? null, row.assetIntegId ?? null, row.am ?? null, row.xBillcompDt ?? null
             )
             const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
             return `(${params.join(',')})`
@@ -739,7 +753,45 @@ export const uploadFile = async (req, res, next) => {
             scalling2: cleanNumber(getValue(record, keyMap, 'scaling2', 'scalling2')),
             tipeGrup: getValue(record, keyMap, 'tipe_grup', 'group_type'),
             witelBaru: getValue(record, keyMap, 'witel_baru', 'new_witel'),
-            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'new_category')
+            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'new_category'),
+            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
+            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
+            sid: getValue(record, keyMap, 'sid'),
+            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
+            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
+            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
+            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
+            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
+            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
+            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
+            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
+            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
+            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
+            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
+            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
+            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
+            liId: getValue(record, keyMap, 'li_id', 'liid'),
+            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
+            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
+            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
+            billcomDate: cleanDate(getValue(record, keyMap, 'billcom_date', 'billcomdate')),
+            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
+            scaling: getValue(record, keyMap, 'scaling'),
+            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
+            liBillingStartDate: cleanDate(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')),
+            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
+            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
+            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
+            liCreatedDate: cleanDate(getValue(record, keyMap, 'li_created_date', 'licreateddate')),
+            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
+            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
+            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
+            productActivationDate: cleanDate(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')),
+            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
+            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
+            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
+            am: getValue(record, keyMap, 'am'),
+            xBillcompDt: cleanDate(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt'))
           })
 
           if (sosBuffer.length >= BATCH_SIZE) {
@@ -821,13 +873,27 @@ export const uploadFile = async (req, res, next) => {
           const witelLamaVal = getValue(record, keyMap, 'witel lama', 'witel_lama', 'witel_eksisting')
 
           // 1. Skip if Witel is missing (Empty Row)
-          if (!witelBaruVal) continue
+          if (!witelBaruVal) {
+             skippedCount++
+             // Only log first 20 skipped to avoid bloating response
+             if (skippedRows.length < 20) {
+                 skippedRows.push({ index: i + 1, reason: 'MISSING WITEL', data: record })
+             }
+             continue
+          }
 
           // 2. Filter out unwanted Witels (Jawa Tengah)
           const unwantedWitels = ['SOLO', 'YOGYA', 'MAGELANG', 'SEMARANG', 'KUDUS', 'PURWOKERTO', 'JATENG', 'PEKALONGAN']
           const witelStr = ((witelBaruVal || '') + ' ' + (witelLamaVal || '')).toUpperCase()
 
-          if (unwantedWitels.some(w => witelStr.includes(w))) continue
+          if (unwantedWitels.some(w => witelStr.includes(w))) {
+             skippedCount++
+             // Log skipped regions
+             if (skippedRows.length < 20) {
+                 skippedRows.push({ index: i + 1, reason: `EXCLUDED REGION (${witelStr})`, data: record })
+             }
+             continue
+          }
 
           buffer.push({
             // Identification

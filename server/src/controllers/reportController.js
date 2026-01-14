@@ -1297,19 +1297,28 @@ export const getReportDatinDetails = async (req, res, next) => {
       }
     }
 
-    // Witel Filter
+    // Witel Filter (Multi-select)
     if (witel && !witel.includes('Pilih Witel')) {
-       whereClause.custWitel = { contains: witel, mode: 'insensitive' }
+       const witelList = witel.split(',').filter(w => w)
+       if (witelList.length > 0) {
+         whereClause.witelBaru = { in: witelList }
+       }
     }
 
-    // Segment Filter
+    // Segment Filter (Multi-select)
     if (segment && !segment.includes('Pilih Segmen')) {
-       whereClause.segmen = { contains: segment, mode: 'insensitive' }
+       const segmentList = segment.split(',').filter(s => s)
+       if (segmentList.length > 0) {
+         whereClause.segmen = { in: segmentList }
+       }
     }
 
-    // Kategori Filter
+    // Kategori Filter (Multi-select)
     if (kategori && !kategori.includes('Pilih Kategori')) {
-       whereClause.kategori = { contains: kategori, mode: 'insensitive' }
+       const kategoriList = kategori.split(',').filter(k => k)
+       if (kategoriList.length > 0) {
+         whereClause.kategori = { in: kategoriList }
+       }
     }
 
     // Search Filter
