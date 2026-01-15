@@ -387,15 +387,15 @@ model OrderProduct {
 }
 
 model Target {
-  id          BigInt    @id @default(autoincrement())
-  segment     String    @db.VarChar(255)
-  namaWitel   String    @map("nama_witel") @db.VarChar(255)
-  metricType  String    @map("metric_type") @db.VarChar(255)
-  productName String    @map("product_name") @db.VarChar(255)
-  targetValue Decimal   @map("target_value") @db.Decimal(15, 2)
-  period      DateTime  @db.Date
-  createdAt   DateTime? @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
+  id         BigInt   @id @default(autoincrement())
+  periodType String   @map("period_type") @db.VarChar(50) // BULANAN, KUARTAL, TAHUNAN
+  targetType String   @map("target_type") @db.VarChar(50) // REVENUE, ORDER
+  witel      String   @db.VarChar(100) // ALL, BALI, etc.
+  product    String   @db.VarChar(100) // ALL, OCA, etc.
+  value      Decimal  @map("target_value") @db.Decimal(18, 2)
+  periodDate DateTime @map("period_date") @db.Date // Representasi tanggal mulai periode
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("targets")
 }

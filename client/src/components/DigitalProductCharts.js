@@ -1,8 +1,38 @@
 import React from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell, LineChart, Line, ComposedChart, Scatter
 } from 'recharts'
+
+// Custom marker for target (a vertical line for horizontal bar charts)
+const TargetMarker = (props) => {
+  const { x, y } = props
+  if (x === undefined || y === undefined) return null
+  return (
+    <line 
+      x1={x} y1={y - 15} 
+      x2={x} y2={y + 15} 
+      stroke="#ef4444" 
+      strokeWidth={1.5} 
+      strokeDasharray="10 5"
+    />
+  )
+}
+
+// Custom marker for vertical bar charts (horizontal line)
+const TargetMarkerVertical = (props) => {
+  const { x, y } = props
+  if (x === undefined || y === undefined) return null
+  return (
+    <line 
+      x1={x - 15} y1={y} 
+      x2={x + 15} y2={y} 
+      stroke="#ef4444" 
+      strokeWidth={1.5} 
+      strokeDasharray="10 5"
+    />
+  )
+}
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1']
 const PRODUCT_COLORS = {
@@ -40,11 +70,12 @@ const CustomTooltip = ({ active, payload, label, formatter }) => {
   return null
 }
 
-const getAllKeys = (data, ignoreKey = 'name') => {
+const getAllKeys = (data, ignoreKey = ['name', 'target']) => {
   const keys = new Set()
+  const ignore = Array.isArray(ignoreKey) ? ignoreKey : [ignoreKey]
   data.forEach(item => {
     Object.keys(item).forEach(k => {
-      if (k !== ignoreKey) keys.add(k)
+      if (!ignore.includes(k)) keys.add(k)
     })
   })
   return Array.from(keys)
@@ -87,12 +118,13 @@ export const OrderByStatusChart = ({ data }) => {
 
 export const RevenueByWitelChart = ({ data }) => {
   const keys = getAllKeys(data)
+  const hasTarget = data.some(d => d.target > 0)
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart 
+        <ComposedChart 
           data={data} 
           layout="vertical" 
           margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
@@ -106,13 +138,25 @@ export const RevenueByWitelChart = ({ data }) => {
             width={120} 
             tick={{ fontSize: 9 }} 
             interval={0}
+            padding={{ top: 0, bottom: 0 }}
           />
           <Tooltip content={<CustomTooltip formatter={formatRupiah} />} />
           <Legend wrapperStyle={{ paddingTop: '10px' }} />
           {keys.map((key) => (
             <Bar key={key} dataKey={key} stackId="a" fill={PRODUCT_COLORS[key] || '#9ca3af'} />
           ))}
-        </BarChart>
+          {hasTarget && (
+            <Line 
+              type="stepAfter" 
+              dataKey="target" 
+              stroke="#ef4444" 
+              strokeWidth={1} 
+              strokeDasharray="10 5" 
+              dot={false} 
+              name="Target" 
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
@@ -121,14 +165,23 @@ export const RevenueByWitelChart = ({ data }) => {
 export const OrderByWitelChart = ({ data }) => {
   const keys = getAllKeys(data)
   const isSimple = keys.includes('value')
+  const hasTarget = data.some(d => d.target > 0)
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Order by Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barCategoryGap="20%">
+        <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barCategoryGap="20%">
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={60} />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fontSize: 10 }} 
+            interval={0} 
+            angle={-45} 
+            textAnchor="end" 
+            height={60} 
+            padding={{ left: 0, right: 0 }}
+          />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ paddingTop: '10px' }} />
@@ -141,7 +194,18 @@ export const OrderByWitelChart = ({ data }) => {
               name={isSimple ? 'Total Order' : key}
             />
           ))}
-        </BarChart>
+          {hasTarget && (
+            <Line 
+              type="stepAfter" 
+              dataKey="target" 
+              stroke="#ef4444" 
+              strokeWidth={1} 
+              strokeDasharray="10 5" 
+              dot={false} 
+              name="Target" 
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
@@ -149,6 +213,7 @@ export const OrderByWitelChart = ({ data }) => {
 
 export const RevenueTrendChart = ({ data }) => {
   const keys = getAllKeys(data)
+  const hasTarget = data.some(d => d.target > 0)
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -156,20 +221,31 @@ export const RevenueTrendChart = ({ data }) => {
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} padding={{ left: 0, right: 0 }} />
           <YAxis tickFormatter={formatRupiah} width={80} tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip formatter={formatRupiah} />} />
           <Legend wrapperStyle={{ paddingTop: '10px' }} />
           {keys.map((key) => (
-            <Line 
-              key={key} 
-              type="monotone" 
-              dataKey={key} 
-              stroke={PRODUCT_COLORS[key] || '#9ca3af'} 
+            <Line
+              key={key}
+              type="monotone"
+              dataKey={key}
+              stroke={PRODUCT_COLORS[key] || '#9ca3af'}
               strokeWidth={2}
               dot={{ r: 3 }}
             />
           ))}
+          {hasTarget && (
+            <Line
+              type="linear"
+              dataKey="target"
+              stroke="#ef4444"
+              name="Target"
+              dot={false}
+              strokeWidth={1}
+              strokeDasharray="10 5"
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -212,6 +288,7 @@ export const ProductShareChart = ({ data }) => {
 
 export const OrderTrendChart = ({ data }) => {
   const keys = getAllKeys(data)
+  const hasTarget = data.some(d => d.target > 0)
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -219,8 +296,7 @@ export const OrderTrendChart = ({ data }) => {
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis width={40} tick={{ fontSize: 11 }} />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} padding={{ left: 0, right: 0 }} />          <YAxis width={40} tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ paddingTop: '10px' }} />
           {keys.map((key) => (
@@ -233,6 +309,17 @@ export const OrderTrendChart = ({ data }) => {
               dot={{ r: 3 }}
             />
           ))}
+          {hasTarget && (
+            <Line 
+              type="linear" 
+              dataKey="target" 
+              stroke="#ef4444" 
+              name="Target" 
+              dot={false} 
+              strokeWidth={1} 
+              strokeDasharray="10 5"
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

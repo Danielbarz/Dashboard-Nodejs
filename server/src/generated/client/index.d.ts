@@ -16411,46 +16411,46 @@ export namespace Prisma {
 
   export type TargetAvgAggregateOutputType = {
     id: number | null
-    targetValue: Decimal | null
+    value: Decimal | null
   }
 
   export type TargetSumAggregateOutputType = {
     id: bigint | null
-    targetValue: Decimal | null
+    value: Decimal | null
   }
 
   export type TargetMinAggregateOutputType = {
     id: bigint | null
-    segment: string | null
-    namaWitel: string | null
-    metricType: string | null
-    productName: string | null
-    targetValue: Decimal | null
-    period: Date | null
+    periodType: string | null
+    targetType: string | null
+    witel: string | null
+    product: string | null
+    value: Decimal | null
+    periodDate: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
   export type TargetMaxAggregateOutputType = {
     id: bigint | null
-    segment: string | null
-    namaWitel: string | null
-    metricType: string | null
-    productName: string | null
-    targetValue: Decimal | null
-    period: Date | null
+    periodType: string | null
+    targetType: string | null
+    witel: string | null
+    product: string | null
+    value: Decimal | null
+    periodDate: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
   export type TargetCountAggregateOutputType = {
     id: number
-    segment: number
-    namaWitel: number
-    metricType: number
-    productName: number
-    targetValue: number
-    period: number
+    periodType: number
+    targetType: number
+    witel: number
+    product: number
+    value: number
+    periodDate: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -16459,46 +16459,46 @@ export namespace Prisma {
 
   export type TargetAvgAggregateInputType = {
     id?: true
-    targetValue?: true
+    value?: true
   }
 
   export type TargetSumAggregateInputType = {
     id?: true
-    targetValue?: true
+    value?: true
   }
 
   export type TargetMinAggregateInputType = {
     id?: true
-    segment?: true
-    namaWitel?: true
-    metricType?: true
-    productName?: true
-    targetValue?: true
-    period?: true
+    periodType?: true
+    targetType?: true
+    witel?: true
+    product?: true
+    value?: true
+    periodDate?: true
     createdAt?: true
     updatedAt?: true
   }
 
   export type TargetMaxAggregateInputType = {
     id?: true
-    segment?: true
-    namaWitel?: true
-    metricType?: true
-    productName?: true
-    targetValue?: true
-    period?: true
+    periodType?: true
+    targetType?: true
+    witel?: true
+    product?: true
+    value?: true
+    periodDate?: true
     createdAt?: true
     updatedAt?: true
   }
 
   export type TargetCountAggregateInputType = {
     id?: true
-    segment?: true
-    namaWitel?: true
-    metricType?: true
-    productName?: true
-    targetValue?: true
-    period?: true
+    periodType?: true
+    targetType?: true
+    witel?: true
+    product?: true
+    value?: true
+    periodDate?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -16592,14 +16592,14 @@ export namespace Prisma {
 
   export type TargetGroupByOutputType = {
     id: bigint
-    segment: string
-    namaWitel: string
-    metricType: string
-    productName: string
-    targetValue: Decimal
-    period: Date
-    createdAt: Date | null
-    updatedAt: Date | null
+    periodType: string
+    targetType: string
+    witel: string
+    product: string
+    value: Decimal
+    periodDate: Date
+    createdAt: Date
+    updatedAt: Date
     _count: TargetCountAggregateOutputType | null
     _avg: TargetAvgAggregateOutputType | null
     _sum: TargetSumAggregateOutputType | null
@@ -16623,67 +16623,67 @@ export namespace Prisma {
 
   export type TargetSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    segment?: boolean
-    namaWitel?: boolean
-    metricType?: boolean
-    productName?: boolean
-    targetValue?: boolean
-    period?: boolean
+    periodType?: boolean
+    targetType?: boolean
+    witel?: boolean
+    product?: boolean
+    value?: boolean
+    periodDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["target"]>
 
   export type TargetSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    segment?: boolean
-    namaWitel?: boolean
-    metricType?: boolean
-    productName?: boolean
-    targetValue?: boolean
-    period?: boolean
+    periodType?: boolean
+    targetType?: boolean
+    witel?: boolean
+    product?: boolean
+    value?: boolean
+    periodDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["target"]>
 
   export type TargetSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    segment?: boolean
-    namaWitel?: boolean
-    metricType?: boolean
-    productName?: boolean
-    targetValue?: boolean
-    period?: boolean
+    periodType?: boolean
+    targetType?: boolean
+    witel?: boolean
+    product?: boolean
+    value?: boolean
+    periodDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["target"]>
 
   export type TargetSelectScalar = {
     id?: boolean
-    segment?: boolean
-    namaWitel?: boolean
-    metricType?: boolean
-    productName?: boolean
-    targetValue?: boolean
-    period?: boolean
+    periodType?: boolean
+    targetType?: boolean
+    witel?: boolean
+    product?: boolean
+    value?: boolean
+    periodDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "segment" | "namaWitel" | "metricType" | "productName" | "targetValue" | "period" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
+  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "periodType" | "targetType" | "witel" | "product" | "value" | "periodDate" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
 
   export type $TargetPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Target"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
-      segment: string
-      namaWitel: string
-      metricType: string
-      productName: string
-      targetValue: Prisma.Decimal
-      period: Date
-      createdAt: Date | null
-      updatedAt: Date | null
+      periodType: string
+      targetType: string
+      witel: string
+      product: string
+      value: Prisma.Decimal
+      periodDate: Date
+      createdAt: Date
+      updatedAt: Date
     }, ExtArgs["result"]["target"]>
     composites: {}
   }
@@ -17108,12 +17108,12 @@ export namespace Prisma {
    */
   interface TargetFieldRefs {
     readonly id: FieldRef<"Target", 'BigInt'>
-    readonly segment: FieldRef<"Target", 'String'>
-    readonly namaWitel: FieldRef<"Target", 'String'>
-    readonly metricType: FieldRef<"Target", 'String'>
-    readonly productName: FieldRef<"Target", 'String'>
-    readonly targetValue: FieldRef<"Target", 'Decimal'>
-    readonly period: FieldRef<"Target", 'DateTime'>
+    readonly periodType: FieldRef<"Target", 'String'>
+    readonly targetType: FieldRef<"Target", 'String'>
+    readonly witel: FieldRef<"Target", 'String'>
+    readonly product: FieldRef<"Target", 'String'>
+    readonly value: FieldRef<"Target", 'Decimal'>
+    readonly periodDate: FieldRef<"Target", 'DateTime'>
     readonly createdAt: FieldRef<"Target", 'DateTime'>
     readonly updatedAt: FieldRef<"Target", 'DateTime'>
   }
@@ -39022,12 +39022,12 @@ export namespace Prisma {
 
   export const TargetScalarFieldEnum: {
     id: 'id',
-    segment: 'segment',
-    namaWitel: 'namaWitel',
-    metricType: 'metricType',
-    productName: 'productName',
-    targetValue: 'targetValue',
-    period: 'period',
+    periodType: 'periodType',
+    targetType: 'targetType',
+    witel: 'witel',
+    product: 'product',
+    value: 'value',
+    periodDate: 'periodDate',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -41351,26 +41351,26 @@ export namespace Prisma {
     OR?: TargetWhereInput[]
     NOT?: TargetWhereInput | TargetWhereInput[]
     id?: BigIntFilter<"Target"> | bigint | number
-    segment?: StringFilter<"Target"> | string
-    namaWitel?: StringFilter<"Target"> | string
-    metricType?: StringFilter<"Target"> | string
-    productName?: StringFilter<"Target"> | string
-    targetValue?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFilter<"Target"> | Date | string
-    createdAt?: DateTimeNullableFilter<"Target"> | Date | string | null
-    updatedAt?: DateTimeNullableFilter<"Target"> | Date | string | null
+    periodType?: StringFilter<"Target"> | string
+    targetType?: StringFilter<"Target"> | string
+    witel?: StringFilter<"Target"> | string
+    product?: StringFilter<"Target"> | string
+    value?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFilter<"Target"> | Date | string
+    createdAt?: DateTimeFilter<"Target"> | Date | string
+    updatedAt?: DateTimeFilter<"Target"> | Date | string
   }
 
   export type TargetOrderByWithRelationInput = {
     id?: SortOrder
-    segment?: SortOrder
-    namaWitel?: SortOrder
-    metricType?: SortOrder
-    productName?: SortOrder
-    targetValue?: SortOrder
-    period?: SortOrder
-    createdAt?: SortOrderInput | SortOrder
-    updatedAt?: SortOrderInput | SortOrder
+    periodType?: SortOrder
+    targetType?: SortOrder
+    witel?: SortOrder
+    product?: SortOrder
+    value?: SortOrder
+    periodDate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type TargetWhereUniqueInput = Prisma.AtLeast<{
@@ -41378,26 +41378,26 @@ export namespace Prisma {
     AND?: TargetWhereInput | TargetWhereInput[]
     OR?: TargetWhereInput[]
     NOT?: TargetWhereInput | TargetWhereInput[]
-    segment?: StringFilter<"Target"> | string
-    namaWitel?: StringFilter<"Target"> | string
-    metricType?: StringFilter<"Target"> | string
-    productName?: StringFilter<"Target"> | string
-    targetValue?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFilter<"Target"> | Date | string
-    createdAt?: DateTimeNullableFilter<"Target"> | Date | string | null
-    updatedAt?: DateTimeNullableFilter<"Target"> | Date | string | null
+    periodType?: StringFilter<"Target"> | string
+    targetType?: StringFilter<"Target"> | string
+    witel?: StringFilter<"Target"> | string
+    product?: StringFilter<"Target"> | string
+    value?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFilter<"Target"> | Date | string
+    createdAt?: DateTimeFilter<"Target"> | Date | string
+    updatedAt?: DateTimeFilter<"Target"> | Date | string
   }, "id">
 
   export type TargetOrderByWithAggregationInput = {
     id?: SortOrder
-    segment?: SortOrder
-    namaWitel?: SortOrder
-    metricType?: SortOrder
-    productName?: SortOrder
-    targetValue?: SortOrder
-    period?: SortOrder
-    createdAt?: SortOrderInput | SortOrder
-    updatedAt?: SortOrderInput | SortOrder
+    periodType?: SortOrder
+    targetType?: SortOrder
+    witel?: SortOrder
+    product?: SortOrder
+    value?: SortOrder
+    periodDate?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
     _count?: TargetCountOrderByAggregateInput
     _avg?: TargetAvgOrderByAggregateInput
     _max?: TargetMaxOrderByAggregateInput
@@ -41410,14 +41410,14 @@ export namespace Prisma {
     OR?: TargetScalarWhereWithAggregatesInput[]
     NOT?: TargetScalarWhereWithAggregatesInput | TargetScalarWhereWithAggregatesInput[]
     id?: BigIntWithAggregatesFilter<"Target"> | bigint | number
-    segment?: StringWithAggregatesFilter<"Target"> | string
-    namaWitel?: StringWithAggregatesFilter<"Target"> | string
-    metricType?: StringWithAggregatesFilter<"Target"> | string
-    productName?: StringWithAggregatesFilter<"Target"> | string
-    targetValue?: DecimalWithAggregatesFilter<"Target"> | Decimal | DecimalJsLike | number | string
-    period?: DateTimeWithAggregatesFilter<"Target"> | Date | string
-    createdAt?: DateTimeNullableWithAggregatesFilter<"Target"> | Date | string | null
-    updatedAt?: DateTimeNullableWithAggregatesFilter<"Target"> | Date | string | null
+    periodType?: StringWithAggregatesFilter<"Target"> | string
+    targetType?: StringWithAggregatesFilter<"Target"> | string
+    witel?: StringWithAggregatesFilter<"Target"> | string
+    product?: StringWithAggregatesFilter<"Target"> | string
+    value?: DecimalWithAggregatesFilter<"Target"> | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeWithAggregatesFilter<"Target"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"Target"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Target"> | Date | string
   }
 
   export type list_poWhereInput = {
@@ -45405,86 +45405,86 @@ export namespace Prisma {
 
   export type TargetCreateInput = {
     id?: bigint | number
-    segment: string
-    namaWitel: string
-    metricType: string
-    productName: string
-    targetValue: Decimal | DecimalJsLike | number | string
-    period: Date | string
-    createdAt?: Date | string | null
-    updatedAt?: Date | string | null
+    periodType: string
+    targetType: string
+    witel: string
+    product: string
+    value: Decimal | DecimalJsLike | number | string
+    periodDate: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TargetUncheckedCreateInput = {
     id?: bigint | number
-    segment: string
-    namaWitel: string
-    metricType: string
-    productName: string
-    targetValue: Decimal | DecimalJsLike | number | string
-    period: Date | string
-    createdAt?: Date | string | null
-    updatedAt?: Date | string | null
+    periodType: string
+    targetType: string
+    witel: string
+    product: string
+    value: Decimal | DecimalJsLike | number | string
+    periodDate: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TargetUpdateInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    segment?: StringFieldUpdateOperationsInput | string
-    namaWitel?: StringFieldUpdateOperationsInput | string
-    metricType?: StringFieldUpdateOperationsInput | string
-    productName?: StringFieldUpdateOperationsInput | string
-    targetValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    periodType?: StringFieldUpdateOperationsInput | string
+    targetType?: StringFieldUpdateOperationsInput | string
+    witel?: StringFieldUpdateOperationsInput | string
+    product?: StringFieldUpdateOperationsInput | string
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TargetUncheckedUpdateInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    segment?: StringFieldUpdateOperationsInput | string
-    namaWitel?: StringFieldUpdateOperationsInput | string
-    metricType?: StringFieldUpdateOperationsInput | string
-    productName?: StringFieldUpdateOperationsInput | string
-    targetValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    periodType?: StringFieldUpdateOperationsInput | string
+    targetType?: StringFieldUpdateOperationsInput | string
+    witel?: StringFieldUpdateOperationsInput | string
+    product?: StringFieldUpdateOperationsInput | string
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TargetCreateManyInput = {
     id?: bigint | number
-    segment: string
-    namaWitel: string
-    metricType: string
-    productName: string
-    targetValue: Decimal | DecimalJsLike | number | string
-    period: Date | string
-    createdAt?: Date | string | null
-    updatedAt?: Date | string | null
+    periodType: string
+    targetType: string
+    witel: string
+    product: string
+    value: Decimal | DecimalJsLike | number | string
+    periodDate: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TargetUpdateManyMutationInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    segment?: StringFieldUpdateOperationsInput | string
-    namaWitel?: StringFieldUpdateOperationsInput | string
-    metricType?: StringFieldUpdateOperationsInput | string
-    productName?: StringFieldUpdateOperationsInput | string
-    targetValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    periodType?: StringFieldUpdateOperationsInput | string
+    targetType?: StringFieldUpdateOperationsInput | string
+    witel?: StringFieldUpdateOperationsInput | string
+    product?: StringFieldUpdateOperationsInput | string
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TargetUncheckedUpdateManyInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    segment?: StringFieldUpdateOperationsInput | string
-    namaWitel?: StringFieldUpdateOperationsInput | string
-    metricType?: StringFieldUpdateOperationsInput | string
-    productName?: StringFieldUpdateOperationsInput | string
-    targetValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    period?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    periodType?: StringFieldUpdateOperationsInput | string
+    targetType?: StringFieldUpdateOperationsInput | string
+    witel?: StringFieldUpdateOperationsInput | string
+    product?: StringFieldUpdateOperationsInput | string
+    value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    periodDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type list_poCreateInput = {
@@ -48787,48 +48787,48 @@ export namespace Prisma {
 
   export type TargetCountOrderByAggregateInput = {
     id?: SortOrder
-    segment?: SortOrder
-    namaWitel?: SortOrder
-    metricType?: SortOrder
-    productName?: SortOrder
-    targetValue?: SortOrder
-    period?: SortOrder
+    periodType?: SortOrder
+    targetType?: SortOrder
+    witel?: SortOrder
+    product?: SortOrder
+    value?: SortOrder
+    periodDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type TargetAvgOrderByAggregateInput = {
     id?: SortOrder
-    targetValue?: SortOrder
+    value?: SortOrder
   }
 
   export type TargetMaxOrderByAggregateInput = {
     id?: SortOrder
-    segment?: SortOrder
-    namaWitel?: SortOrder
-    metricType?: SortOrder
-    productName?: SortOrder
-    targetValue?: SortOrder
-    period?: SortOrder
+    periodType?: SortOrder
+    targetType?: SortOrder
+    witel?: SortOrder
+    product?: SortOrder
+    value?: SortOrder
+    periodDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type TargetMinOrderByAggregateInput = {
     id?: SortOrder
-    segment?: SortOrder
-    namaWitel?: SortOrder
-    metricType?: SortOrder
-    productName?: SortOrder
-    targetValue?: SortOrder
-    period?: SortOrder
+    periodType?: SortOrder
+    targetType?: SortOrder
+    witel?: SortOrder
+    product?: SortOrder
+    value?: SortOrder
+    periodDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type TargetSumOrderByAggregateInput = {
     id?: SortOrder
-    targetValue?: SortOrder
+    value?: SortOrder
   }
 
   export type list_poCountOrderByAggregateInput = {

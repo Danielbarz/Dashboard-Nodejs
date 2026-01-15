@@ -1,33 +1,21 @@
 import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
+import PO_MAPPING from '../utils/poMapping.js'
 
 // --- ACCOUNT OFFICERS ---
-export const getAccountOfficers = async (req, res) => {
-  try {
-    const data = await prisma.list_po.findMany({
-      orderBy: { po: 'asc' }
-    })
-    // Konversi BigInt ke string agar JSON aman
-    const formatted = data.map(item => ({
-      ...item,
-      id: item.id.toString()
-    }))
-    successResponse(res, formattedData, 'Data PO retrieved successfully')
-  } catch (error) {
-    console.error(error)
-    errorResponse(res, 'Failed to fetch PO Master', 500)
-  }
-}
-
-// Get All Account Officers
 export const getAccountOfficers = async (req, res) => {
   try {
     const data = await prisma.accountOfficer.findMany({
         orderBy: { name: 'asc' }
     })
-    return successResponse(res, null, 'Account Officer created')
+    const formatted = data.map(item => ({
+      ...item,
+      id: item.id.toString()
+    }))
+    return successResponse(res, formatted, 'Account Officers retrieved successfully')
   } catch (error) {
-    return errorResponse(res, 'Failed to create AO', 500)
+    console.error(error)
+    return errorResponse(res, 'Failed to fetch Account Officers', 500)
   }
 }
 
@@ -44,20 +32,19 @@ export const deleteAccountOfficer = async (req, res) => {
 // --- MASTER PO (list_po) ---
 export const getPOMaster = async (req, res) => {
   try {
-    // Gunakan query raw sebagai fallback karena model list_po mungkin belum ter-generate di Prisma Client
     const data = await prisma.$queryRawUnsafe('SELECT * FROM list_po ORDER BY po ASC')
     const formatted = data.map(item => ({
       id: item.id.toString(),
       nipnas: item.nipnas,
-      namaPo: item.po, // Mapping kolom 'po' di DB ke 'namaPo' di Frontend
+      namaPo: item.po, 
       segment: item.segment,
       billCity: item.bill_city,
       witel: item.witel
     }))
-    successResponse(res, formattedData, 'AO retrieved successfully')
+    successResponse(res, formatted, 'Master PO retrieved successfully')
   } catch (error) {
     console.error(error)
-    errorResponse(res, 'Failed to fetch Account Officers', 500)
+    errorResponse(res, 'Failed to fetch Master PO', 500)
   }
 }
 
@@ -87,7 +74,6 @@ export const deletePOMaster = async (req, res) => {
 // --- UNMAPPED ORDERS & MAPPING ---
 export const getUnmappedOrders = async (req, res) => {
   try {
-    // 1. Definisikan Witel Region 3 secara LENGKAP
     const region3Witels = [
       'BALI',
       'JATIM BARAT',
@@ -98,10 +84,6 @@ export const getUnmappedOrders = async (req, res) => {
       'SIDOARJO'
     ];
 
-    // 2. Query Database (Prisma)
-    // HANYA ambil yang benar-benar kosong (null, empty, '-')
-    // Jika sudah berubah jadi 'PO_TIDAK_TERDEFINISI' atau nama orang, dia dianggap 'mapped'
-    // sehingga list Unmapped akan berkurang/hilang setelah dipencet Mapping Otomatis.
     const data = await prisma.sosData.findMany({
       where: {
         OR: [
@@ -118,17 +100,17 @@ export const getUnmappedOrders = async (req, res) => {
       take: 50
     })
 
-    const formattedData = unmappedSos.map(item => ({
+    const formattedData = data.map(item => ({
         id: item.id.toString(),
         orderId: item.orderId,
-        customerName: item.standardName || item.customerName, // Sesuaikan kolom
+        customerName: item.standardName || item.customerName,
         nipnas: item.nipnas,
         custCity: item.custCity,
         billCity: item.billCity,
         billWitel: item.billWitel,
         segment: item.segmen
     }))
-    return successResponse(res, formatted, 'Unmapped orders retrieved')
+    return successResponse(res, formattedData, 'Unmapped orders retrieved')
   } catch (error) {
     console.error('Get Unmapped Error:', error)
     return errorResponse(res, 'Failed to fetch unmapped orders', 500)
@@ -138,19 +120,23 @@ export const getUnmappedOrders = async (req, res) => {
 export const updateMapping = async (req, res) => {
   try {
     const { id } = req.params
-    const { poName, billCity, billWitel, segment } = req.body
+    const { poName } = req.body 
 
-    successResponse(res, formattedData, 'Unmapped orders retrieved')
+    await prisma.sosData.update({
+        where: { id: BigInt(id) },
+        data: { poName: poName }
+    })
+
+    successResponse(res, null, 'Order mapped successfully')
   } catch (error) {
     console.error(error)
-    errorResponse(res, 'Failed to fetch unmapped orders', 500)
+    errorResponse(res, 'Failed to update mapping', 500)
   }
 }
 
 export const autoMapping = async (req, res) => {
   console.log('API: autoMapping started with improved priority logic')
   try {
-    // 1. Get all Region 3 unmapped orders (including those currently marked as undefined)
     const region3Witels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU', 'MALANG', 'SIDOARJO']
 
     const targetOrders = await prisma.sosData.findMany({
@@ -180,16 +166,14 @@ export const autoMapping = async (req, res) => {
 
       let newPoName = null
 
-      // PRIORITY 1: Check static PO_MAPPING utility (highest accuracy manual overrides)
       if (PO_MAPPING[order.nipnas]) {
         newPoName = PO_MAPPING[order.nipnas].toUpperCase()
         utilityCount++
       }
 
-      // PRIORITY 2: Check list_po table if utility didn't have it OR utility returned a generic name
       if (!newPoName) {
         const match = await prisma.$queryRawUnsafe(
-          'SELECT po FROM list_po WHERE nipnas = $1 AND po != \'PO_TIDAK_TERDEFINISI\' LIMIT 1',
+          "SELECT po FROM list_po WHERE nipnas = $1 AND po != 'PO_TIDAK_TERDEFINISI' LIMIT 1",
           order.nipnas
         )
         if (match && match.length > 0) {
@@ -198,7 +182,6 @@ export const autoMapping = async (req, res) => {
         }
       }
 
-      // Perform update if a real name was found and it's different from current
       if (newPoName && newPoName !== order.poName) {
         await prisma.sosData.update({
           where: { id: order.id },
@@ -208,7 +191,6 @@ export const autoMapping = async (req, res) => {
       }
     }
 
-    // 3. Optional: Final cleanup for anything still NULL/Empty in Region 3
     const resultCleanup = await prisma.sosData.updateMany({
       where: {
         OR: [
@@ -238,5 +220,92 @@ export const autoMapping = async (req, res) => {
   } catch (error) {
     console.error('AutoMapping Error:', error)
     return errorResponse(res, 'Failed to perform auto mapping: ' + error.message, 500)
+  }
+}
+
+// --- TARGET MANAGEMENT ---
+
+export const getTargets = async (req, res) => {
+  try {
+    const data = await prisma.target.findMany({
+      orderBy: { periodDate: 'desc' }
+    })
+    const formatted = data.map(item => ({
+      ...item,
+      id: item.id.toString(),
+      value: parseFloat(item.value)
+    }))
+    return successResponse(res, formatted, 'Targets retrieved successfully')
+  } catch (error) {
+    console.error(error)
+    return errorResponse(res, 'Failed to fetch targets', 500)
+  }
+}
+
+export const getTargetById = async (req, res) => {
+  try {
+    const { id } = req.params
+    const item = await prisma.target.findUnique({
+      where: { id: BigInt(id) }
+    })
+    if (!item) return errorResponse(res, 'Target not found', 404)
+    
+    return successResponse(res, {
+      ...item,
+      id: item.id.toString(),
+      value: parseFloat(item.value)
+    }, 'Target retrieved')
+  } catch (error) {
+    return errorResponse(res, 'Failed to fetch target', 500)
+  }
+}
+
+export const createTarget = async (req, res) => {
+  try {
+    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const newItem = await prisma.target.create({
+      data: {
+        periodType,
+        targetType,
+        witel,
+        product,
+        value: parseFloat(value),
+        periodDate: new Date(periodDate)
+      }
+    })
+    return successResponse(res, { ...newItem, id: newItem.id.toString() }, 'Target created')
+  } catch (error) {
+    return errorResponse(res, 'Failed to create target: ' + error.message, 500)
+  }
+}
+
+export const updateTarget = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const updated = await prisma.target.update({
+      where: { id: BigInt(id) },
+      data: {
+        periodType,
+        targetType,
+        witel,
+        product,
+        value: parseFloat(value),
+        periodDate: new Date(periodDate)
+      }
+    })
+    return successResponse(res, { ...updated, id: updated.id.toString() }, 'Target updated')
+  } catch (error) {
+    return errorResponse(res, 'Failed to update target: ' + error.message, 500)
+  }
+}
+
+export const deleteTarget = async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.target.delete({ where: { id: BigInt(id) } })
+    return successResponse(res, null, 'Target deleted')
+  } catch (error) {
+    return errorResponse(res, 'Failed to delete target', 500)
   }
 }

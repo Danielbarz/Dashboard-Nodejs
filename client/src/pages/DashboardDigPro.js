@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiChevronDown, FiRefreshCw, FiDollarSign, FiActivity, FiShoppingCart, FiCheckCircle } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
+import { FiChevronDown, FiRefreshCw, FiDollarSign, FiActivity, FiShoppingCart, FiCheckCircle, FiTarget } from 'react-icons/fi'
+import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
 import KPICard from '../components/KPICard'
 import {
@@ -12,6 +14,9 @@ import {
 } from '../components/DigitalProductCharts'
 
 const DashboardPage = () => {
+  const navigate = useNavigate()
+  const currentRole = useCurrentRole()
+  const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   // --- 1. STATE INITIALIZATION ---
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -39,7 +44,16 @@ const DashboardPage = () => {
 
   // Dashboard Data
   const [data, setData] = useState({
-    kpi: { totalRevenue: 0, pipelineRevenue: 0, totalOrder: 0, completionRate: 0 },
+    kpi: { 
+      totalRevenue: 0, 
+      revTarget: 0, 
+      revAchievement: 0, 
+      pipelineRevenue: 0, 
+      totalOrder: 0, 
+      orderTarget: 0, 
+      orderAchievement: 0, 
+      completionRate: 0 
+    },
     charts: {
       orderByStatus: [],
       revenueByWitel: [],
@@ -255,34 +269,49 @@ const DashboardPage = () => {
             >
               Reset
             </button>
+
+            {/* Atur Target Button - Only for Admin */}
+            {isAdminMode && (
+              <button
+                onClick={() => navigate('/admin/master-targets')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-blue-700 h-10 flex items-center gap-2"
+              >
+                <FiTarget />
+                Atur Target
+              </button>
+            )}
           </div>
         </div>
 
-        {/* SECTION 1: KPI CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard 
-            title="TOTAL REVENUE (Completed)" 
-            value={`Rp ${data.kpi.totalRevenue.toLocaleString('id-ID')}`} 
-            icon={<FiDollarSign />} 
-            color="green" 
+        {/* --- SECTION 1: KPI CARDS --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <KPICard
+            title="TOTAL REVENUE (Completed)"
+            value={`Rp ${(data?.kpi?.totalRevenue || 0).toLocaleString('id-ID')}`}
+            target={`Rp ${(data?.kpi?.revTarget || 0).toLocaleString('id-ID')}`}
+            achievement={data?.kpi?.revAchievement}
+            icon={<FiDollarSign />}
+            color="green"
           />
-          <KPICard 
-            title="PIPELINE REVENUE (In Progress)" 
-            value={`Rp ${data.kpi.pipelineRevenue.toLocaleString('id-ID')}`} 
-            icon={<FiActivity />} 
-            color="orange" 
+          <KPICard
+            title="PIPELINE REVENUE (In Progress)"
+            value={`Rp ${(data?.kpi?.pipelineRevenue || 0).toLocaleString('id-ID')}`}
+            icon={<FiActivity />}
+            color="orange"
           />
-          <KPICard 
-            title="TOTAL ORDER" 
-            value={data.kpi.totalOrder} 
-            icon={<FiShoppingCart />} 
-            color="blue" 
+          <KPICard
+            title="TOTAL ORDER"
+            value={data?.kpi?.totalOrder || 0}
+            target={data?.kpi?.orderTarget || 0}
+            achievement={data?.kpi?.orderAchievement}
+            icon={<FiShoppingCart />}
+            color="blue"
           />
-          <KPICard 
-            title="COMPLETION RATE" 
-            value={`${data.kpi.completionRate}%`} 
-            icon={<FiCheckCircle />} 
-            color="green" 
+          <KPICard
+            title="COMPLETION RATE"
+            value={`${data?.kpi?.completionRate || 0}%`}
+            icon={<FiCheckCircle />}
+            color="blue"
           />
         </div>
 
@@ -293,25 +322,25 @@ const DashboardPage = () => {
           {/* Row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 1: Order by Status (Donut) */}
-            <OrderByStatusChart data={data.charts.orderByStatus} />
+            <OrderByStatusChart data={data?.charts?.orderByStatus || []} />
             {/* Chart 2: Revenue by Witel (Horizontal Stacked Product) */}
-            <RevenueByWitelChart data={data.charts.revenueByWitel} />
+            <RevenueByWitelChart data={data?.charts?.revenueByWitel || []} />
           </div>
 
           {/* Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 3: Order by Witel (Vertical Stacked Status) */}
-            <OrderByWitelChart data={data.charts.orderByWitel} />
+            <OrderByWitelChart data={data?.charts?.orderByWitel || []} />
             {/* Chart 4: Revenue Trend (Multi-Line Product) */}
-            <RevenueTrendChart data={data.charts.revenueTrend} />
+            <RevenueTrendChart data={data?.charts?.revenueTrend || []} />
           </div>
 
           {/* Row 3 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 5: Order Trend (Multi-Line Product) */}
-            <OrderTrendChart data={data.charts.orderTrend} />
+            <OrderTrendChart data={data?.charts?.orderTrend || []} />
             {/* Chart 6: Product Share (Donut) */}
-            <ProductShareChart data={data.charts.productShare} />
+            <ProductShareChart data={data?.charts?.productShare || []} />
           </div>
         </div>
 

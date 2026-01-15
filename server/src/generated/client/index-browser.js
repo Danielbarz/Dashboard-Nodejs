@@ -464,12 +464,12 @@ exports.Prisma.OrderProductScalarFieldEnum = {
 
 exports.Prisma.TargetScalarFieldEnum = {
   id: 'id',
-  segment: 'segment',
-  namaWitel: 'namaWitel',
-  metricType: 'metricType',
-  productName: 'productName',
-  targetValue: 'targetValue',
-  period: 'period',
+  periodType: 'periodType',
+  targetType: 'targetType',
+  witel: 'witel',
+  product: 'product',
+  value: 'value',
+  periodDate: 'periodDate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
