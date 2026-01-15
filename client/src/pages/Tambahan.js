@@ -127,7 +127,8 @@ const Tambahan = () => {
     const totalLop = parentRows.reduce((a, c) => a + (c.jumlahLop || 0), 0)
     const totalGoLive = parentRows.reduce((a, c) => a + (c.golive_jml || 0), 0)
     const totalDrop = parentRows.reduce((a, c) => a + (c.drop || 0), 0)
-    const pending = Math.max(totalLop - totalGoLive - totalDrop, 0)
+    // jumlahLop is Non-Drop only. So Pending = Non-Drop - GoLive.
+    const pending = Math.max(totalLop - totalGoLive, 0)
     return { totalLop, totalGoLive, totalDrop, pending }
   }, [parentRows])
 
@@ -138,7 +139,8 @@ const Tambahan = () => {
       survey: Number(row.survey) || 0,
       perizinan: Number(row.perizinan) || 0,
       instalasi: Number(row.instalasi) || 0,
-      piOgp: Number(row.piOgp) || 0
+      piOgp: Number(row.piOgp) || 0,
+      done: Number(row.golive_jml) || 0
     }))
   }, [parentRows])
 
@@ -347,6 +349,7 @@ const Tambahan = () => {
                   <th className="px-4 py-3 text-right">Izin</th>
                   <th className="px-4 py-3 text-right">Inst</th>
                   <th className="px-4 py-3 text-right">FI-OGP</th>
+                  <th className="px-4 py-3 text-right">Done</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -358,10 +361,11 @@ const Tambahan = () => {
                     <td className="px-4 py-3 text-right">{formatNumber(row.perizinan)}</td>
                     <td className="px-4 py-3 text-right">{formatNumber(row.instalasi)}</td>
                     <td className="px-4 py-3 text-right font-semibold text-blue-600">{formatNumber(row.piOgp)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-green-600">{formatNumber(row.done)}</td>
                   </tr>
                 ))}
                 {progressByWitel.length === 0 && (
-                  <tr><td className="px-4 py-6 text-center text-gray-400" colSpan={6}>Tidak ada data</td></tr>
+                  <tr><td className="px-4 py-6 text-center text-gray-400" colSpan={7}>Tidak ada data</td></tr>
                 )}
               </tbody>
             </table>

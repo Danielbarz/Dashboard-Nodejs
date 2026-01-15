@@ -16,7 +16,8 @@ const stages = [
   { key: 'survey', label: 'Survey / DRM', color: '#06b6d4' }, // Cyan
   { key: 'perizinan', label: 'Perizinan / MOS', color: '#eab308' }, // Yellow
   { key: 'instalasi', label: 'Instalasi', color: '#f97316' }, // Orange
-  { key: 'piOgp', label: 'FI-OGP Live', color: '#22c55e' } // Green (Success)
+  { key: 'piOgp', label: 'FI-OGP Live', color: '#8b5cf6' }, // Purple
+  { key: 'done', label: 'Done Go Live', color: '#22c55e' } // Green
 ]
 
 const GroupedBarProgressWitelJT = ({ data = [] }) => {

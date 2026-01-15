@@ -79,11 +79,11 @@ export const getReportTambahan = async (req, res, next) => {
         SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
         SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
         SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END)::int AS drop_cnt,
-        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
-        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
-        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
-        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
-        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
+        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
+        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
+        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
+        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
+        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
       FROM spmk_mom
       ${dateFilter}
       GROUP BY witel_baru, witel_lama
@@ -146,15 +146,84 @@ export const getReportTambahan = async (req, res, next) => {
     })
 
     // Aging Charts
-    const top3WitelRaw = await prisma.$queryRawUnsafe(`WITH Ranked AS (SELECT TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) as witel_norm, id_i_hld, tanggal_mom, revenue_plan, status_tomps_new, usia, uraian_kegiatan, ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) ORDER BY usia DESC) as rn FROM spmk_mom WHERE go_live = 'N' AND populasi_non_drop = 'Y') SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`)
-    const rawActiveProjects = await prisma.spmkMom.findMany({ where: { goLive: 'N', populasiNonDrop: 'Y' }, select: { witelLama: true, witelBaru: true, segmen: true, poName: true, idIHld: true, tanggalMom: true, revenuePlan: true, statusTompsNew: true, usia: true, uraianKegiatan: true }, orderBy: { usia: 'desc' } })
+    // Fetch all active projects sorted by age
+    const rawActiveProjects = await prisma.spmkMom.findMany({
+      where: {
+        ...(start_date && end_date && {
+          tanggalMom: { gte: new Date(start_date), lte: new Date(end_date) }
+        }),
+        goLive: 'N',
+        populasiNonDrop: 'Y'
+      },
+      select: {
+        witelLama: true, witelBaru: true, segmen: true, poName: true, idIHld: true,
+        tanggalMom: true, revenuePlan: true, statusTompsNew: true, usia: true, uraianKegiatan: true
+      },
+      orderBy: { usia: 'desc' }
+    })
+
+    // 1. Top 3 Witel Logic
+    const witelGroups = {}
+    rawActiveProjects.forEach(proj => {
+      const w = cleanWitelName(proj.witelBaru || proj.witelLama)
+      const region = findParent(w)
+      if (!witelGroups[region]) witelGroups[region] = []
+      // Push all, sort/slice later
+      witelGroups[region].push({
+        ...proj,
+        witel_norm: w,
+        region: region,
+        revenue_plan: Number(proj.revenuePlan || 0),
+        status_tomps_new: proj.statusTompsNew,
+        usia: proj.usia,
+        uraian_kegiatan: proj.uraianKegiatan
+      })
+    })
+
+    const top3WitelMapped = []
+    Object.keys(witelGroups).sort().forEach(key => {
+      // Sort desc by usia just in case
+      witelGroups[key].sort((a, b) => (b.usia || 0) - (a.usia || 0))
+      // Take top 3
+      witelGroups[key].slice(0, 3).forEach((item, idx) => {
+        top3WitelMapped.push({ ...item, rn: idx + 1 })
+      })
+    })
+
+    // 2. Top 3 PO Logic
     const poGroups = {}
     rawActiveProjects.forEach(proj => {
-      const rawWitel = cleanWitelName(proj.witelLama || proj.witelBaru); const parent = findParent(rawWitel); const ao = findAO(rawWitel, parent, proj.segmen); const aoName = ao ? ao.name : (proj.poName || 'UNMAPPED PO')
+      const rawWitel = cleanWitelName(proj.witelLama || proj.witelBaru)
+      const parent = findParent(rawWitel)
+      const ao = findAO(rawWitel, parent, proj.segmen)
+      let aoName = ao ? ao.name : (proj.poName || 'UNMAPPED PO')
+
+      // CLEANUP: Filter out junk PO names
+      aoName = aoName.trim()
+      if (['PT2', 'PT3', 'PT2S', 'PT2UL', 'PT3B'].includes(aoName) || aoName.length < 3) {
+         return // Skip junk POs
+      }
+
       if (!poGroups[aoName]) poGroups[aoName] = []
-      if (poGroups[aoName].length < 3) poGroups[aoName].push({ po_name: aoName, witel_norm: rawWitel, id_i_hld: proj.idIHld, tanggal_mom: proj.tanggalMom, revenue_plan: Number(proj.revenuePlan || 0), status_tomps_new: proj.statusTompsNew, usia: proj.usia, uraian_kegiatan: proj.uraianKegiatan })
+      poGroups[aoName].push({
+        po_name: aoName,
+        witel_norm: rawWitel,
+        id_i_hld: proj.idIHld,
+        tanggal_mom: proj.tanggalMom,
+        revenue_plan: Number(proj.revenuePlan || 0),
+        status_tomps_new: proj.statusTompsNew,
+        usia: proj.usia,
+        uraian_kegiatan: proj.uraianKegiatan
+      })
     })
-    const top3PoMapped = []; Object.keys(poGroups).sort().forEach(key => poGroups[key].forEach((item, idx) => top3PoMapped.push({ ...item, rn: idx + 1 })))
+
+    const top3PoMapped = []
+    Object.keys(poGroups).sort().forEach(key => {
+      poGroups[key].sort((a, b) => (b.usia || 0) - (a.usia || 0))
+      poGroups[key].slice(0, 3).forEach((item, idx) => {
+        top3PoMapped.push({ ...item, rn: idx + 1 })
+      })
+    })
 
     // Top Mitra Chart
     const rawRevenueData = await prisma.$queryRawUnsafe(`SELECT TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) as witel, segmen, po_name, SUM(COALESCE(revenue_plan,0)) as total_revenue, COUNT(*)::int as project_count FROM spmk_mom ${dateFilter ? `${dateFilter} AND populasi_non_drop = 'Y'` : "WHERE populasi_non_drop = 'Y'"} GROUP BY witel_lama, witel_baru, segmen, po_name`, ...queryParams)
@@ -175,8 +244,8 @@ export const getReportTambahan = async (req, res, next) => {
         return successResponse(res, {
           tableData: finalTable,
           projectData: finalProjects,
-          top3Witel: formatRawWitel(top3WitelRaw),
-          topUsiaByWitel: formatRawWitel(top3WitelRaw),
+          top3Witel: top3WitelMapped,
+          topUsiaByWitel: top3WitelMapped,
           top3Po: top3PoMapped,
           topUsiaByPo: top3PoMapped,
           bucketUsiaData: bucketUsiaRaw,
