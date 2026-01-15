@@ -44,28 +44,29 @@ const MasterDataPO = () => {
   }, [])
 
   // --- Fetch Functions ---
-  const fetchAccountOfficers = async () => {
-    try {
-      setError(null)
-      const response = await api.get('/master/account-officers')
-      setAccountOfficers(response.data.data || [])
-    } catch (error) {
-      console.error('Error fetching AO:', error)
-      setError('Gagal memuat data Account Officer')
+    const fetchAccountOfficers = async () => {
+      try {
+        setError(null)
+        const response = await api.get('/master/account-officers')
+        const data = response.data.data
+        setAccountOfficers(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching AO:', error)
+        setError('Gagal memuat data Account Officer')
+      }
     }
-  }
 
-  const fetchPOMaster = async () => {
-    try {
-      setError(null)
-      const response = await api.get('/master/po')
-      setPoMaster(response.data.data || [])
-    } catch (error) {
-      console.error('Error fetching PO:', error)
-      setError('Gagal memuat data Master PO')
+    const fetchPOMaster = async () => {
+      try {
+        setError(null)
+        const response = await api.get('/master/po')
+        const data = response.data.data
+        setPoMaster(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching PO:', error)
+        setError('Gagal memuat data Master PO')
+      }
     }
-  }
-
   const fetchUnmappedOrders = async () => {
     try {
       setError(null)
