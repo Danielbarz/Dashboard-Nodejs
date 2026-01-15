@@ -40,6 +40,7 @@ router.use('/report', reportRoutes)
 
 // Analysis routes
 router.use('/analysis', analysisRoutes)
+router.use('/jt', analysisRoutes)
 // router.use('/dashboard', dashboardRoutes)
 // router.use('/import', importRoutes)
 

@@ -377,9 +377,9 @@ const ReportDigPro = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data?.data?.filters) {
-          if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
-            setWitelOptions(response.data.data.filters.witels)
-          }
+          // if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
+          //   setWitelOptions(response.data.data.filters.witels)
+          // }
         }
       } catch (error) {
         console.error('Failed to fetch filter options:', error)
@@ -814,7 +814,7 @@ const ReportDigPro = () => {
               {renderTable(`Progress WFM Digital Product MTD`, reportData.legs || [], reportData.detailsLegs)}
             </div>
           )}
-          
+
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               {renderTable(`Progress WFM Digital Product MTD`, reportData.sme || [], reportData.detailsSme)}

@@ -91,50 +91,88 @@ model AccountOfficer {
 }
 
 model SosData {
-  id                BigInt    @id @default(autoincrement())
-  nipnas            String?   @db.VarChar(255)
-  standardName      String?   @map("standard_name") @db.VarChar(255)
-  orderId           String    @unique @map("order_id") @db.VarChar(255)
-  orderSubtype      String?   @map("order_subtype") @db.VarChar(255)
-  order_description String?
-  segmen            String?   @db.VarChar(255)
-  subSegmen         String?   @map("sub_segmen") @db.VarChar(255)
-  custCity          String?   @map("cust_city") @db.VarChar(255)
-  custWitel         String?   @map("cust_witel") @db.VarChar(255)
-  servCity          String?   @map("serv_city") @db.VarChar(255)
-  serviceWitel      String?   @map("service_witel") @db.VarChar(255)
-  billWitel         String?   @map("bill_witel") @db.VarChar(255)
-  liProductName     String?   @map("li_product_name") @db.VarChar(255)
-  liBilldate        DateTime? @map("li_billdate") @db.Date
-  liMilestone       String?   @map("li_milestone") @db.VarChar(255)
-  kategori          String?   @db.VarChar(255)
-  liStatus          String?   @map("li_status") @db.VarChar(255)
-  liStatusDate      DateTime? @map("li_status_date") @db.Date
-  isTermin          String?   @map("is_termin") @db.VarChar(255)
-  biayaPasang       Decimal   @default(0.00) @map("biaya_pasang") @db.Decimal(15, 2)
-  hrgBulanan        Decimal   @default(0.00) @map("hrg_bulanan") @db.Decimal(15, 2)
-  revenue           Decimal   @default(0.00) @db.Decimal(15, 2)
-  orderCreatedDate  DateTime? @map("order_created_date") @db.Timestamp(6)
-  agreeType         String?   @map("agree_type") @db.VarChar(255)
-  agreeStartDate    DateTime? @map("agree_start_date") @db.Date
-  agreeEndDate      DateTime? @map("agree_end_date") @db.Date
-  lamaKontrakHari   Int       @default(0) @map("lama_kontrak_hari")
-  amortisasi        String?   @db.VarChar(255)
-  actionCd          String?   @map("action_cd") @db.VarChar(255)
-  kategoriUmur      String?   @map("kategori_umur") @db.VarChar(255)
-  umurOrder         Int       @default(0) @map("umur_order")
-  billCity          String?   @map("bill_city") @db.VarChar(255)
-  poName            String?   @map("po_name") @db.VarChar(255)
-  tipeOrder         String?   @map("tipe_order") @db.VarChar(255)
-  segmenBaru        String?   @map("segmen_baru") @db.VarChar(255)
-  scalling1         String?   @db.VarChar(255)
-  scalling2         String?   @db.VarChar(255)
-  tipeGrup          String?   @map("tipe_grup") @db.VarChar(255)
-  witelBaru         String?   @map("witel_baru") @db.VarChar(255)
-  kategoriBaru      String?   @map("kategori_baru") @db.VarChar(255)
-  createdAt         DateTime? @map("created_at") @db.Timestamp(6)
-  updatedAt         DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
-  batchId           String?   @map("batch_id") @db.VarChar(255)
+  id                    BigInt    @id @default(autoincrement())
+  nipnas                String?   @db.VarChar(255)
+  standardName          String?   @map("standard_name") @db.VarChar(255)
+  orderId               String    @unique @map("order_id") @db.VarChar(255)
+  orderSubtype          String?   @map("order_subtype") @db.VarChar(255)
+  order_description     String?
+  segmen                String?   @db.VarChar(255)
+  subSegmen             String?   @map("sub_segmen") @db.VarChar(255)
+  custCity              String?   @map("cust_city") @db.VarChar(255)
+  custWitel             String?   @map("cust_witel") @db.VarChar(255)
+  servCity              String?   @map("serv_city") @db.VarChar(255)
+  serviceWitel          String?   @map("service_witel") @db.VarChar(255)
+  billWitel             String?   @map("bill_witel") @db.VarChar(255)
+  liProductName         String?   @map("li_product_name") @db.VarChar(255)
+  liBilldate            DateTime? @map("li_billdate") @db.Date
+  liMilestone           String?   @map("li_milestone") @db.VarChar(255)
+  kategori              String?   @db.VarChar(255)
+  liStatus              String?   @map("li_status") @db.VarChar(255)
+  liStatusDate          DateTime? @map("li_status_date") @db.Date
+  isTermin              String?   @map("is_termin") @db.VarChar(255)
+  biayaPasang           Decimal   @default(0.00) @map("biaya_pasang") @db.Decimal(15, 2)
+  hrgBulanan            Decimal   @default(0.00) @map("hrg_bulanan") @db.Decimal(15, 2)
+  revenue               Decimal   @default(0.00) @db.Decimal(15, 2)
+  orderCreatedDate      DateTime? @map("order_created_date") @db.Timestamp(6)
+  agreeType             String?   @map("agree_type") @db.VarChar(255)
+  agreeStartDate        DateTime? @map("agree_start_date") @db.Date
+  agreeEndDate          DateTime? @map("agree_end_date") @db.Date
+  lamaKontrakHari       Int       @default(0) @map("lama_kontrak_hari")
+  amortisasi            String?   @db.VarChar(255)
+  actionCd              String?   @map("action_cd") @db.VarChar(255)
+  kategoriUmur          String?   @map("kategori_umur") @db.VarChar(255)
+  umurOrder             Int       @default(0) @map("umur_order")
+  billCity              String?   @map("bill_city") @db.VarChar(255)
+  poName                String?   @map("po_name") @db.VarChar(255)
+  tipeOrder             String?   @map("tipe_order") @db.VarChar(255)
+  segmenBaru            String?   @map("segmen_baru") @db.VarChar(255)
+  scalling1             String?   @db.VarChar(255)
+  scalling2             String?   @db.VarChar(255)
+  tipeGrup              String?   @map("tipe_grup") @db.VarChar(255)
+  witelBaru             String?   @map("witel_baru") @db.VarChar(255)
+  kategoriBaru          String?   @map("kategori_baru") @db.VarChar(255)
+  createdAt             DateTime? @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
+  batchId               String?   @map("batch_id") @db.VarChar(255)
+  prevOrder             String?   @map("prev_order") @db.VarChar(255)
+  liSid                 String?   @map("li_sid") @db.VarChar(255)
+  sid                   String?   @db.VarChar(255)
+  custAccntNum          String?   @map("cust_accnt_num") @db.VarChar(255)
+  custAccntName         String?   @map("cust_accnt_name") @db.VarChar(255)
+  custAddr              String?   @map("cust_addr")
+  custRegion            String?   @map("cust_region") @db.VarChar(255)
+  servAccntNum          String?   @map("serv_accnt_num") @db.VarChar(255)
+  servAccntName         String?   @map("serv_accnt_name") @db.VarChar(255)
+  servAddr              String?   @map("serv_addr")
+  serviceRegion         String?   @map("service_region") @db.VarChar(255)
+  billAccntNum          String?   @map("bill_accnt_num") @db.VarChar(255)
+  accountNas            String?   @map("account_nas") @db.VarChar(255)
+  billAccntName         String?   @map("bill_accnt_name") @db.VarChar(255)
+  billAddr              String?   @map("bill_addr")
+  billRegion            String?   @map("bill_region") @db.VarChar(255)
+  liId                  String?   @map("li_id") @db.VarChar(255)
+  liProductId           String?   @map("li_product_id") @db.VarChar(255)
+  productDigital        String?   @map("product_digital") @db.VarChar(255)
+  liBandwidth           String?   @map("li_bandwidth") @db.VarChar(255)
+  billcomDate           DateTime? @map("billcom_date") @db.Date
+  liFulfillmentStatus   String?   @map("li_fulfillment_status") @db.VarChar(255)
+  scaling               String?   @db.VarChar(255)
+  liPaymentTerm         String?   @map("li_payment_term") @db.VarChar(255)
+  liBillingStartDate    DateTime? @map("li_billing_start_date") @db.Date
+  agreeItemNum          String?   @map("agree_item_num") @db.VarChar(255)
+  agreeName             String?   @map("agree_name") @db.VarChar(255)
+  orderCreatedBy        String?   @map("order_created_by") @db.VarChar(255)
+  liCreatedDate         DateTime? @map("li_created_date") @db.Timestamp(6)
+  orderCreatedByName    String?   @map("order_created_by_name") @db.VarChar(255)
+  currentBandwidth      String?   @map("current_bandwidth") @db.VarChar(255)
+  beforeBandwidth       String?   @map("before_bandwidth") @db.VarChar(255)
+  productActivationDate DateTime? @map("product_activation_date") @db.Date
+  quoteRowId            String?   @map("quote_row_id") @db.VarChar(255)
+  lineItemDescription   String?   @map("line_item_description")
+  assetIntegId          String?   @map("asset_integ_id") @db.VarChar(255)
+  am                    String?   @db.VarChar(255)
+  xBillcompDt           DateTime? @map("x_billcomp_dt") @db.Date
 
   @@index([batchId], map: "idx_sos_data_batch_id")
   @@index([billWitel], map: "idx_sos_data_bill_witel")
@@ -268,6 +306,38 @@ model SpmkMom {
   @@map("spmk_mom")
 }
 
+model ReportTambahan {
+  id             BigInt    @id @default(autoincrement())
+  bulan          String?
+  tahun          Int?
+  region         String?
+  witelLama      String?   @map("witel_lama")
+  witelBaru      String?   @map("witel_baru")
+  idIHld         String?   @map("id_i_hld")
+  noNdeSpmk      String?   @map("no_nde_spmk")
+  uraianKegiatan String?   @map("uraian_kegiatan") @db.Text
+  segmen         String?
+  poName         String?   @map("po_name")
+  tanggalGolive  DateTime? @map("tanggal_golive")
+  konfirmasiPo   String?   @map("konfirmasi_po")
+  tanggalCb      DateTime? @map("tanggal_cb")
+  jenisKegiatan  String?   @map("jenis_kegiatan")
+  revenuePlan    Float?    @map("revenue_plan")
+  usia           Int?
+  statusProyek   String?   @map("status_proyek")
+  goLive         String?   @map("go_live")
+  keteranganToc  String?   @map("keterangan_toc") @db.Text
+  mom            String?
+  baDrop         String?   @map("ba_drop")
+  statusTompsNew String?   @map("status_tomps_new")
+  statusIHld     String?   @map("status_i_hld")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  batchId        String?   @map("batch_id")
+
+  @@map("report_tambahan")
+}
+
 model DocumentData {
   id                BigInt    @id @default(autoincrement())
   batchId           String?   @map("batch_id") @db.VarChar(255)
@@ -328,6 +398,19 @@ model Target {
   updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("targets")
+}
+
+model list_po {
+  id         BigInt    @id @default(autoincrement())
+  nipnas     String?
+  po         String
+  segment    String?
+  bill_city  String?
+  witel      String?
+  created_at DateTime? @default(now()) @map("created_at")
+  updated_at DateTime? @updatedAt @map("updated_at")
+
+  @@map("list_po")
 }
 
 model CustomTarget {
@@ -415,17 +498,6 @@ model jobs {
   created_at   Int
 
   @@index([queue], map: "idx_jobs_queue")
-}
-
-model list_po {
-  id         BigInt    @id @default(autoincrement())
-  nipnas     String?   @db.VarChar(255)
-  po         String    @db.VarChar(255)
-  segment    String?   @db.VarChar(255)
-  bill_city  String?   @db.VarChar(255)
-  witel      String?   @db.VarChar(255)
-  created_at DateTime? @db.Timestamp(6)
-  updated_at DateTime? @db.Timestamp(6)
 }
 
 model migrations {

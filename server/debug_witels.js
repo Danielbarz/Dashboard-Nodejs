@@ -2,7 +2,7 @@ import prisma from './src/lib/prisma.js'
 
 async function main() {
   console.log('Fetching distinct witels from sosData...')
-  
+
   try {
       const custWitels = await prisma.sosData.groupBy({
         by: ['custWitel'],

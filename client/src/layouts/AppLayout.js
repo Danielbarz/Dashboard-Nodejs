@@ -304,7 +304,7 @@ const AppLayout = ({ children, pageTitle }) => {
       '/': 'Home',
       '/home': 'Home',
       '/dashboard': 'Dashboard Digital Product',
-      '/analysis': 'Dashboard Digital Product',
+      '/analysis': 'Analysis Digital Product',
       '/tambahan': 'Dashboard Jaringan Tambahan',
       '/datin': 'Dashboard Datin',
       '/hsi': 'Dashboard HSI',

@@ -1,7 +1,12 @@
 import express from 'express'
 import { authenticate } from '../middleware/auth.js'
 import { paginationValidation, validate } from '../middleware/validator.js'
-import { getDigitalProducts, getDigitalProductStatsHandler, exportDigitalProducts } from '../controllers/analysisController.js'
+import {
+  getDigitalProducts,
+  getDigitalProductStatsHandler,
+  exportDigitalProducts,
+  getJtProgressStats
+} from '../controllers/analysisController.js'
 
 const router = express.Router()
 
@@ -13,5 +18,8 @@ router.get('/digital-product/stats', authenticate, getDigitalProductStatsHandler
 
 // Export to Excel
 router.get('/digital-product/export', authenticate, exportDigitalProducts)
+
+// Endpoint sesuai request: '/api/jt/progress-stats' (prefix /jt added in index.js)
+router.get('/progress-stats', authenticate, getJtProgressStats)
 
 export default router

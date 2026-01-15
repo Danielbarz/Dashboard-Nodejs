@@ -26,14 +26,14 @@ async function testData() {
         revenue: true
       }
     })
-    
+
     if (data) {
       console.log('✓ Data found in SosData table:')
       console.log(JSON.stringify(data, null, 2))
     } else {
       console.log('✗ No data found in SosData table')
     }
-    
+
     const count = await prisma.sosData.count()
     console.log(`\nTotal records in SosData: ${count}`)
   } catch (error) {

@@ -1,8 +1,15 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 
 const Reports = () => {
-  const [reportType, setReportType] = useState('revenue')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const reportType = searchParams.get('tab') || 'revenue'
+
+  const setReportType = (type) => {
+    setSearchParams({ tab: type }, { replace: true })
+  }
+
   const currentRole = useCurrentRole()
   const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 

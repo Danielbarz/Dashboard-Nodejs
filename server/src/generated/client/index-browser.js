@@ -391,6 +391,36 @@ exports.Prisma.SpmkMomScalarFieldEnum = {
   batchId: 'batchId'
 };
 
+exports.Prisma.ReportTambahanScalarFieldEnum = {
+  id: 'id',
+  bulan: 'bulan',
+  tahun: 'tahun',
+  region: 'region',
+  witelLama: 'witelLama',
+  witelBaru: 'witelBaru',
+  idIHld: 'idIHld',
+  noNdeSpmk: 'noNdeSpmk',
+  uraianKegiatan: 'uraianKegiatan',
+  segmen: 'segmen',
+  poName: 'poName',
+  tanggalGolive: 'tanggalGolive',
+  konfirmasiPo: 'konfirmasiPo',
+  tanggalCb: 'tanggalCb',
+  jenisKegiatan: 'jenisKegiatan',
+  revenuePlan: 'revenuePlan',
+  usia: 'usia',
+  statusProyek: 'statusProyek',
+  goLive: 'goLive',
+  keteranganToc: 'keteranganToc',
+  mom: 'mom',
+  baDrop: 'baDrop',
+  statusTompsNew: 'statusTompsNew',
+  statusIHld: 'statusIHld',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  batchId: 'batchId'
+};
+
 exports.Prisma.DocumentDataScalarFieldEnum = {
   id: 'id',
   batchId: 'batchId',
@@ -442,6 +472,17 @@ exports.Prisma.TargetScalarFieldEnum = {
   period: 'period',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.List_poScalarFieldEnum = {
+  id: 'id',
+  nipnas: 'nipnas',
+  po: 'po',
+  segment: 'segment',
+  bill_city: 'bill_city',
+  witel: 'witel',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 };
 
 exports.Prisma.CustomTargetScalarFieldEnum = {
@@ -521,17 +562,6 @@ exports.Prisma.JobsScalarFieldEnum = {
   reserved_at: 'reserved_at',
   available_at: 'available_at',
   created_at: 'created_at'
-};
-
-exports.Prisma.List_poScalarFieldEnum = {
-  id: 'id',
-  nipnas: 'nipnas',
-  po: 'po',
-  segment: 'segment',
-  bill_city: 'bill_city',
-  witel: 'witel',
-  created_at: 'created_at',
-  updated_at: 'updated_at'
 };
 
 exports.Prisma.MigrationsScalarFieldEnum = {
@@ -741,9 +771,11 @@ exports.Prisma.ModelName = {
   SosData: 'SosData',
   HsiData: 'HsiData',
   SpmkMom: 'SpmkMom',
+  ReportTambahan: 'ReportTambahan',
   DocumentData: 'DocumentData',
   OrderProduct: 'OrderProduct',
   Target: 'Target',
+  list_po: 'list_po',
   CustomTarget: 'CustomTarget',
   UserTableConfiguration: 'UserTableConfiguration',
   cache: 'cache',
@@ -753,7 +785,6 @@ exports.Prisma.ModelName = {
   failed_jobs: 'failed_jobs',
   job_batches: 'job_batches',
   jobs: 'jobs',
-  list_po: 'list_po',
   migrations: 'migrations',
   order_status_logs: 'order_status_logs',
   password_reset_tokens: 'password_reset_tokens',

@@ -91,7 +91,7 @@ export default function FlowProcessHSI() {
 
     const [selectedWitels, setSelectedWitels] = useState([]);
     const [selectedBranches, setSelectedBranches] = useState([]);
-    
+
     // ACTIVE STATE
     const [activeCategory, setActiveCategory] = useState(null);
 
@@ -198,7 +198,7 @@ export default function FlowProcessHSI() {
         // setActiveSection(section);
         setCurrentPage(1);
         loadDetail(categoryName, 1);
-        
+
         // Scroll ke section yang relevan
         setTimeout(() => {
             const elementId = 'detail-section-main'; // Defaulting to main since section is unknown
