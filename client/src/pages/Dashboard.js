@@ -112,20 +112,19 @@ const DashboardPage = () => {
   // --- 4. RENDER ---
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-[1600px] mx-auto space-y-6">
-        
-        {/* HEADER */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard Digital Product</h1>
-            <p className="text-gray-500 text-sm">Performance Monitoring & Analytics</p>
-          </div>
+    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
+      
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard Digital Product</h1>
+          <p className="text-gray-500 text-sm">Performance Monitoring & Analytics</p>
         </div>
+      </div>
 
-        {/* --- FILTERS --- */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 sticky top-0 z-20 border-b border-gray-200">
-          <div className="flex flex-col lg:flex-row gap-4">
+      {/* --- FILTERS --- */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-4 sticky top-0 z-20 border-b border-gray-200">
+        <div className="flex flex-col lg:flex-row gap-4">
             
             {/* Date Picker */}
             <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
@@ -317,7 +316,6 @@ const DashboardPage = () => {
         </div>
 
       </div>
-    </div>
   )
 }
 

@@ -13,10 +13,8 @@ import {
 
 const DigitalProduct = () => {
   // Filters State
-  const now = new Date()
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-  const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0])
-  const [endDate, setEndDate] = useState(now.toISOString().split('T')[0])
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [loading, setLoading] = useState(false)
   
   const [selectedWitels, setSelectedWitels] = useState([])
@@ -30,7 +28,8 @@ const DigitalProduct = () => {
   const [filterOptions, setFilterOptions] = useState({
     witels: [],
     products: [],
-    branchMap: {}
+    branchMap: {},
+    dateRange: { min: '', max: '' }
   })
 
   const [dashboardData, setDashboardData] = useState({
@@ -51,7 +50,21 @@ const DigitalProduct = () => {
       try {
         const response = await api.get('/dashboard/digital-product/filters')
         if (response.data.success) {
-          setFilterOptions(response.data.data)
+          const filterData = response.data.data
+          console.log('DEBUG: Filter Data Received:', filterData)
+          setFilterOptions(filterData)
+          
+          // Set default dates from data if available
+          if (filterData.dateRange?.min && filterData.dateRange?.max) {
+            setStartDate(new Date(filterData.dateRange.min).toISOString().split('T')[0])
+            setEndDate(new Date(filterData.dateRange.max).toISOString().split('T')[0])
+          } else {
+            // Fallback to current month if no data
+            const now = new Date()
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+            setStartDate(firstDay.toISOString().split('T')[0])
+            setEndDate(now.toISOString().split('T')[0])
+          }
         }
       } catch (error) {
         console.error('Error fetching filters:', error)
@@ -69,6 +82,8 @@ const DigitalProduct = () => {
 
   // Fetch Dashboard Data
   const fetchData = async () => {
+    if (!startDate || !endDate) return // Don't fetch if dates aren't set yet
+
     setLoading(true)
     try {
       const params = { 
@@ -105,17 +120,17 @@ const DigitalProduct = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="py-2">
+      <div className="max-w-[1600px] mx-auto space-y-6">
         
         {/* HEADER */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Digital Product Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Digital Product</h1>
           <p className="text-gray-600 mt-1">Performance Monitoring & Analytics</p>
         </div>
 
         {/* --- FILTERS --- */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sticky top-0 z-20 border-b border-gray-200">
+        <div className="p-1 sticky top-0 z-20">
           <div className="flex flex-col lg:flex-row gap-4">
             
             {/* Date Picker */}

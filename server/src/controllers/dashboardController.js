@@ -2222,17 +2222,8 @@ export const getSOSDatinDashboard = async (req, res, next) => {
 
     
 
-    // Logic: If (Region of BillCity == Region of Row), use BillCity. Else if (Region of CustCity == Region of Row), use CustCity. Else 'UNKNOWN'
-
-    const RAW_BRANCH = `(CASE
-
-      WHEN ${BILL_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(bill_city)), 'UNKNOWN')
-
-      WHEN ${CUST_CITY_REGION_EXPR} = ${WITEL_EXPR} THEN COALESCE(TRIM(UPPER(cust_city)), 'UNKNOWN')
-
-      ELSE 'UNKNOWN'
-
-    END)`
+    // Logic: Use BillCity directly. If null, use 'UNKNOWN'.
+    const RAW_BRANCH = "COALESCE(TRIM(UPPER(bill_city)), 'UNKNOWN')"
 
 
 
@@ -2476,10 +2467,22 @@ export const getDigitalProductFilters = async (req, res, next) => {
       'SURAMADU': ['SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
     }
 
+    // 4. Fetch Date Range from Database
+    const dateRange = await prisma.$queryRaw`
+      SELECT MIN(order_date) as min_date, MAX(order_date) as max_date 
+      FROM digital_products 
+      WHERE order_date IS NOT NULL
+    `
+    console.log('DEBUG: Digital Product Date Range:', dateRange)
+
     successResponse(res, {
       witels,
       branchMap,
-      products
+      products,
+      dateRange: {
+        min: dateRange[0]?.min_date || '2024-01-01',
+        max: dateRange[0]?.max_date || new Date()
+      }
     }, 'Digital product filter options retrieved')
   } catch (error) {
     next(error)
