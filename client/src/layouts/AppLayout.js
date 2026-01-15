@@ -16,6 +16,7 @@ import {
   MdStorage
 } from 'react-icons/md'
 import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import ChatBot from '../components/ChatBot'
 
 // ==================== HELPER COMPONENTS ====================
 
@@ -302,6 +303,8 @@ const AppLayout = ({ children, pageTitle }) => {
     const pathMap = {
       '/': 'Home',
       '/home': 'Home',
+      '/dashboard': 'Dashboard Digital Product',
+      '/analysis': 'Analysis Digital Product',
       '/tambahan': 'Dashboard Jaringan Tambahan',
       '/datin': 'Dashboard Datin',
       '/hsi': 'Dashboard HSI',
@@ -651,6 +654,9 @@ const AppLayout = ({ children, pageTitle }) => {
           {children}
         </main>
       </div>
+
+      {/* AI ChatBot */}
+      <ChatBot />
     </div>
   )
 }

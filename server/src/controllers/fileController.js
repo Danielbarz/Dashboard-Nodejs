@@ -3,7 +3,7 @@ import { successResponse, errorResponse } from '../utils/response.js'
 import XLSX from 'xlsx'
 import csv from 'csv-parser'
 import { createReadStream } from 'fs'
-import { unlink, writeFile } from 'fs/promises'
+import { unlink, writeFile, appendFile } from 'fs/promises'
 import path from 'path'
 
 function pickCaseInsensitive(obj, key) {
@@ -41,50 +41,42 @@ const cleanNumber = (value) => {
 
   let strVal = value.toString().trim()
 
-  // Remove Rp, IDR, spaces
-  strVal = strVal.replace(/Rp|IDR|\s/gi, '')
+  // Remove common currency symbols and hidden characters
+  strVal = strVal.replace(/Rp|IDR|USD|\s/gi, '').replace(/[^\x20-\x7E]/g, '')
+
+  // Handle "(123)" as negative
+  if (strVal.startsWith('(') && strVal.endsWith(')')) {
+    strVal = '-' + strVal.slice(1, -1)
+  }
 
   // Check format
   const hasComma = strVal.includes(',')
   const hasDot = strVal.includes('.')
 
   if (hasComma && hasDot) {
-    // Both present. The last one is decimal.
     const lastComma = strVal.lastIndexOf(',')
     const lastDot = strVal.lastIndexOf('.')
-
     if (lastComma > lastDot) {
-      // Format: 1.000.000,00 (Indo standard) -> remove dots, replace comma with dot
       strVal = strVal.replace(/\./g, '').replace(',', '.')
     } else {
-      // Format: 1,000,000.00 (US standard) -> remove commas
       strVal = strVal.replace(/,/g, '')
     }
   } else if (hasComma) {
-    // Only commas. Could be 100,50 (decimal) or 9,000 (thousand) or 9,000,000
-    // Heuristic: Split by comma. If any part except the last one has !== 3 digits, it's weird.
-    // Simpler: If comma is followed by exactly 2 digits at the end (e.g. ,00), likely decimal.
-    // If followed by 3 digits (e.g. ,000), likely thousand.
-
     if (/,\d{2}$/.test(strVal)) {
-       // Ends in ,XX -> decimal
        strVal = strVal.replace(',', '.')
     } else {
-       // Likely thousand separator -> remove
        strVal = strVal.replace(/,/g, '')
     }
   } else if (hasDot) {
-    // Only dots. Could be 100.50 (decimal) or 9.000 (thousand)
-    // Same heuristic.
-    if (/\.\d{2}$/.test(strVal)) {
-       // Ends in .XX -> keep/standardize
-    } else {
-       // Likely thousand separator (Indo) -> remove
+    // Indo standard often uses dot for thousands (1.000.000)
+    // US standard uses dot for decimal (1000.00)
+    // Heuristic: If dot is followed by 3 digits (and not end of string or followed by another dot), it's likely thousand sep.
+    // Safest bet for Rupiah context: Assume dot is thousand separator unless it looks very much like decimal.
+    if (/\.\d{3}/.test(strVal) && !/\.\d{2}$/.test(strVal)) {
        strVal = strVal.replace(/\./g, '')
     }
   }
 
-  // Cleanup any remaining non-numeric chars (except dot and minus)
   const cleaned = strVal.replace(/[^0-9.\-]/g, '')
   return cleaned ? parseFloat(cleaned) : 0
 }
@@ -162,8 +154,8 @@ export const uploadFile = async (req, res, next) => {
     let type = (req.query.type || 'sos').toString().toLowerCase()
 
     // Normalize aliases
-    if (['digital', 'dp'].includes(type)) type = 'digital_product'
-    if (type === 'datin') type = 'sos'
+    if (['digital', 'dp', 'analysis'].includes(type)) type = 'digital_product'
+    if (['datin', 'sos'].includes(type)) type = 'sos'
 
     console.log(`📂 Processing Upload - Original Type: ${req.query.type}, Resolved Type: ${type}`)
 
@@ -247,20 +239,64 @@ export const uploadFile = async (req, res, next) => {
         customer_name TEXT,
         po_name TEXT,
         witel TEXT,
+        regional TEXT,
+        channel TEXT,
         branch TEXT,
         revenue NUMERIC(18,2) DEFAULT 0,
         amount NUMERIC(18,2) DEFAULT 0,
+        net_price NUMERIC(18,2) DEFAULT 0,
         status TEXT,
         milestone TEXT,
         segment TEXT,
         category TEXT,
         sub_type TEXT,
         order_date TIMESTAMPTZ,
+        order_created_date TIMESTAMPTZ,
+        billcomp_date TIMESTAMPTZ,
+        last_update TIMESTAMPTZ,
         batch_id TEXT,
+        filter_product TEXT,
+        product_order_id TEXT,
+        ach TEXT,
+        active_user TEXT,
+        join_nama_target TEXT,
+        layanan TEXT,
+        order_status_n TEXT,
+        product_name_group TEXT,
+        produk_details TEXT,
+        regional_antares_eazy TEXT,
+        regional_join TEXT,
+        segmen_n TEXT,
+        sto TEXT,
+        tahun INTEGER,
+        week INTEGER,
+        target_operational TEXT,
+        telda TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
     `)
+
+    // FIX: Digital Products Self-Healing Schema
+    const dpTextCols = [
+      'regional', 'channel', 'filter_product', 'product_order_id', 'ach', 'active_user',
+      'join_nama_target', 'layanan', 'order_status_n', 'product_name_group', 'produk_details',
+      'regional_antares_eazy', 'regional_join', 'segmen_n', 'sto', 'target_operational', 'telda'
+    ]
+    const dpTimeCols = ['order_created_date', 'billcomp_date', 'last_update']
+    const dpNumCols = ['net_price', 'tahun', 'week']
+
+    for (const col of dpTextCols) {
+      try { await prisma.$executeRawUnsafe(`ALTER TABLE "digital_products" ADD COLUMN IF NOT EXISTS "${col}" TEXT;`) } catch(e) {}
+    }
+    for (const col of dpTimeCols) {
+      try { await prisma.$executeRawUnsafe(`ALTER TABLE "digital_products" ADD COLUMN IF NOT EXISTS "${col}" TIMESTAMPTZ;`) } catch(e) {}
+    }
+    for (const col of dpNumCols) {
+       // Simplify to NUMERIC or INTEGER for safety
+       const type = (col === 'net_price') ? 'NUMERIC(18,2) DEFAULT 0' : 'INTEGER'
+       try { await prisma.$executeRawUnsafe(`ALTER TABLE "digital_products" ADD COLUMN IF NOT EXISTS "${col}" ${type};`) } catch(e) {}
+    }
 
     // 1. RESET TABEL HSI
     if (type === 'hsi') {
@@ -368,7 +404,14 @@ export const uploadFile = async (req, res, next) => {
             'is_termin', 'agree_type', 'agree_start_date', 'agree_end_date',
             'lama_kontrak_hari', 'amortisasi', 'kategori_umur', 'umur_order',
             'bill_city', 'po_name', 'tipe_order', 'segmen_baru', 'scalling1',
-            'scalling2', 'tipe_grup', 'witel_baru', 'kategori_baru'
+            'scalling2', 'tipe_grup', 'witel_baru', 'kategori_baru',
+            'prev_order', 'li_sid', 'sid', 'cust_accnt_num', 'cust_accnt_name', 'cust_addr', 'cust_region',
+            'serv_accnt_num', 'serv_accnt_name', 'serv_addr', 'service_region', 'bill_accnt_num', 'account_nas',
+            'bill_accnt_name', 'bill_addr', 'bill_region', 'li_id', 'li_product_id', 'product_digital',
+            'li_bandwidth', 'billcom_date', 'li_fulfillment_status', 'scaling', 'li_payment_term',
+            'li_billing_start_date', 'agree_item_num', 'agree_name', 'order_created_by', 'li_created_date',
+            'order_created_by_name', 'current_bandwidth', 'before_bandwidth', 'product_activation_date',
+            'quote_row_id', 'line_item_description', 'asset_integ_id', 'am', 'x_billcomp_dt'
           ]
 
           // Deduplicate buffer by orderId to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time"
@@ -396,7 +439,14 @@ export const uploadFile = async (req, res, next) => {
               row.isTermin ?? null, row.agreeType ?? null, row.agreeStartDate ?? null, row.agreeEndDate ?? null,
               row.lamaKontrakHari ?? null, row.amortisasi ?? null, row.kategoriUmur ?? null, row.umurOrder ?? null,
               row.billCity ?? null, row.poName ?? null, row.tipeOrder ?? null, row.segmenBaru ?? null,
-              row.scalling1 ?? null, row.scalling2 ?? null, row.tipeGrup ?? null, row.witelBaru ?? null, row.kategoriBaru ?? null
+              row.scalling1 ?? null, row.scalling2 ?? null, row.tipeGrup ?? null, row.witelBaru ?? null, row.kategoriBaru ?? null,
+              row.prevOrder ?? null, row.liSid ?? null, row.sid ?? null, row.custAccntNum ?? null, row.custAccntName ?? null, row.custAddr ?? null, row.custRegion ?? null,
+              row.servAccntNum ?? null, row.servAccntName ?? null, row.servAddr ?? null, row.serviceRegion ?? null, row.billAccntNum ?? null, row.accountNas ?? null,
+              row.billAccntName ?? null, row.billAddr ?? null, row.billRegion ?? null, row.liId ?? null, row.liProductId ?? null, row.productDigital ?? null,
+              row.liBandwidth ?? null, row.billcomDate ?? null, row.liFulfillmentStatus ?? null, row.scaling ?? null, row.liPaymentTerm ?? null,
+              row.liBillingStartDate ?? null, row.agreeItemNum ?? null, row.agreeName ?? null, row.orderCreatedBy ?? null, row.liCreatedDate ?? null,
+              row.orderCreatedByName ?? null, row.currentBandwidth ?? null, row.beforeBandwidth ?? null, row.productActivationDate ?? null,
+              row.quoteRowId ?? null, row.lineItemDescription ?? null, row.assetIntegId ?? null, row.am ?? null, row.xBillcompDt ?? null
             )
             const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
             return `(${params.join(',')})`
@@ -410,7 +460,14 @@ export const uploadFile = async (req, res, next) => {
         } else if (mode === 'digital') {
           // Digital Product Logic
           const columns = [
-            'order_number','product_name','customer_name','po_name','witel','branch','revenue','amount','status','milestone','segment','category','sub_type','order_date','batch_id','created_at','updated_at'
+            'order_number','product_name','customer_name','po_name','witel','regional','channel','branch',
+            'revenue','amount','net_price','status','milestone','segment','category','sub_type',
+            'order_date','order_created_date','billcomp_date','last_update',
+            'batch_id',
+            'filter_product','product_order_id','ach','active_user','join_nama_target','layanan',
+            'order_status_n','product_name_group','produk_details','regional_antares_eazy',
+            'regional_join','segmen_n','sto','tahun','week','target_operational','telda',
+            'created_at','updated_at'
           ]
           const uniqMap = new Map()
           for (const row of buffer) {
@@ -421,12 +478,27 @@ export const uploadFile = async (req, res, next) => {
           const values = []
           const placeholders = uniqRows.map((row, rowIdx) => {
             const base = rowIdx * columns.length
+            
+            // Helper to safe-guard dates
+            const toISO = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString() : null
+
             values.push(
-              row.order_number, row.product_name, row.customer_name, row.po_name, row.witel, row.branch,
-              row.revenue, row.amount, row.status, row.milestone, row.segment, row.category, row.sub_type,
-              row.order_date, row.batch_id, row.created_at, row.updated_at
+              row.order_number, row.product_name, row.customer_name, row.po_name, row.witel, row.regional, row.channel, row.branch,
+              row.revenue, row.amount, row.net_price, row.status, row.milestone, row.segment, row.category, row.sub_type,
+              toISO(row.order_date), toISO(row.order_created_date), toISO(row.billcomp_date), toISO(row.last_update),
+              row.batch_id,
+              row.filter_product, row.product_order_id, row.ach, row.active_user, row.join_nama_target, row.layanan,
+              row.order_status_n, row.product_name_group, row.produk_details, row.regional_antares_eazy,
+              row.regional_join, row.segmen_n, row.sto, row.tahun, row.week, row.target_operational, row.telda,
+              toISO(row.created_at), toISO(row.updated_at)
             )
-            const params = columns.map((_, colIdx) => `$${base + colIdx + 1}`)
+            const params = columns.map((col, colIdx) => {
+               // Cast dates explicitly to TIMESTAMPTZ
+               if (['order_date','order_created_date','billcomp_date','last_update','created_at','updated_at'].includes(col)) {
+                  return `$${base + colIdx + 1}::timestamptz`
+               }
+               return `$${base + colIdx + 1}`
+            })
             return `(${params.join(',')})`
           }).join(',')
 
@@ -517,8 +589,16 @@ export const uploadFile = async (req, res, next) => {
       } catch (err) {
         batchCounter++
         const errorMsg = `❌ Batch ${batchCounter}: Error inserting ${label} - ${err.message}`
-        console.error(errorMsg) // Print plain string first
-        console.error(`Detail: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`) // Print full error object
+        console.error(errorMsg)
+        
+        // Append error to log file
+        try {
+          const logEntry = `[${new Date().toISOString()}] ${errorMsg}\nDetail: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}\n\n`
+          await appendFile('import_errors.log', logEntry)
+        } catch (logErr) {
+          console.error('Failed to write to import_errors.log', logErr)
+        }
+
         progressLogs.push({ batch: batchCounter, type: label, error: err.message, status: 'failed', timestamp: new Date() })
         const failedCount = buffer.length
         buffer.length = 0
@@ -545,27 +625,58 @@ export const uploadFile = async (req, res, next) => {
       try {
         if (['digital_product'].includes(type)) {
           const now = new Date()
-          const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order') || `AUTO-${Date.now()}-${i}`
+          const orderNumber = getValue(record, keyMap, 'order_number', 'order number', 'orderid', 'order_id', 'no_order', 'order', 'order id') || `AUTO-${Date.now()}-${i}`
           const productName = type === 'digital_product'
-            ? (getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name') || 'DIGITAL_PRODUCT')
+            ? (getValue(record, keyMap, 'product_name', 'product', 'productname', 'li_product_name', 'nama produk', 'product name') || 'DIGITAL_PRODUCT')
             : type.toUpperCase()
 
           digitalBuffer.push({
             order_number: orderNumber.toString(),
             product_name: productName,
-            customer_name: getValue(record, keyMap, 'customer_name', 'customername'),
-            po_name: getValue(record, keyMap, 'po_name'),
-            witel: getValue(record, keyMap, 'witel', 'nama witel'),
+            customer_name: getValue(record, keyMap, 'customer_name', 'customername', 'customer name', 'nama pelanggan'),
+            po_name: getValue(record, keyMap, 'po_name', 'po name'),
+            witel: getValue(record, keyMap, 'witel', 'nama witel', 'witel'),
+            regional: getValue(record, keyMap, 'regional', 'reg', 'regional'),
+            channel: getValue(record, keyMap, 'channel'),
             branch: getValue(record, keyMap, 'branch', 'datel', 'sto'),
-            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev')),
-            amount: cleanNumber(getValue(record, keyMap, 'amount', 'qty')) || 0,
-            status: getValue(record, keyMap, 'status', 'status_resume') || 'progress',
+            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'rev', 'amount', 'nilai', 'harga', 'total')),
+            amount: cleanNumber(getValue(record, keyMap, 'amount', 'qty', 'jumlah', 'quantity')) || 0,
+            net_price: cleanNumber(getValue(record, keyMap, 'net_price', 'net price', 'harga net', 'harga_net', 'net', 'price', 'harga', 'nilai_kontrak')),
+            status: getValue(record, keyMap, 'status', 'status_resume', 'order status', 'order_status') || 'progress',
             milestone: getValue(record, keyMap, 'milestone'),
             segment: getValue(record, keyMap, 'segment', 'segmen'),
             category: getValue(record, keyMap, 'category', 'kategori'),
-            sub_type: getValue(record, keyMap, 'sub_type'),
-            order_date: cleanDate(getValue(record, keyMap, 'order_date')),
-            batch_id: currentBatchId, created_at: now, updated_at: now
+            sub_type: getValue(record, keyMap, 'sub_type', 'order subtype', 'order_subtype'),
+            order_date: cleanDate(getValue(record, keyMap, 'order_date', 'order date')),
+            order_created_date: cleanDate(getValue(record, keyMap, 'order_created_date', 'order created date')),
+            billcomp_date: cleanDate(getValue(record, keyMap, 'billcomp_date', 'billcomp date')),
+            last_update: cleanDate(getValue(record, keyMap, 'last_update', 'last update')),
+            batch_id: currentBatchId,
+            filter_product: getValue(record, keyMap, 'filter_product', 'filter product'),
+            product_order_id: getValue(record, keyMap, 'product_order_id', 'product + order id'),
+            ach: getValue(record, keyMap, 'ach'),
+            active_user: getValue(record, keyMap, 'active_user', 'active user'),
+            join_nama_target: getValue(record, keyMap, 'join_nama_target', 'join nama target'),
+            layanan: getValue(record, keyMap, 'layanan'),
+            order_status_n: getValue(record, keyMap, 'order_status_n', 'order status n'),
+            product_name_group: getValue(record, keyMap, 'product_name_group', 'product name group'),
+            produk_details: getValue(record, keyMap, 'produk_details', 'produk details'),
+            regional_antares_eazy: getValue(record, keyMap, 'regional_antares_eazy', 'regional antares eazy'),
+            regional_join: getValue(record, keyMap, 'regional_join', 'regional join'),
+            segmen_n: getValue(record, keyMap, 'segmen_n', 'segmen n'),
+            sto: getValue(record, keyMap, 'sto'),
+            tahun: (() => {
+               const val = cleanNumber(getValue(record, keyMap, 'tahun', 'year'))
+               return (val > 1900 && val < 2100) ? val : null
+            })(),
+            week: (() => {
+               const val = cleanNumber(getValue(record, keyMap, 'week'))
+               return (val > 0 && val < 54) ? val : null
+            })(),
+            target_operational: getValue(record, keyMap, 'target_operational', 'target operational'),
+            telda: getValue(record, keyMap, 'telda'),
+            created_at: now,
+            updated_at: now
           })
 
           if (digitalBuffer.length >= BATCH_SIZE) {
@@ -642,7 +753,45 @@ export const uploadFile = async (req, res, next) => {
             scalling2: cleanNumber(getValue(record, keyMap, 'scaling2', 'scalling2')),
             tipeGrup: getValue(record, keyMap, 'tipe_grup', 'group_type'),
             witelBaru: getValue(record, keyMap, 'witel_baru', 'new_witel'),
-            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'new_category')
+            kategoriBaru: getValue(record, keyMap, 'kategori_baru', 'new_category'),
+            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
+            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
+            sid: getValue(record, keyMap, 'sid'),
+            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
+            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
+            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
+            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
+            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
+            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
+            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
+            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
+            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
+            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
+            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
+            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
+            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
+            liId: getValue(record, keyMap, 'li_id', 'liid'),
+            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
+            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
+            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
+            billcomDate: cleanDate(getValue(record, keyMap, 'billcom_date', 'billcomdate')),
+            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
+            scaling: getValue(record, keyMap, 'scaling'),
+            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
+            liBillingStartDate: cleanDate(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')),
+            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
+            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
+            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
+            liCreatedDate: cleanDate(getValue(record, keyMap, 'li_created_date', 'licreateddate')),
+            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
+            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
+            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
+            productActivationDate: cleanDate(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')),
+            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
+            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
+            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
+            am: getValue(record, keyMap, 'am'),
+            xBillcompDt: cleanDate(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt'))
           })
 
           if (sosBuffer.length >= BATCH_SIZE) {
@@ -724,13 +873,27 @@ export const uploadFile = async (req, res, next) => {
           const witelLamaVal = getValue(record, keyMap, 'witel lama', 'witel_lama', 'witel_eksisting')
 
           // 1. Skip if Witel is missing (Empty Row)
-          if (!witelBaruVal) continue
+          if (!witelBaruVal) {
+             skippedCount++
+             // Only log first 20 skipped to avoid bloating response
+             if (skippedRows.length < 20) {
+                 skippedRows.push({ index: i + 1, reason: 'MISSING WITEL', data: record })
+             }
+             continue
+          }
 
           // 2. Filter out unwanted Witels (Jawa Tengah)
           const unwantedWitels = ['SOLO', 'YOGYA', 'MAGELANG', 'SEMARANG', 'KUDUS', 'PURWOKERTO', 'JATENG', 'PEKALONGAN']
           const witelStr = ((witelBaruVal || '') + ' ' + (witelLamaVal || '')).toUpperCase()
 
-          if (unwantedWitels.some(w => witelStr.includes(w))) continue
+          if (unwantedWitels.some(w => witelStr.includes(w))) {
+             skippedCount++
+             // Log skipped regions
+             if (skippedRows.length < 20) {
+                 skippedRows.push({ index: i + 1, reason: `EXCLUDED REGION (${witelStr})`, data: record })
+             }
+             continue
+          }
 
           buffer.push({
             // Identification
@@ -905,8 +1068,8 @@ export const truncateData = async (req, res, next) => {
     let type = (req.query.type || '').toString().toLowerCase()
 
     // Normalize aliases
-    if (['digital', 'dp'].includes(type)) type = 'digital_product'
-    if (type === 'datin') type = 'sos'
+    if (['digital', 'dp', 'analysis'].includes(type)) type = 'digital_product'
+    if (['datin', 'sos'].includes(type)) type = 'sos'
 
     let tableName = ''
     let label = ''

@@ -1,35 +1,21 @@
-// server/src/routes/masterRoutes.js
 import express from 'express'
-import { authenticate } from '../middleware/auth.js' // Pastikan user login
+import { authenticate } from '../middleware/auth.js'
 import {
-  getAccountOfficers,
-  createAccountOfficer,
-  deleteAccountOfficer,
-  getPOMaster,
-  createPOMaster,
-  deletePOMaster,
-  getUnmappedOrders,
-  updateMapping,
-  autoMapping
+    getPOMaster,
+    getAccountOfficers,
+    getUnmappedOrders
 } from '../controllers/masterController.js'
 
 const router = express.Router()
 
-router.use(authenticate) // Kunci semua rute di bawah ini
+router.use(authenticate) // Pastikan user login
 
-// Account Officers
-router.get('/account-officers', getAccountOfficers)
-router.post('/account-officers', createAccountOfficer)
-router.delete('/account-officers/:id', deleteAccountOfficer)
-
-// PO Master
 router.get('/po', getPOMaster)
-router.post('/po', createPOMaster)
-router.delete('/po/:id', deletePOMaster)
-
-// Mapping / Unmapped Orders
+router.get('/account-officers', getAccountOfficers)
 router.get('/unmapped-orders', getUnmappedOrders)
-router.put('/update-mapping/:id', updateMapping)
-router.post('/auto-mapping', autoMapping)
+
+// Tambahkan route POST/DELETE jika perlu
+// router.post('/po', createPO)
+// router.delete('/po/:id', deletePO)
 
 export default router

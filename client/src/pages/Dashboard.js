@@ -1,287 +1,321 @@
-import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import KPICard from '../components/KPICard'
-import FileUploadForm from '../components/FileUploadForm'
-import { dashboardService, roleService } from '../services/dashboardService'
+import React, { useState, useEffect, useMemo } from 'react'
+import { FiChevronDown, FiRefreshCw, FiDollarSign, FiActivity, FiShoppingCart, FiCheckCircle } from 'react-icons/fi'
 import api from '../services/api'
-import { MdTrendingUp, MdCheckCircle, MdSchedule } from 'react-icons/md'
-import { FiRefreshCw } from 'react-icons/fi'
+import KPICard from '../components/KPICard'
 import {
+  OrderByStatusChart,
   RevenueByWitelChart,
-  AmountByWitelChart,
-  ProductBySegmentChart,
-  ProductByChannelChart,
-  ProductShareChart
+  OrderByWitelChart,
+  RevenueTrendChart,
+  ProductShareChart,
+  OrderTrendChart
 } from '../components/DigitalProductCharts'
 
 const DashboardPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const { user } = useAuth()
+  // --- 1. STATE INITIALIZATION ---
+  const now = new Date()
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+  
+  const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(now.toISOString().split('T')[0])
+  const [loading, setLoading] = useState(false)
 
-  // Derived states from URL
-  const startDate = searchParams.get('startDate') || ''
-  const endDate = searchParams.get('endDate') || ''
-  const selectedProduct = searchParams.get('product') || ''
-  const selectedWitel = searchParams.get('witel') || ''
-  const selectedSubType = searchParams.get('subType') || ''
+  // Filters
+  const [selectedWitels, setSelectedWitels] = useState([])
+  const [selectedBranches, setSelectedBranches] = useState([])
+  const [selectedProducts, setSelectedProducts] = useState([])
 
-  // Helper to update search params
-  const updateFilters = (newFilters) => {
-    const params = Object.fromEntries(searchParams.entries())
-    setSearchParams({ ...params, ...newFilters }, { replace: true })
-  }
+  // Dropdown States (Matching JSX names)
+  const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false)
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false)
 
-  // Setters that update URL
-  const setStartDate = (val) => updateFilters({ startDate: val })
-  const setEndDate = (val) => updateFilters({ endDate: val })
-  const setSelectedProduct = (val) => updateFilters({ product: val })
-  const setSelectedWitel = (val) => updateFilters({ witel: val })
-  const setSelectedSubType = (val) => updateFilters({ subType: val })
-
-  // Chart data - NEW: using digital product charts endpoint
-  const [chartData, setChartData] = useState({
-    revenueByWitel: [],
-    amountByWitel: [],
-    productBySegment: [],
-    productByChannel: [],
-    productShare: [],
-    products: [],
-    segments: [],
-    channels: []
-  })
-  const [kpiData, setKpiData] = useState(null)
-
-  // Filter options
+  // Options
   const [filterOptions, setFilterOptions] = useState({
+    witels: [],
     products: [],
-    branches: [],
-    witels: []
+    branchMap: {}
   })
 
-  const [loading, setLoading] = useState(true)
-  const [activeRole, setActiveRole] = useState(user?.role || 'user')
-  const [adminMode, setAdminMode] = useState(false)
+  // Dashboard Data
+  const [data, setData] = useState({
+    kpi: { totalRevenue: 0, pipelineRevenue: 0, totalOrder: 0, completionRate: 0 },
+    charts: {
+      orderByStatus: [],
+      revenueByWitel: [],
+      orderByWitel: [],
+      revenueTrend: [],
+      productShare: [],
+      orderTrend: []
+    }
+  })
 
-  // Fetch all dashboard data
-  const fetchDashboardData = async () => {
+  // --- 2. DATA FETCHING ---
+
+  // Fetch Filter Options on Mount
+  useEffect(() => {
+    api.get('/dashboard/digital-product/filters')
+      .then(res => {
+        if (res.data.success) setFilterOptions(res.data.data)
+      })
+      .catch(err => console.error('Filter fetch error:', err))
+  }, [])
+
+  // Derived Branches (Matching JSX name)
+  const availableBranchOptions = useMemo(() => {
+    if (selectedWitels.length === 0) return Object.values(filterOptions.branchMap || {}).flat().sort()
+    return selectedWitels.flatMap(w => filterOptions.branchMap[w] || []).sort()
+  }, [selectedWitels, filterOptions.branchMap])
+
+  // Fetch Stats
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const queryParams = {
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(selectedProduct && { product: selectedProduct }),
-        ...(selectedWitel && { witel: selectedWitel }),
-        ...(selectedSubType && { subType: selectedSubType })
+      const params = {
+        start_date: startDate,
+        end_date: endDate,
+        witel: selectedWitels.join(','),
+        branch: selectedBranches.join(','),
+        product: selectedProducts.join(',')
       }
-
-      // Fetch chart data from new endpoint
-      const chartParams = {
-        ...(startDate && { start_date: startDate }),
-        ...(endDate && { end_date: endDate }),
-        ...(selectedWitel && { witel: selectedWitel })
+      const res = await api.get('/dashboard/digital-product/stats', { params })
+      if (res.data.success) {
+        setData(res.data.data)
       }
-
-      const [
-        chartRes,
-        kpiRes,
-        optionsRes
-      ] = await Promise.all([
-        api.get('/dashboard/digital-product/charts', { params: chartParams }),
-        dashboardService.getKPIData(queryParams),
-        dashboardService.getFilterOptions()
-      ])
-
-      if (chartRes.data.success) {
-        setChartData(chartRes.data.data)
-      }
-      setKpiData(kpiRes.data.data)
-      setFilterOptions(optionsRes.data.data)
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+    } catch (err) {
+      console.error('Stats fetch error:', err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [startDate, endDate, selectedProduct, selectedWitel, selectedSubType])
-
-  useEffect(() => {
-    // fetch active role to control UI permissions
-    roleService.getCurrentRole().then(res => {
-      setActiveRole(res.data?.data?.activeRole || activeRole)
-    }).catch(() => {})
+    fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [startDate, endDate, selectedWitels, selectedBranches, selectedProducts])
 
-  const handleResetFilters = () => {
-    setSearchParams({}, { replace: true })
+  // --- 3. HANDLERS ---
+
+  const toggleSelection = (item, list, setList) => {
+    if (list.includes(item)) setList(list.filter(i => i !== item))
+    else setList([...list, item])
   }
 
-  const handleApplyFilters = () => {
-    fetchDashboardData()
+  const resetFilters = () => {
+    setSelectedWitels([])
+    setSelectedBranches([])
+    setSelectedProducts([])
+    setStartDate(firstDay.toISOString().split('T')[0])
+    setEndDate(now.toISOString().split('T')[0])
   }
 
-  if (loading && !chartData.revenueByWitel.length) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-gray-500">
-        <FiRefreshCw className="animate-spin mr-2" /> Loading Dashboard...
-      </div>
-    )
-  }
+  // --- 4. RENDER ---
 
   return (
     <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
+      
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard Digital Product</h1>
-          <p className="text-gray-500 text-sm">Overview & Analytics Performance</p>
+          <p className="text-gray-500 text-sm">Performance Monitoring & Analytics</p>
         </div>
-        <button
-          onClick={fetchDashboardData}
-          className="p-2 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition-colors"
-          title="Refresh Data"
-        >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
-        </button>
       </div>
 
-      {/* Modern Filter Section */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-gray-100 p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* --- FILTERS --- */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-4 sticky top-0 z-20 border-b border-gray-200">
+        <div className="flex flex-col lg:flex-row gap-4">
+            
+            {/* Date Picker */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" 
+                />
+              </div>
+              <span className="text-gray-400 font-light">|</span>
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" 
+                />
+              </div>
+            </div>
 
-          {/* Start Date */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Dari Tanggal</label>
-            <input
-              type="date"
-              name="startDate"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
+            {/* Product Filter */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+              <div className="flex flex-col justify-center px-2 h-full w-40">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Product</span>
+                <div
+                  className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
+                >
+                  <span className="truncate">{selectedProducts.length > 0 ? `${selectedProducts.length} Selected` : 'Semua Produk'}</span>
+                  <FiChevronDown className={`ml-1 transition-transform ${isProductDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              {isProductDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {filterOptions.products?.map(option => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => toggleSelection(option, selectedProducts, setSelectedProducts)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(option)}
+                        readOnly
+                        className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                      />
+                      <span className="text-sm text-gray-700">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* End Date */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Sampai Tanggal</label>
-            <input
-              type="date"
-              name="endDate"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
+            {/* Witel Filter */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+              <div className="flex flex-col justify-center px-2 h-full w-40">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
+                <div
+                  className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
+                >
+                  <span className="truncate">{selectedWitels.length > 0 ? `${selectedWitels.length} Selected` : 'Semua Witel'}</span>
+                  <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              {isWitelDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {filterOptions.witels?.map(option => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => toggleSelection(option, selectedWitels, setSelectedWitels)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedWitels.includes(option)}
+                        readOnly
+                        className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                      />
+                      <span className="text-sm text-gray-700">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Product Dropdown */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Produk</label>
-            <select
-              value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
-              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-            >
-              <option value="">Semua Produk</option>
-              {filterOptions.products?.map(product => (
-                <option key={product} value={product}>{product}</option>
-              ))}
-            </select>
-          </div>
+            {/* Branch Filter */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+              <div className="flex flex-col justify-center px-2 h-full w-40">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Branch</span>
+                <div
+                  className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                >
+                  <span className="truncate">{selectedBranches.length > 0 ? `${selectedBranches.length} Selected` : 'Semua Branch'}</span>
+                  <FiChevronDown className={`ml-1 transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              {isBranchDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {availableBranchOptions.map(option => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => toggleSelection(option, selectedBranches, setSelectedBranches)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedBranches.includes(option)}
+                        readOnly
+                        className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                      />
+                      <span className="text-sm text-gray-700">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Witel Dropdown */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Witel</label>
-            <select
-              value={selectedWitel}
-              onChange={(e) => setSelectedWitel(e.target.value)}
-              className="w-full text-xs p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-            >
-              <option value="">Semua Witel</option>
-              {filterOptions.witels?.map(witel => (
-                <option key={witel} value={witel}>{witel}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Reset & Apply */}
-          <div className="flex items-end gap-2">
+            {/* Reset Button */}
             <button
-              onClick={handleResetFilters}
-              className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition-all"
+              onClick={resetFilters}
+              className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold uppercase hover:bg-gray-200 h-10"
             >
               Reset
             </button>
-            <button
-              onClick={handleApplyFilters}
-              className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
-            >
-              Apply
-            </button>
           </div>
         </div>
-      </div>
 
-      {/* KPI CARDS */}
-      {kpiData && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <KPICard
-            title="TOTAL ORDER"
-            value={kpiData.totalOrder}
-            icon={<MdTrendingUp />}
-            color="blue"
+        {/* SECTION 1: KPI CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KPICard 
+            title="TOTAL REVENUE (Completed)" 
+            value={`Rp ${data.kpi.totalRevenue.toLocaleString('id-ID')}`} 
+            icon={<FiDollarSign />} 
+            color="green" 
           />
-          <KPICard
-            title="COMPLETED / PS"
-            value={kpiData.completed}
-            icon={<MdCheckCircle />}
-            color="green"
+          <KPICard 
+            title="PIPELINE REVENUE (In Progress)" 
+            value={`Rp ${data.kpi.pipelineRevenue.toLocaleString('id-ID')}`} 
+            icon={<FiActivity />} 
+            color="orange" 
           />
-          <KPICard
-            title="OPEN / PROGRESS"
-            value={kpiData.openProgress}
-            icon={<MdSchedule />}
-            color="orange"
+          <KPICard 
+            title="TOTAL ORDER" 
+            value={data.kpi.totalOrder} 
+            icon={<FiShoppingCart />} 
+            color="blue" 
+          />
+          <KPICard 
+            title="COMPLETION RATE" 
+            value={`${data.kpi.completionRate}%`} 
+            icon={<FiCheckCircle />} 
+            color="green" 
           />
         </div>
-      )}
 
-      {/* CHARTS ROW 1: Revenue & Amount by Witel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueByWitelChart
-          data={chartData.revenueByWitel}
-          products={chartData.products}
-        />
-        <AmountByWitelChart
-          data={chartData.amountByWitel}
-          products={chartData.products}
-        />
-      </div>
+        {/* SECTION 2: PERFORMANCE MONITORING */}
+        <div className="space-y-6">
+          <h2 className="text-lg font-bold text-gray-800 border-l-4 border-blue-600 pl-3">Performance Monitoring</h2>
+          
+          {/* Row 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 1: Order by Status (Donut) */}
+            <OrderByStatusChart data={data.charts.orderByStatus} />
+            {/* Chart 2: Revenue by Witel (Horizontal Stacked Product) */}
+            <RevenueByWitelChart data={data.charts.revenueByWitel} />
+          </div>
 
-      {/* CHARTS ROW 2: Product by Segment, Channel, Share */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProductBySegmentChart
-          data={chartData.productBySegment}
-          segments={chartData.segments}
-        />
-        <ProductByChannelChart
-          data={chartData.productByChannel}
-          channels={chartData.channels}
-        />
-        <ProductShareChart
-          data={chartData.productShare}
-        />
-      </div>
+          {/* Row 2 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 3: Order by Witel (Vertical Stacked Status) */}
+            <OrderByWitelChart data={data.charts.orderByWitel} />
+            {/* Chart 4: Revenue Trend (Multi-Line Product) */}
+            <RevenueTrendChart data={data.charts.revenueTrend} />
+          </div>
 
-      {/* FILE UPLOAD - Only for active admin/superadmin */}
-      {['admin', 'superadmin'].includes(activeRole) && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1">
-          <FileUploadForm type="digital_product" onSuccess={fetchDashboardData} />
+          {/* Row 3 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 5: Order Trend (Multi-Line Product) */}
+            <OrderTrendChart data={data.charts.orderTrend} />
+            {/* Chart 6: Product Share (Donut) */}
+            <ProductShareChart data={data.charts.productShare} />
+          </div>
         </div>
-      )}
-    </div>
+
+      </div>
   )
 }
 

@@ -6,7 +6,8 @@ import fileRoutes from './fileRoutes.js'
 import roleRoutes from './roleRoutes.js'
 import adminRoutes from './adminRoutes.js'
 import reportRoutes from './reportRoutes.js'
-import masterRoutes from './masterRoutes.js' // <--- TAMBAHKAN INI
+import masterRoutes from './masterRoutes.js'
+import aiRoutes from './aiRoutes.js'
 
 const router = express.Router()
 
@@ -43,6 +44,9 @@ router.use('/jt', analysisRoutes)
 // router.use('/dashboard', dashboardRoutes)
 // router.use('/import', importRoutes)
 
-router.use('/master', masterRoutes)
+router.use('/master', masterRoutes) // <--- Tambahkan ini
+
+// AI routes
+router.use('/ai', aiRoutes)
 
 export default router
