@@ -26,9 +26,9 @@ const AdminModeRoute = ({ children, superOnly = false }) => {
 
   const allowedRoles = superOnly ? ['superadmin'] : ['admin', 'superadmin']
 
-  // Redirect to analysis if not allowed
+  // Redirect to home if not allowed
   if (!allowedRoles.includes(currentRole)) {
-    return <Navigate to="/analysis" replace />
+    return <Navigate to="/home" replace />
   }
 
   return <AppLayout>{children}</AppLayout>

@@ -75,7 +75,7 @@ const DigitalProduct = () => {
         start_date: startDate, 
         end_date: endDate 
       }
-      
+
       if (selectedWitels.length > 0) params.witel = selectedWitels.join(',')
       if (selectedBranches.length > 0) params.branch = selectedBranches.join(',')
       if (selectedProducts.length > 0) params.product = selectedProducts.join(',')

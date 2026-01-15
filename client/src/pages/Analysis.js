@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import FileUploadForm from '../components/FileUploadForm'
 import AdminReport from '../components/AdminReport'
 import { useAuth } from '../context/AuthContext'
@@ -9,21 +10,37 @@ import StatusBadge from '../components/StatusBadge'
 import { RevenueByWitelChart, AmountByWitelChart, StatusDistributionChart, BranchRevenueChart } from '../components/Charts'
 
 const Analysis = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [stats, setStats] = useState(null)
   const { user } = useAuth()
   const currentRole = useCurrentRole()
   const [loading, setLoading] = useState(false)
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+
+  // Get values from URL or defaults
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = parseInt(searchParams.get('limit') || '20')
+  const startDate = searchParams.get('startDate') || ''
+  const endDate = searchParams.get('endDate') || ''
+  const product = searchParams.get('product') || ''
+  const witel = searchParams.get('witel') || ''
+  const subType = searchParams.get('subType') || ''
+
   const [total, setTotal] = useState(0)
 
-  // Filters
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [product, setProduct] = useState('')
-  const [witel, setWitel] = useState('')
-  const [subType, setSubType] = useState('')
+  // Helper to update search params
+  const updateFilters = (newFilters) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, ...newFilters }, { replace: true })
+  }
+
+  const setPage = (p) => updateFilters({ page: p.toString() })
+  const setLimit = (l) => updateFilters({ limit: l.toString(), page: '1' })
+  const setStartDate = (d) => updateFilters({ startDate: d, page: '1' })
+  const setEndDate = (d) => updateFilters({ endDate: d, page: '1' })
+  const setProduct = (p) => updateFilters({ product: p, page: '1' })
+  const setWitel = (w) => updateFilters({ witel: w, page: '1' })
+  const setSubType = (s) => updateFilters({ subType: s, page: '1' })
 
   // Options (biasanya dari backend API)
   const products_list = ['FBB Product (A-I)', 'Managed Service (VPN)']
@@ -59,15 +76,10 @@ const Analysis = () => {
 
   useEffect(() => {
     fetchData()
-  }, [page, limit])
+  }, [page, limit, startDate, endDate, product, witel, subType])
 
   const handleResetFilters = () => {
-    setStartDate('')
-    setEndDate('')
-    setProduct('')
-    setWitel('')
-    setSubType('')
-    setPage(1)
+    setSearchParams({}, { replace: true })
   }
 
   const totalPages = Math.ceil(total / limit)

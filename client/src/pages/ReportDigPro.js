@@ -814,7 +814,7 @@ const ReportDigPro = () => {
               {renderTable(`Progress WFM Digital Product MTD`, reportData.legs || [], reportData.detailsLegs)}
             </div>
           )}
-          
+
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               {renderTable(`Progress WFM Digital Product MTD`, reportData.sme || [], reportData.detailsSme)}

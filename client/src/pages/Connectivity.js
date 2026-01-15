@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 const Connectivity = () => {
-  const [selectedNetwork, setSelectedNetwork] = useState('jaringan')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedNetwork = searchParams.get('tab') || 'jaringan'
+
+  const setSelectedNetwork = (tab) => {
+    setSearchParams({ tab }, { replace: true })
+  }
 
   const networks = [
     { id: 'jaringan', label: 'Jaringan Overview', desc: 'Status dan performa jaringan utama' },

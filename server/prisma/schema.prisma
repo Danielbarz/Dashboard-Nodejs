@@ -306,6 +306,38 @@ model SpmkMom {
   @@map("spmk_mom")
 }
 
+model ReportTambahan {
+  id                    BigInt    @id @default(autoincrement())
+  bulan                 String?
+  tahun                 Int?
+  region                String?
+  witelLama             String?   @map("witel_lama")
+  witelBaru             String?   @map("witel_baru")
+  idIHld                String?   @map("id_i_hld")
+  noNdeSpmk             String?   @map("no_nde_spmk")
+  uraianKegiatan        String?   @map("uraian_kegiatan") @db.Text
+  segmen                String?
+  poName                String?   @map("po_name")
+  tanggalGolive         DateTime? @map("tanggal_golive")
+  konfirmasiPo          String?   @map("konfirmasi_po")
+  tanggalCb             DateTime? @map("tanggal_cb")
+  jenisKegiatan         String?   @map("jenis_kegiatan")
+  revenuePlan           Float?    @map("revenue_plan")
+  usia                  Int?
+  statusProyek          String?   @map("status_proyek")
+  goLive                String?   @map("go_live")
+  keteranganToc         String?   @map("keterangan_toc") @db.Text
+  mom                   String?
+  baDrop                String?   @map("ba_drop")
+  statusTompsNew        String?   @map("status_tomps_new")
+  statusIHld            String?   @map("status_i_hld")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  batchId               String?   @map("batch_id")
+
+  @@map("report_tambahan")
+}
+
 model DocumentData {
   id                BigInt    @id @default(autoincrement())
   batchId           String?   @map("batch_id") @db.VarChar(255)
@@ -366,6 +398,19 @@ model Target {
   updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("targets")
+}
+
+model list_po {
+  id         BigInt    @id @default(autoincrement())
+  nipnas     String?
+  po         String
+  segment    String?
+  bill_city  String?
+  witel      String?
+  created_at DateTime? @default(now()) @map("created_at")
+  updated_at DateTime? @updatedAt @map("updated_at")
+
+  @@map("list_po")
 }
 
 model CustomTarget {
