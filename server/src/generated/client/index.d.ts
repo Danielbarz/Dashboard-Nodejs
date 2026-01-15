@@ -64,6 +64,11 @@ export type OrderProduct = $Result.DefaultSelection<Prisma.$OrderProductPayload>
  */
 export type Target = $Result.DefaultSelection<Prisma.$TargetPayload>
 /**
+ * Model list_po
+ *
+ */
+export type list_po = $Result.DefaultSelection<Prisma.$list_poPayload>
+/**
  * Model CustomTarget
  *
  */
@@ -291,6 +296,16 @@ export class PrismaClient<
     * ```
     */
   get target(): Prisma.TargetDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.list_po`: Exposes CRUD operations for the **list_po** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more List_pos
+    * const list_pos = await prisma.list_po.findMany()
+    * ```
+    */
+  get list_po(): Prisma.list_poDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.customTarget`: Exposes CRUD operations for the **CustomTarget** model.
@@ -762,6 +777,7 @@ export namespace Prisma {
     DocumentData: 'DocumentData',
     OrderProduct: 'OrderProduct',
     Target: 'Target',
+    list_po: 'list_po',
     CustomTarget: 'CustomTarget',
     UserTableConfiguration: 'UserTableConfiguration'
   };
@@ -782,7 +798,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "digitalProduct" | "user" | "accountOfficer" | "sosData" | "hsiData" | "spmkMom" | "reportTambahan" | "documentData" | "orderProduct" | "target" | "customTarget" | "userTableConfiguration"
+      modelProps: "digitalProduct" | "user" | "accountOfficer" | "sosData" | "hsiData" | "spmkMom" | "reportTambahan" | "documentData" | "orderProduct" | "target" | "list_po" | "customTarget" | "userTableConfiguration"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1526,6 +1542,80 @@ export namespace Prisma {
           }
         }
       }
+      list_po: {
+        payload: Prisma.$list_poPayload<ExtArgs>
+        fields: Prisma.list_poFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.list_poFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.list_poFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          findFirst: {
+            args: Prisma.list_poFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.list_poFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          findMany: {
+            args: Prisma.list_poFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          create: {
+            args: Prisma.list_poCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          createMany: {
+            args: Prisma.list_poCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.list_poCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          delete: {
+            args: Prisma.list_poDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          update: {
+            args: Prisma.list_poUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          deleteMany: {
+            args: Prisma.list_poDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.list_poUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.list_poUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          upsert: {
+            args: Prisma.list_poUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          aggregate: {
+            args: Prisma.List_poAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateList_po>
+          }
+          groupBy: {
+            args: Prisma.list_poGroupByArgs<ExtArgs>
+            result: $Utils.Optional<List_poGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.list_poCountArgs<ExtArgs>
+            result: $Utils.Optional<List_poCountAggregateOutputType> | number
+          }
+        }
+      }
       CustomTarget: {
         payload: Prisma.$CustomTargetPayload<ExtArgs>
         fields: Prisma.CustomTargetFieldRefs
@@ -1780,6 +1870,7 @@ export namespace Prisma {
     documentData?: DocumentDataOmit
     orderProduct?: OrderProductOmit
     target?: TargetOmit
+    list_po?: list_poOmit
     customTarget?: CustomTargetOmit
     userTableConfiguration?: UserTableConfigurationOmit
   }
@@ -15119,6 +15210,1074 @@ export namespace Prisma {
 
 
   /**
+   * Model list_po
+   */
+
+  export type AggregateList_po = {
+    _count: List_poCountAggregateOutputType | null
+    _avg: List_poAvgAggregateOutputType | null
+    _sum: List_poSumAggregateOutputType | null
+    _min: List_poMinAggregateOutputType | null
+    _max: List_poMaxAggregateOutputType | null
+  }
+
+  export type List_poAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type List_poSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type List_poMinAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    po: string | null
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type List_poMaxAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    po: string | null
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type List_poCountAggregateOutputType = {
+    id: number
+    nipnas: number
+    po: number
+    segment: number
+    bill_city: number
+    witel: number
+    created_at: number
+    updated_at: number
+    _all: number
+  }
+
+
+  export type List_poAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type List_poSumAggregateInputType = {
+    id?: true
+  }
+
+  export type List_poMinAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type List_poMaxAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type List_poCountAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+    _all?: true
+  }
+
+  export type List_poAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which list_po to aggregate.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned list_pos
+    **/
+    _count?: true | List_poCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+    **/
+    _avg?: List_poAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+    **/
+    _sum?: List_poSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+    **/
+    _min?: List_poMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+    **/
+    _max?: List_poMaxAggregateInputType
+  }
+
+  export type GetList_poAggregateType<T extends List_poAggregateArgs> = {
+        [P in keyof T & keyof AggregateList_po]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateList_po[P]>
+      : GetScalarType<T[P], AggregateList_po[P]>
+  }
+
+
+
+
+  export type list_poGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: list_poWhereInput
+    orderBy?: list_poOrderByWithAggregationInput | list_poOrderByWithAggregationInput[]
+    by: List_poScalarFieldEnum[] | List_poScalarFieldEnum
+    having?: list_poScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: List_poCountAggregateInputType | true
+    _avg?: List_poAvgAggregateInputType
+    _sum?: List_poSumAggregateInputType
+    _min?: List_poMinAggregateInputType
+    _max?: List_poMaxAggregateInputType
+  }
+
+  export type List_poGroupByOutputType = {
+    id: bigint
+    nipnas: string | null
+    po: string
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    _count: List_poCountAggregateOutputType | null
+    _avg: List_poAvgAggregateOutputType | null
+    _sum: List_poSumAggregateOutputType | null
+    _min: List_poMinAggregateOutputType | null
+    _max: List_poMaxAggregateOutputType | null
+  }
+
+  type GetList_poGroupByPayload<T extends list_poGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<List_poGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof List_poGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], List_poGroupByOutputType[P]>
+            : GetScalarType<T[P], List_poGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type list_poSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectScalar = {
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }
+
+  export type list_poOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "po" | "segment" | "bill_city" | "witel" | "created_at" | "updated_at", ExtArgs["result"]["list_po"]>
+
+  export type $list_poPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "list_po"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      nipnas: string | null
+      po: string
+      segment: string | null
+      bill_city: string | null
+      witel: string | null
+      created_at: Date | null
+      updated_at: Date | null
+    }, ExtArgs["result"]["list_po"]>
+    composites: {}
+  }
+
+  type list_poGetPayload<S extends boolean | null | undefined | list_poDefaultArgs> = $Result.GetResult<Prisma.$list_poPayload, S>
+
+  type list_poCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<list_poFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: List_poCountAggregateInputType | true
+    }
+
+  export interface list_poDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['list_po'], meta: { name: 'list_po' } }
+    /**
+     * Find zero or one List_po that matches the filter.
+     * @param {list_poFindUniqueArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends list_poFindUniqueArgs>(args: SelectSubset<T, list_poFindUniqueArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one List_po that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {list_poFindUniqueOrThrowArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends list_poFindUniqueOrThrowArgs>(args: SelectSubset<T, list_poFindUniqueOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first List_po that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindFirstArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends list_poFindFirstArgs>(args?: SelectSubset<T, list_poFindFirstArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first List_po that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindFirstOrThrowArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends list_poFindFirstOrThrowArgs>(args?: SelectSubset<T, list_poFindFirstOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more List_pos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all List_pos
+     * const list_pos = await prisma.list_po.findMany()
+     *
+     * // Get first 10 List_pos
+     * const list_pos = await prisma.list_po.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const list_poWithIdOnly = await prisma.list_po.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends list_poFindManyArgs>(args?: SelectSubset<T, list_poFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a List_po.
+     * @param {list_poCreateArgs} args - Arguments to create a List_po.
+     * @example
+     * // Create one List_po
+     * const List_po = await prisma.list_po.create({
+     *   data: {
+     *     // ... data to create a List_po
+     *   }
+     * })
+     *
+     */
+    create<T extends list_poCreateArgs>(args: SelectSubset<T, list_poCreateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many List_pos.
+     * @param {list_poCreateManyArgs} args - Arguments to create many List_pos.
+     * @example
+     * // Create many List_pos
+     * const list_po = await prisma.list_po.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends list_poCreateManyArgs>(args?: SelectSubset<T, list_poCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many List_pos and returns the data saved in the database.
+     * @param {list_poCreateManyAndReturnArgs} args - Arguments to create many List_pos.
+     * @example
+     * // Create many List_pos
+     * const list_po = await prisma.list_po.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many List_pos and only return the `id`
+     * const list_poWithIdOnly = await prisma.list_po.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends list_poCreateManyAndReturnArgs>(args?: SelectSubset<T, list_poCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a List_po.
+     * @param {list_poDeleteArgs} args - Arguments to delete one List_po.
+     * @example
+     * // Delete one List_po
+     * const List_po = await prisma.list_po.delete({
+     *   where: {
+     *     // ... filter to delete one List_po
+     *   }
+     * })
+     *
+     */
+    delete<T extends list_poDeleteArgs>(args: SelectSubset<T, list_poDeleteArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one List_po.
+     * @param {list_poUpdateArgs} args - Arguments to update one List_po.
+     * @example
+     * // Update one List_po
+     * const list_po = await prisma.list_po.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends list_poUpdateArgs>(args: SelectSubset<T, list_poUpdateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more List_pos.
+     * @param {list_poDeleteManyArgs} args - Arguments to filter List_pos to delete.
+     * @example
+     * // Delete a few List_pos
+     * const { count } = await prisma.list_po.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends list_poDeleteManyArgs>(args?: SelectSubset<T, list_poDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more List_pos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many List_pos
+     * const list_po = await prisma.list_po.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends list_poUpdateManyArgs>(args: SelectSubset<T, list_poUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more List_pos and returns the data updated in the database.
+     * @param {list_poUpdateManyAndReturnArgs} args - Arguments to update many List_pos.
+     * @example
+     * // Update many List_pos
+     * const list_po = await prisma.list_po.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Update zero or more List_pos and only return the `id`
+     * const list_poWithIdOnly = await prisma.list_po.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    updateManyAndReturn<T extends list_poUpdateManyAndReturnArgs>(args: SelectSubset<T, list_poUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one List_po.
+     * @param {list_poUpsertArgs} args - Arguments to update or create a List_po.
+     * @example
+     * // Update or create a List_po
+     * const list_po = await prisma.list_po.upsert({
+     *   create: {
+     *     // ... data to create a List_po
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the List_po we want to update
+     *   }
+     * })
+     */
+    upsert<T extends list_poUpsertArgs>(args: SelectSubset<T, list_poUpsertArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of List_pos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poCountArgs} args - Arguments to filter List_pos to count.
+     * @example
+     * // Count the number of List_pos
+     * const count = await prisma.list_po.count({
+     *   where: {
+     *     // ... the filter for the List_pos we want to count
+     *   }
+     * })
+    **/
+    count<T extends list_poCountArgs>(
+      args?: Subset<T, list_poCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], List_poCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a List_po.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {List_poAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends List_poAggregateArgs>(args: Subset<T, List_poAggregateArgs>): Prisma.PrismaPromise<GetList_poAggregateType<T>>
+
+    /**
+     * Group by List_po.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+    **/
+    groupBy<
+      T extends list_poGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: list_poGroupByArgs['orderBy'] }
+        : { orderBy?: list_poGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, list_poGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetList_poGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the list_po model
+   */
+  readonly fields: list_poFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for list_po.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__list_poClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the list_po model
+   */
+  interface list_poFieldRefs {
+    readonly id: FieldRef<"list_po", 'BigInt'>
+    readonly nipnas: FieldRef<"list_po", 'String'>
+    readonly po: FieldRef<"list_po", 'String'>
+    readonly segment: FieldRef<"list_po", 'String'>
+    readonly bill_city: FieldRef<"list_po", 'String'>
+    readonly witel: FieldRef<"list_po", 'String'>
+    readonly created_at: FieldRef<"list_po", 'DateTime'>
+    readonly updated_at: FieldRef<"list_po", 'DateTime'>
+  }
+
+
+  // Custom InputTypes
+  /**
+   * list_po findUnique
+   */
+  export type list_poFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po findUniqueOrThrow
+   */
+  export type list_poFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po findFirst
+   */
+  export type list_poFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of list_pos.
+     */
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po findFirstOrThrow
+   */
+  export type list_poFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of list_pos.
+     */
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po findMany
+   */
+  export type list_poFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_pos to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po create
+   */
+  export type list_poCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data needed to create a list_po.
+     */
+    data: XOR<list_poCreateInput, list_poUncheckedCreateInput>
+  }
+
+  /**
+   * list_po createMany
+   */
+  export type list_poCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many list_pos.
+     */
+    data: list_poCreateManyInput | list_poCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * list_po createManyAndReturn
+   */
+  export type list_poCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data used to create many list_pos.
+     */
+    data: list_poCreateManyInput | list_poCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * list_po update
+   */
+  export type list_poUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data needed to update a list_po.
+     */
+    data: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
+    /**
+     * Choose, which list_po to update.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po updateMany
+   */
+  export type list_poUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update list_pos.
+     */
+    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
+    /**
+     * Filter which list_pos to update
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po updateManyAndReturn
+   */
+  export type list_poUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data used to update list_pos.
+     */
+    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
+    /**
+     * Filter which list_pos to update
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po upsert
+   */
+  export type list_poUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The filter to search for the list_po to update in case it exists.
+     */
+    where: list_poWhereUniqueInput
+    /**
+     * In case the list_po found by the `where` argument doesn't exist, create a new list_po with this data.
+     */
+    create: XOR<list_poCreateInput, list_poUncheckedCreateInput>
+    /**
+     * In case the list_po was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
+  }
+
+  /**
+   * list_po delete
+   */
+  export type list_poDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter which list_po to delete.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po deleteMany
+   */
+  export type list_poDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which list_pos to delete
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po without action
+   */
+  export type list_poDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model CustomTarget
    */
 
@@ -17730,6 +18889,20 @@ export namespace Prisma {
   export type TargetScalarFieldEnum = (typeof TargetScalarFieldEnum)[keyof typeof TargetScalarFieldEnum]
 
 
+  export const List_poScalarFieldEnum: {
+    id: 'id',
+    nipnas: 'nipnas',
+    po: 'po',
+    segment: 'segment',
+    bill_city: 'bill_city',
+    witel: 'witel',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+  };
+
+  export type List_poScalarFieldEnum = (typeof List_poScalarFieldEnum)[keyof typeof List_poScalarFieldEnum]
+
+
   export const CustomTargetScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
@@ -19514,6 +20687,75 @@ export namespace Prisma {
     period?: DateTimeWithAggregatesFilter<"Target"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"Target"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Target"> | Date | string
+  }
+
+  export type list_poWhereInput = {
+    AND?: list_poWhereInput | list_poWhereInput[]
+    OR?: list_poWhereInput[]
+    NOT?: list_poWhereInput | list_poWhereInput[]
+    id?: BigIntFilter<"list_po"> | bigint | number
+    nipnas?: StringNullableFilter<"list_po"> | string | null
+    po?: StringFilter<"list_po"> | string
+    segment?: StringNullableFilter<"list_po"> | string | null
+    bill_city?: StringNullableFilter<"list_po"> | string | null
+    witel?: StringNullableFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+  }
+
+  export type list_poOrderByWithRelationInput = {
+    id?: SortOrder
+    nipnas?: SortOrderInput | SortOrder
+    po?: SortOrder
+    segment?: SortOrderInput | SortOrder
+    bill_city?: SortOrderInput | SortOrder
+    witel?: SortOrderInput | SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+  }
+
+  export type list_poWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: list_poWhereInput | list_poWhereInput[]
+    OR?: list_poWhereInput[]
+    NOT?: list_poWhereInput | list_poWhereInput[]
+    nipnas?: StringNullableFilter<"list_po"> | string | null
+    po?: StringFilter<"list_po"> | string
+    segment?: StringNullableFilter<"list_po"> | string | null
+    bill_city?: StringNullableFilter<"list_po"> | string | null
+    witel?: StringNullableFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+  }, "id">
+
+  export type list_poOrderByWithAggregationInput = {
+    id?: SortOrder
+    nipnas?: SortOrderInput | SortOrder
+    po?: SortOrder
+    segment?: SortOrderInput | SortOrder
+    bill_city?: SortOrderInput | SortOrder
+    witel?: SortOrderInput | SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    _count?: list_poCountOrderByAggregateInput
+    _avg?: list_poAvgOrderByAggregateInput
+    _max?: list_poMaxOrderByAggregateInput
+    _min?: list_poMinOrderByAggregateInput
+    _sum?: list_poSumOrderByAggregateInput
+  }
+
+  export type list_poScalarWhereWithAggregatesInput = {
+    AND?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
+    OR?: list_poScalarWhereWithAggregatesInput[]
+    NOT?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"list_po"> | bigint | number
+    nipnas?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    po?: StringWithAggregatesFilter<"list_po"> | string
+    segment?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    bill_city?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    witel?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
   }
 
   export type CustomTargetWhereInput = {
@@ -21707,6 +22949,83 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type list_poCreateInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUncheckedCreateInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poCreateManyInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type CustomTargetCreateInput = {
     id?: bigint | number
     pageName: string
@@ -23156,6 +24475,47 @@ export namespace Prisma {
   export type TargetSumOrderByAggregateInput = {
     id?: SortOrder
     targetValue?: SortOrder
+  }
+
+  export type list_poCountOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type list_poMaxOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poMinOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type UserScalarRelationFilter = {

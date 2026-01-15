@@ -4,10 +4,12 @@ import { successResponse, errorResponse } from '../utils/response.js'
 
 // --- ACCOUNT OFFICERS ---
 export const getAccountOfficers = async (req, res) => {
+  console.log('API: getAccountOfficers called')
   try {
     const data = await prisma.accountOfficer.findMany({
       orderBy: { name: 'asc' }
     })
+    console.log(`API: getAccountOfficers found ${data.length} rows`)
     // Konversi BigInt ke string agar JSON aman
     const formatted = data.map(item => ({
       ...item,
@@ -50,10 +52,12 @@ export const deleteAccountOfficer = async (req, res) => {
 
 // --- MASTER PO (list_po) ---
 export const getPOMaster = async (req, res) => {
+  console.log('API: getPOMaster called')
   try {
-    const data = await prisma.list_po.findMany({
-      orderBy: { po: 'asc' }
-    })
+    // Gunakan query raw sebagai workaround karena model list_po mungkin belum ter-generate di Prisma Client
+    const data = await prisma.$queryRawUnsafe('SELECT * FROM list_po ORDER BY po ASC')
+    console.log(`API: getPOMaster found ${data.length} rows`)
+    if (data.length > 0) console.log('API: getPOMaster first item:', data[0])
     const formatted = data.map(item => ({
       id: item.id.toString(),
       nipnas: item.nipnas,
@@ -98,6 +102,7 @@ export const deletePOMaster = async (req, res) => {
 
 // --- UNMAPPED ORDERS & MAPPING ---
 export const getUnmappedOrders = async (req, res) => {
+  console.log('API: getUnmappedOrders called')
   try {
     // Ambil data SOS yang belum punya PO Name valid
     const data = await prisma.sosData.findMany({
@@ -107,6 +112,7 @@ export const getUnmappedOrders = async (req, res) => {
       take: 50, // Limit agar tidak berat
       orderBy: { orderDate: 'desc' }
     })
+    console.log(`API: getUnmappedOrders found ${data.length} rows`)
 
     const formatted = data.map(item => ({
       id: item.id.toString(),

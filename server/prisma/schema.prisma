@@ -338,6 +338,19 @@ model Target {
   @@map("targets")
 }
 
+model list_po {
+  id         BigInt    @id @default(autoincrement())
+  nipnas     String?
+  po         String
+  segment    String?
+  bill_city  String?
+  witel      String?
+  created_at DateTime? @default(now()) @map("created_at")
+  updated_at DateTime? @updatedAt @map("updated_at")
+
+  @@map("list_po")
+}
+
 model CustomTarget {
   id        BigInt    @id @default(autoincrement())
   userId    BigInt    @map("user_id")

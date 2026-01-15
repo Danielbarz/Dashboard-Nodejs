@@ -413,6 +413,17 @@ exports.Prisma.TargetScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.List_poScalarFieldEnum = {
+  id: 'id',
+  nipnas: 'nipnas',
+  po: 'po',
+  segment: 'segment',
+  bill_city: 'bill_city',
+  witel: 'witel',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
 exports.Prisma.CustomTargetScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -471,6 +482,7 @@ exports.Prisma.ModelName = {
   DocumentData: 'DocumentData',
   OrderProduct: 'OrderProduct',
   Target: 'Target',
+  list_po: 'list_po',
   CustomTarget: 'CustomTarget',
   UserTableConfiguration: 'UserTableConfiguration'
 };

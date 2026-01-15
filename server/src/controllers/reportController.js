@@ -399,7 +399,9 @@ export const getReportTambahan = async (req, res, next) => {
       {
         tableData: finalTable,
         projectData: finalProjects,
+        top3Witel: formatRawWitel(top3WitelRaw),
         topUsiaByWitel: formatRawWitel(top3WitelRaw),
+        top3Po: top3PoMapped,
         topUsiaByPo: top3PoMapped,
         bucketUsiaData: bucketUsiaRaw,
         trendGolive: trendRaw,
