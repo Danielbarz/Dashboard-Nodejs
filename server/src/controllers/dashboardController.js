@@ -1095,6 +1095,8 @@ export const getReportHSI = async (req, res, next) => {
 }
 
 // Placeholder exports for reports
+
+// Placeholder exports for reports
 export const exportReportAnalysis = async (req, res, next) => {
   try {
     successResponse(res, { message: 'Export Report Analysis not implemented' }, 'Export placeholder')
@@ -1103,18 +1105,10 @@ export const exportReportAnalysis = async (req, res, next) => {
   }
 }
 
-        return successResponse(res, {
-          tableData: finalTable,
-          projectData: finalProjects,
-          top3Witel: top3WitelMapped,
-          topUsiaByWitel: top3WitelMapped,
-          top3Po: top3PoMapped,
-          topUsiaByPo: top3PoMapped,
-          bucketUsiaData: bucketUsiaRaw,
-          trendGolive: trendRaw,
-          topMitraRevenue,
-          rawProjectRows: rawProjects
-        }, 'Report Tambahan data retrieved successfully')  } catch (error) {
+export const exportReportDatin = async (req, res, next) => {
+  try {
+    successResponse(res, { message: 'Export Report Datin not implemented' }, 'Export placeholder')
+  } catch (error) {
     next(error)
   }
 }
@@ -2674,7 +2668,8 @@ export const getDigitalProductDashboard = async (req, res, next) => {
       orderByWitel,
       revenueByProductTrend,
       productShare,
-      orderTrend
+      orderTrend,
+      targetData
     ] = await Promise.all([
       // 1. KPIs
       prisma.$queryRawUnsafe(`
@@ -2752,18 +2747,48 @@ export const getDigitalProductDashboard = async (req, res, next) => {
         ${filterCondition}
         GROUP BY month, product_norm
         ORDER BY month ASC
-      `, ...params)
+      `, ...params),
+
+      // 7. TARGETS
+      prisma.target.findMany({
+        where: {
+          periodDate: {
+            gte: new Date(start_date || '2020-01-01'),
+            lte: new Date(end_date || new Date())
+          },
+          // Filter target berdasarkan witel dan produk jika ada
+          ...(witel && witel !== 'ALL' ? { witel: { in: witel.split(',') } } : {}),
+          ...(product && product !== 'ALL' ? { product: { in: product.split(',') } } : {})
+        }
+      })
     ])
 
     // --- 3. DATA TRANSFORMATION ---
 
+    // Calculate Aggregate Targets
+    const totalRevTarget = targetData
+      .filter(t => t.targetType === 'REVENUE')
+      .reduce((sum, t) => sum + Number(t.value), 0)
+    
+    const totalOrderTarget = targetData
+      .filter(t => t.targetType === 'ORDER')
+      .reduce((sum, t) => sum + Number(t.value), 0)
+
     const totalOrder = Number(kpiData[0]?.total_order || 0)
     const completedCount = Number(kpiData[0]?.completed_count || 0)
+    const totalRevenue = Number(kpiData[0]?.total_revenue || 0)
 
     const kpi = {
-      totalRevenue: Number(kpiData[0]?.total_revenue || 0),
+      totalRevenue: totalRevenue,
+      revTarget: totalRevTarget,
+      revAchievement: totalRevTarget > 0 ? ((totalRevenue / totalRevTarget) * 100).toFixed(1) : 0,
+      
       pipelineRevenue: Number(kpiData[0]?.pipeline_revenue || 0),
+      
       totalOrder: totalOrder,
+      orderTarget: totalOrderTarget,
+      orderAchievement: totalOrderTarget > 0 ? ((totalOrder / totalOrderTarget) * 100).toFixed(1) : 0,
+      
       completionRate: totalOrder > 0 ? ((completedCount / totalOrder) * 100).toFixed(1) : 0
     }
 
@@ -2782,15 +2807,49 @@ export const getDigitalProductDashboard = async (req, res, next) => {
       return Object.values(grouped)
     }
 
+    // Transform Witel Charts with Target Support
+    const revenueByWitelTransformed = transformToStacked(revenueByWitel, 'witel', 'product', 'revenue', isSingleWitel ? [] : WITEL_ORDER)
+    revenueByWitelTransformed.forEach(item => {
+      item.target = targetData
+        .filter(t => t.targetType === 'REVENUE' && (t.witel === 'ALL' || t.witel === item.name))
+        .reduce((sum, t) => sum + Number(t.value), 0)
+    })
+
+    const orderByWitelTransformed = isSingleWitel 
+      ? orderByWitel.map(r => ({ name: r.witel, value: Number(r.count) }))
+      : transformToStacked(orderByWitel, 'witel', 'status', 'count', WITEL_ORDER)
+    
+    if (!isSingleWitel) {
+      orderByWitelTransformed.forEach(item => {
+        item.target = targetData
+          .filter(t => t.targetType === 'ORDER' && (t.witel === 'ALL' || t.witel === item.name))
+          .reduce((sum, t) => sum + Number(t.value), 0)
+      })
+    }
+
+    // Trend charts with Target Support
+    const revenueTrendTransformed = transformToStacked(revenueByProductTrend, 'month', 'product', 'revenue')
+    revenueTrendTransformed.forEach(item => {
+      // Sum all revenue targets for this month
+      item.target = targetData
+        .filter(t => t.targetType === 'REVENUE' && new Date(t.periodDate).toISOString().startsWith(item.name))
+        .reduce((sum, t) => sum + Number(t.value), 0)
+    })
+
+    const orderTrendTransformed = transformToStacked(orderTrend, 'month', 'product', 'count')
+    orderTrendTransformed.forEach(item => {
+      item.target = targetData
+        .filter(t => t.targetType === 'ORDER' && new Date(t.periodDate).toISOString().startsWith(item.name))
+        .reduce((sum, t) => sum + Number(t.value), 0)
+    })
+
     const charts = {
       orderByStatus: orderByStatus.map(r => ({ name: r.name, value: Number(r.value) })),
-      revenueByWitel: transformToStacked(revenueByWitel, 'witel', 'product', 'revenue', isSingleWitel ? [] : WITEL_ORDER),
-      orderByWitel: isSingleWitel 
-        ? orderByWitel.map(r => ({ name: r.witel, value: Number(r.count) }))
-        : transformToStacked(orderByWitel, 'witel', 'status', 'count', WITEL_ORDER),
-      revenueTrend: transformToStacked(revenueByProductTrend, 'month', 'product', 'revenue'),
+      revenueByWitel: revenueByWitelTransformed,
+      orderByWitel: orderByWitelTransformed,
+      revenueTrend: revenueTrendTransformed,
       productShare: productShare.map(r => ({ name: r.name, value: Number(r.value) })),
-      orderTrend: transformToStacked(orderTrend, 'month', 'product', 'count')
+      orderTrend: orderTrendTransformed
     }
 
     successResponse(res, { kpi, charts }, 'Digital Product dashboard data retrieved')

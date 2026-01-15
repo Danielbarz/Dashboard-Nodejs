@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminModeRoute from './components/AdminModeRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
+import DashboardDigPro from './pages/DashboardDigPro'
 import History from './pages/History'
 import Reports from './pages/Reports'
 import Connectivity from './pages/Connectivity'
@@ -18,6 +18,7 @@ import ReportsHSI from './pages/ReportsHSI'
 import ReportsDatin from './pages/ReportsDatin'
 import ReportsTambahan from './pages/ReportsTambahan'
 import Home from './pages/Home'
+import ManageTargets from './pages/ManageTargets'
 import AdminUsers from './pages/AdminUsers'
 import AdminRollback from './pages/AdminRollback'
 import AdminMergeFiles from './pages/AdminMergeFiles'
@@ -50,7 +51,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <DashboardDigPro />
               </ProtectedRoute>
             }
           />
@@ -157,7 +158,15 @@ function App() {
                 <MasterDataPO />
               </AdminModeRoute>
             }
-/>
+          />
+          <Route
+            path="/admin/master-targets"
+            element={
+              <AdminModeRoute>
+                <ManageTargets />
+              </AdminModeRoute>
+            }
+          />
           <Route
             path="/admin/rollback"
             element={
