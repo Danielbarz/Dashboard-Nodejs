@@ -197,35 +197,7 @@ export const getKPIData = async (req, res, next) => {
             ELSE 'OTHER'
           END as product_norm,
           CASE
-            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
-            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
-            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
-            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
-            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
-            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
-            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
-            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
-            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
-            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
-            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
-            WHEN UPPER(branch) IN ('MLG') THEN 'MALANG'
-            WHEN UPPER(branch) IN ('KDR') THEN 'KEDIRI'
-            WHEN UPPER(branch) IN ('MDN') THEN 'MADIUN'
-            WHEN UPPER(branch) IN ('BJN') THEN 'BOJONEGORO'
-            WHEN UPPER(branch) IN ('PON') THEN 'PONOROGO'
-            WHEN UPPER(branch) IN ('SDO') THEN 'SIDOARJO'
-            WHEN UPPER(branch) IN ('BWI') THEN 'BANYUWANGI'
-            WHEN UPPER(branch) IN ('JMB') THEN 'JEMBER'
-            WHEN UPPER(branch) IN ('PSR') THEN 'PASURUAN'
-            WHEN UPPER(branch) IN ('MTR') THEN 'MATARAM'
-            WHEN UPPER(branch) IN ('KPG') THEN 'KUPANG'
-            WHEN UPPER(branch) IN ('LBJ') THEN 'LABOAN BAJO'
-            WHEN UPPER(branch) IN ('BMA') THEN 'BIMA'
-            WHEN UPPER(branch) IN ('SBS') THEN 'SURABAYA'
-            WHEN UPPER(branch) IN ('SBU') THEN 'SURABAYA'
-            WHEN UPPER(branch) IN ('GSK') THEN 'GRESIK'
-            WHEN UPPER(branch) IN ('PMK') THEN 'PAMEKASAN'
-            WHEN UPPER(branch) IN ('BKL') THEN 'BANGKALAN'
+            WHEN telda IS NOT NULL AND telda != '' THEN UPPER(telda)
             ELSE UPPER(branch)
           END as branch_norm,
           channel as channel_norm
@@ -2526,23 +2498,17 @@ export const getDigitalProductFilters = async (req, res, next) => {
 
  */
 
-export const getDigitalProductCharts = async (req, res, next) => {
-
+export const getDigitalProductDashboard = async (req, res, next) => {
   try {
-
     const { start_date, end_date, witel, branch, product } = req.query
 
+    const witelList = witel ? witel.split(',').filter(Boolean) : []
+    const isSingleWitel = witelList.length === 1
 
-
-    // Define Date Filter
-
+    // --- 1. FILTERS & NORMALIZATION ---
     let dateFilter = ''
-
     const params = []
-
     let pIdx = 1
-
-
 
     if (start_date && end_date) {
       dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
@@ -2550,8 +2516,6 @@ export const getDigitalProductCharts = async (req, res, next) => {
       pIdx += 2
     }
 
-    // Common CTEs for normalization
-    // Maps specific branches to RSO2 Regions, fuzzy matches product names, and groups segments
     const normalizedDataCTE = `
       WITH normalized_data AS (
         SELECT
@@ -2572,61 +2536,39 @@ export const getDigitalProductCharts = async (req, res, next) => {
             ELSE 'OTHER'
           END as product_norm,
           CASE
-            WHEN UPPER(branch) IN ('APR','BLI','MMN','PUA','SWI','TOP','TPS') THEN 'DENPASAR'
-            WHEN UPPER(branch) IN ('BNO','KUT','NSD','SMY','GMK') THEN 'BADUNG'
-            WHEN UPPER(branch) IN ('BTR','GIN','KNT','UBU') THEN 'GIANYAR'
-            WHEN UPPER(branch) IN ('CDS','KLM','SMA') THEN 'KLUNGKUNG'
-            WHEN UPPER(branch) IN ('JBR','NGR') THEN 'JEMBRANA'
-            WHEN UPPER(branch) IN ('LVN','SRR') THEN 'BULELENG'
-            WHEN UPPER(branch) IN ('SAU') THEN 'SANUR'
-            WHEN UPPER(branch) IN ('SGR') THEN 'SINGARAJA'
-            WHEN UPPER(branch) IN ('TBN') THEN 'TABANAN'
-            WHEN UPPER(branch) IN ('UBN') THEN 'UBUNG'
-            WHEN UPPER(branch) IN ('JMB') THEN 'JIMBARAN'
-            ELSE UPPER(branch)
-          END as branch_norm,
+            WHEN status ILIKE '%complete%' OR status ILIKE '%completed%' OR status ILIKE '%ps%' THEN 'COMPLETED'
+            ELSE 'IN PROGRESS'
+          END as status_group,
           CASE
-            WHEN UPPER(segment) IN ('LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT') THEN 'LEGS'
-            ELSE 'SME'
-          END as segment_norm,
-          channel as channel_norm
+            WHEN telda IS NOT NULL AND telda != '' THEN UPPER(telda)
+            ELSE UPPER(branch)
+          END as branch_norm
         FROM digital_products
         WHERE 1=1
         ${dateFilter}
       )
     `
 
-    // Build dynamic filters
     let filterCondition = `WHERE region_norm != 'OTHER' AND product_norm != 'OTHER'`
-    let isSingleWitel = false
-    let isSingleBranch = false
 
-    // 1. Witel Filter (Multiselect)
-    // If witel param exists and is not 'ALL', add condition
     if (witel && witel !== 'ALL') {
       const witelArr = witel.split(',').filter(w => w)
       if (witelArr.length > 0) {
-        if (witelArr.length === 1) isSingleWitel = true
-        // Create placeholders $3, $4, etc.
         const placeholders = witelArr.map(() => `$${pIdx++}`).join(',')
         filterCondition += ` AND region_norm IN (${placeholders})`
         params.push(...witelArr)
       }
     }
 
-    // 2. Branch Filter (Multiselect)
     if (branch) {
       const branchArr = branch.split(',').filter(b => b)
       if (branchArr.length > 0) {
-        if (branchArr.length === 1) isSingleBranch = true
         const placeholders = branchArr.map(() => `$${pIdx++}`).join(',')
-        // Use branch_norm for filtering to match the aggregation
         filterCondition += ` AND branch_norm IN (${placeholders})`
-        params.push(...branchArr)
+        params.push(...branchArr.map(b => b.toUpperCase()))
       }
     }
 
-    // 3. Product Filter (Multiselect)
     if (product) {
       const productArr = product.split(',').filter(p => p)
       if (productArr.length > 0) {
@@ -2636,140 +2578,148 @@ export const getDigitalProductCharts = async (req, res, next) => {
       }
     }
 
-    // Determine Grouping Column (Drill-down logic)
-    // 1. Single Branch -> Group by Product (Independent Bars)
-    // 2. Single Witel -> Group by Branch
-    // 3. Default -> Group by Region
-    let groupByCol = 'region_norm'
-    if (isSingleBranch) {
-      groupByCol = 'product_norm'
-    } else if (isSingleWitel) {
-      groupByCol = 'branch_norm'
-    }
+    const WITEL_ORDER = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'NUSA TENGGARA']
+    
+    // Revenue Logic
+    const REVENUE_COL = "COALESCE(NULLIF(net_price, 0), NULLIF(revenue, 0), (substring(product_name from 'Total \\\\(Sebelum PPN\\\\)\\\\s*:\\\\s*([0-9]+)')::numeric), 0)"
 
-    // Run queries in parallel
+    // Dynamic Grouping
+    const GROUP_COL = isSingleWitel ? 'branch_norm' : 'region_norm'
+    const ORDER_CLAUSE = isSingleWitel ? 'branch_norm ASC' : `CASE 
+          ${WITEL_ORDER.map((w, idx) => `WHEN region_norm = '${w}' THEN ${idx + 1}`).join(' ')}
+          ELSE 99 END`
+
+    // --- 2. EXECUTE QUERIES ---
     const [
+      kpiData,
+      orderByStatus,
       revenueByWitel,
-      amountByWitel,
-      productBySegment,
-      productByChannel,
-      productShare
+      orderByWitel,
+      revenueByProductTrend,
+      productShare,
+      orderTrend
     ] = await Promise.all([
-      // 1. Revenue by Witel (or Branch) - Stacked Bar (Vertical)
+      // 1. KPIs
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT 
-          ${groupByCol} as witel, 
-          product_norm as product, 
-          SUM(
-            COALESCE(
-              NULLIF(net_price, 0),
-              NULLIF(revenue, 0),
-              (substring(product_name from 'Total \\(Sebelum PPN\\)\\s*:\\s*([0-9]+)')::numeric),
-              0
-            )
-          )::numeric as revenue
+        SELECT
+          COUNT(*)::int as total_order,
+          SUM(CASE WHEN status_group = 'COMPLETED' THEN 1 ELSE 0 END)::int as completed_count,
+          SUM(CASE WHEN status_group = 'COMPLETED' THEN ${REVENUE_COL} ELSE 0 END) as total_revenue,
+          SUM(CASE WHEN status_group = 'IN PROGRESS' THEN ${REVENUE_COL} ELSE 0 END) as pipeline_revenue
         FROM normalized_data
         ${filterCondition}
-        GROUP BY ${groupByCol}, product_norm
-        ORDER BY ${groupByCol}, product_norm
       `, ...params),
 
-      // 2. Amount by Witel (or Branch) - Stacked Bar (Vertical)
+      // Chart 1: Order by Status (Donut)
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT ${groupByCol} as witel, product_norm as product, COUNT(*)::int as amount
+        SELECT status_group as name, COUNT(*)::int as value
         FROM normalized_data
         ${filterCondition}
-        GROUP BY ${groupByCol}, product_norm
-        ORDER BY ${groupByCol}, product_norm
+        GROUP BY status_group
       `, ...params),
 
-      // 3. Product by Segment - Horizontal Stacked Bar
+      // Chart 2: Revenue by Witel (Dynamic Group)
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT 
-          product_norm as product,
-          segment_norm as segment,
-          COUNT(*)::int as total
+        SELECT ${GROUP_COL} as witel, product_norm as product, SUM(${REVENUE_COL}) as revenue
         FROM normalized_data
         ${filterCondition}
-        GROUP BY product_norm, segment_norm
-        ORDER BY product_norm, segment_norm
+        GROUP BY ${GROUP_COL}, product_norm
+        ORDER BY ${ORDER_CLAUSE}
       `, ...params),
 
-      // 4. Product by Channel - Horizontal Stacked Bar
-      prisma.$queryRawUnsafe(`
+      // Chart 3: Order by Witel (Dynamic Group)
+      isSingleWitel ? prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT 
-          product_norm as product,
-          channel_norm as channel,
-          COUNT(*)::int as total
+        SELECT ${GROUP_COL} as witel, COUNT(*)::int as count
         FROM normalized_data
         ${filterCondition}
-        GROUP BY product_norm, channel_norm
-        ORDER BY product_norm, channel_norm
+        GROUP BY ${GROUP_COL}
+        ORDER BY ${ORDER_CLAUSE}
+      `, ...params) : prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT ${GROUP_COL} as witel, status_group as status, COUNT(*)::int as count
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY ${GROUP_COL}, status_group
+        ORDER BY ${ORDER_CLAUSE}
       `, ...params),
 
-      // 5. Product Share - Pie Chart
+      // Chart 4: Revenue Trend (Multi-Line by Product)
       prisma.$queryRawUnsafe(`
         ${normalizedDataCTE}
-        SELECT 
-          product_norm as product,
-          COUNT(*)::int as value
+        SELECT TO_CHAR(order_date, 'YYYY-MM') as month, product_norm as product, SUM(${REVENUE_COL}) as revenue
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY month, product_norm
+        ORDER BY month ASC
+      `, ...params),
+
+      // Chart 5: Product Share (Donut - Revenue)
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT product_norm as name, SUM(${REVENUE_COL}) as value
         FROM normalized_data
         ${filterCondition}
         GROUP BY product_norm
         ORDER BY value DESC
+      `, ...params),
+
+      // Chart 6: Order Trend (Multi-Line by Product)
+      prisma.$queryRawUnsafe(`
+        ${normalizedDataCTE}
+        SELECT TO_CHAR(order_date, 'YYYY-MM') as month, product_norm as product, COUNT(*)::int as count
+        FROM normalized_data
+        ${filterCondition}
+        GROUP BY month, product_norm
+        ORDER BY month ASC
       `, ...params)
     ])
 
-    // Transform data for frontend charts
-    // 1 & 2: Transform to stacked bar format {witel: 'X', Antares: 10, Netmonk: 20, ...}
-    const transformStackedByWitel = (data, valueKey) => {
-      const result = {}
-      data.forEach(row => {
-        const witelName = row.witel || 'Unknown'
-        if (!result[witelName]) {
-          result[witelName] = { witel: witelName }
-        }
-        result[witelName][row.product] = Number(row[valueKey] || 0)
-      })
-      return Object.values(result)
+    // --- 3. DATA TRANSFORMATION ---
+
+    const totalOrder = Number(kpiData[0]?.total_order || 0)
+    const completedCount = Number(kpiData[0]?.completed_count || 0)
+
+    const kpi = {
+      totalRevenue: Number(kpiData[0]?.total_revenue || 0),
+      pipelineRevenue: Number(kpiData[0]?.pipeline_revenue || 0),
+      totalOrder: totalOrder,
+      completionRate: totalOrder > 0 ? ((completedCount / totalOrder) * 100).toFixed(1) : 0
     }
 
-    // 3 & 4: Transform to horizontal stacked bar format {product: 'X', SME: 10, LEGS: 20, ...}
-    const transformStackedByProduct = (data, categoryKey) => {
-      const result = {}
+    const transformToStacked = (data, groupKey, stackKey, valueKey, defaultGroups = []) => {
+      const grouped = {}
+      defaultGroups.forEach(g => { grouped[g] = { name: g } })
+
       data.forEach(row => {
-        const productName = row.product || 'Unknown'
-        if (!result[productName]) {
-          result[productName] = { product: productName }
-        }
-        result[productName][row[categoryKey]] = Number(row.total || 0)
+        const group = row[groupKey]
+        if (!group) return
+        if (!grouped[group]) grouped[group] = { name: group }
+        grouped[group][row[stackKey]] = Number(row[valueKey] || 0)
       })
-      return Object.values(result)
+      
+      if (defaultGroups.length > 0) return defaultGroups.map(g => grouped[g] || { name: g })
+      return Object.values(grouped)
     }
 
-    // Get unique products for color mapping
-    const products = ['Antares', 'Netmonk', 'OCA', 'Pijar']
-    const segments = [...new Set(productBySegment.map(p => p.segment))]
-    const channels = [...new Set(productByChannel.map(p => p.channel))]
+    const charts = {
+      orderByStatus: orderByStatus.map(r => ({ name: r.name, value: Number(r.value) })),
+      revenueByWitel: transformToStacked(revenueByWitel, 'witel', 'product', 'revenue', isSingleWitel ? [] : WITEL_ORDER),
+      orderByWitel: isSingleWitel 
+        ? orderByWitel.map(r => ({ name: r.witel, value: Number(r.count) }))
+        : transformToStacked(orderByWitel, 'witel', 'status', 'count', WITEL_ORDER),
+      revenueTrend: transformToStacked(revenueByProductTrend, 'month', 'product', 'revenue'),
+      productShare: productShare.map(r => ({ name: r.name, value: Number(r.value) })),
+      orderTrend: transformToStacked(orderTrend, 'month', 'product', 'count')
+    }
 
-    successResponse(res, {
-      revenueByWitel: transformStackedByWitel(revenueByWitel, 'revenue'),
-      amountByWitel: transformStackedByWitel(amountByWitel, 'amount'),
-      productBySegment: transformStackedByProduct(productBySegment, 'segment'),
-      productByChannel: transformStackedByProduct(productByChannel, 'channel'),
-      productShare: productShare.map(p => ({ name: p.product, value: Number(p.value) })),
-      // Metadata for chart rendering
-      products,
-      segments,
-      channels
-    }, 'Digital product charts data retrieved')
+    successResponse(res, { kpi, charts }, 'Digital Product dashboard data retrieved')
 
   } catch (error) {
-    console.error('Error in getDigitalProductCharts:', error)
+    console.error('Error in getDigitalProductDashboard:', error)
     next(error)
   }
 }
