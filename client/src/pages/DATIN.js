@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
 import KPICard from '../components/KPICard'
@@ -14,18 +15,44 @@ import {
 import { FiChevronDown, FiDollarSign, FiActivity, FiShoppingCart } from 'react-icons/fi'
 
 const DATIN = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const currentRole = useCurrentRole()
   // eslint-disable-next-line no-unused-vars
   const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 
-  // Date defaults
-  const [startDate, setStartDate] = useState('2020-01-01')
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
+  // Derived states from URL
+  const startDate = searchParams.get('start_date') || '2020-01-01'
+  const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0]
+  const selectedWitels = searchParams.get('witels')?.split(',').filter(Boolean) || []
+  const selectedSegments = searchParams.get('segments')?.split(',').filter(Boolean) || []
+  const selectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || []
+  const search = searchParams.get('search') || ''
+  const pageSize = parseInt(searchParams.get('limit') || '10')
+  const currentPage = parseInt(searchParams.get('page') || '1')
 
-  // Multi-select states
-  const [selectedWitels, setSelectedWitels] = useState([])
-  const [selectedSegments, setSelectedSegments] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
+  const [localSearch, setLocalSearch] = useState(search)
+
+  useEffect(() => {
+    setLocalSearch(search)
+  }, [search])
+
+  // Helper to update search params
+  const updateFilters = (newFilters) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, ...newFilters }, { replace: true })
+  }
+
+  // Setters that update URL
+  const setStartDate = (val) => updateFilters({ start_date: val, page: '1' })
+  const setEndDate = (val) => updateFilters({ end_date: val, page: '1' })
+  const setSelectedWitels = (val) => updateFilters({ witels: val.join(','), page: '1' })
+  const setSelectedSegments = (val) => updateFilters({ segments: val.join(','), page: '1' })
+  const setSelectedCategories = (val) => updateFilters({ categories: val.join(','), page: '1' })
+  const setPageSize = (val) => updateFilters({ limit: val.toString(), page: '1' })
+  const setCurrentPage = (val) => {
+    const pageNum = typeof val === 'function' ? val(currentPage) : val
+    updateFilters({ page: pageNum.toString() })
+  }
 
   // Dropdown Open States
   const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)

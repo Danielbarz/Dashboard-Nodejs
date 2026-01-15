@@ -4,7 +4,7 @@ const prisma = new PrismaClient()
 
 async function main() {
   console.log('Starting seed...')
-  
+
   // Clear existing data
   const deletedCount = await prisma.digitalProduct.deleteMany()
   console.log(`✓ Cleared ${deletedCount.count} records from digital_products table`)

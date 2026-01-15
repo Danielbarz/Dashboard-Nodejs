@@ -44,6 +44,11 @@ export type HsiData = $Result.DefaultSelection<Prisma.$HsiDataPayload>
  */
 export type SpmkMom = $Result.DefaultSelection<Prisma.$SpmkMomPayload>
 /**
+ * Model ReportTambahan
+ * 
+ */
+export type ReportTambahan = $Result.DefaultSelection<Prisma.$ReportTambahanPayload>
+/**
  * Model DocumentData
  * 
  */
@@ -58,6 +63,11 @@ export type OrderProduct = $Result.DefaultSelection<Prisma.$OrderProductPayload>
  * 
  */
 export type Target = $Result.DefaultSelection<Prisma.$TargetPayload>
+/**
+ * Model list_po
+ * 
+ */
+export type list_po = $Result.DefaultSelection<Prisma.$list_poPayload>
 /**
  * Model CustomTarget
  * 
@@ -103,11 +113,6 @@ export type job_batches = $Result.DefaultSelection<Prisma.$job_batchesPayload>
  * 
  */
 export type jobs = $Result.DefaultSelection<Prisma.$jobsPayload>
-/**
- * Model list_po
- * 
- */
-export type list_po = $Result.DefaultSelection<Prisma.$list_poPayload>
 /**
  * Model migrations
  * 
@@ -333,6 +338,16 @@ export class PrismaClient<
   get spmkMom(): Prisma.SpmkMomDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.reportTambahan`: Exposes CRUD operations for the **ReportTambahan** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ReportTambahans
+    * const reportTambahans = await prisma.reportTambahan.findMany()
+    * ```
+    */
+  get reportTambahan(): Prisma.ReportTambahanDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.documentData`: Exposes CRUD operations for the **DocumentData** model.
     * Example usage:
     * ```ts
@@ -361,6 +376,16 @@ export class PrismaClient<
     * ```
     */
   get target(): Prisma.TargetDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.list_po`: Exposes CRUD operations for the **list_po** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more List_pos
+    * const list_pos = await prisma.list_po.findMany()
+    * ```
+    */
+  get list_po(): Prisma.list_poDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.customTarget`: Exposes CRUD operations for the **CustomTarget** model.
@@ -451,16 +476,6 @@ export class PrismaClient<
     * ```
     */
   get jobs(): Prisma.jobsDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.list_po`: Exposes CRUD operations for the **list_po** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more List_pos
-    * const list_pos = await prisma.list_po.findMany()
-    * ```
-    */
-  get list_po(): Prisma.list_poDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.migrations`: Exposes CRUD operations for the **migrations** model.
@@ -998,9 +1013,11 @@ export namespace Prisma {
     SosData: 'SosData',
     HsiData: 'HsiData',
     SpmkMom: 'SpmkMom',
+    ReportTambahan: 'ReportTambahan',
     DocumentData: 'DocumentData',
     OrderProduct: 'OrderProduct',
     Target: 'Target',
+    list_po: 'list_po',
     CustomTarget: 'CustomTarget',
     UserTableConfiguration: 'UserTableConfiguration',
     cache: 'cache',
@@ -1010,7 +1027,6 @@ export namespace Prisma {
     failed_jobs: 'failed_jobs',
     job_batches: 'job_batches',
     jobs: 'jobs',
-    list_po: 'list_po',
     migrations: 'migrations',
     order_status_logs: 'order_status_logs',
     password_reset_tokens: 'password_reset_tokens',
@@ -1038,7 +1054,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "digitalProduct" | "user" | "accountOfficer" | "sosData" | "hsiData" | "spmkMom" | "documentData" | "orderProduct" | "target" | "customTarget" | "userTableConfiguration" | "cache" | "cache_locks" | "canceled_orders" | "completed_orders" | "failed_jobs" | "job_batches" | "jobs" | "list_po" | "migrations" | "order_status_logs" | "password_reset_tokens" | "personal_access_tokens" | "sessions" | "sos_data_raw" | "temp_order_products" | "temp_upload_data" | "update_logs"
+      modelProps: "digitalProduct" | "user" | "accountOfficer" | "sosData" | "hsiData" | "spmkMom" | "reportTambahan" | "documentData" | "orderProduct" | "target" | "list_po" | "customTarget" | "userTableConfiguration" | "cache" | "cache_locks" | "canceled_orders" | "completed_orders" | "failed_jobs" | "job_batches" | "jobs" | "migrations" | "order_status_logs" | "password_reset_tokens" | "personal_access_tokens" | "sessions" | "sos_data_raw" | "temp_order_products" | "temp_upload_data" | "update_logs"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1486,6 +1502,80 @@ export namespace Prisma {
           }
         }
       }
+      ReportTambahan: {
+        payload: Prisma.$ReportTambahanPayload<ExtArgs>
+        fields: Prisma.ReportTambahanFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ReportTambahanFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ReportTambahanFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          findFirst: {
+            args: Prisma.ReportTambahanFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ReportTambahanFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          findMany: {
+            args: Prisma.ReportTambahanFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>[]
+          }
+          create: {
+            args: Prisma.ReportTambahanCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          createMany: {
+            args: Prisma.ReportTambahanCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ReportTambahanCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>[]
+          }
+          delete: {
+            args: Prisma.ReportTambahanDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          update: {
+            args: Prisma.ReportTambahanUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          deleteMany: {
+            args: Prisma.ReportTambahanDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ReportTambahanUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ReportTambahanUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>[]
+          }
+          upsert: {
+            args: Prisma.ReportTambahanUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportTambahanPayload>
+          }
+          aggregate: {
+            args: Prisma.ReportTambahanAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateReportTambahan>
+          }
+          groupBy: {
+            args: Prisma.ReportTambahanGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ReportTambahanGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ReportTambahanCountArgs<ExtArgs>
+            result: $Utils.Optional<ReportTambahanCountAggregateOutputType> | number
+          }
+        }
+      }
       DocumentData: {
         payload: Prisma.$DocumentDataPayload<ExtArgs>
         fields: Prisma.DocumentDataFieldRefs
@@ -1705,6 +1795,80 @@ export namespace Prisma {
           count: {
             args: Prisma.TargetCountArgs<ExtArgs>
             result: $Utils.Optional<TargetCountAggregateOutputType> | number
+          }
+        }
+      }
+      list_po: {
+        payload: Prisma.$list_poPayload<ExtArgs>
+        fields: Prisma.list_poFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.list_poFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.list_poFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          findFirst: {
+            args: Prisma.list_poFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.list_poFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          findMany: {
+            args: Prisma.list_poFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          create: {
+            args: Prisma.list_poCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          createMany: {
+            args: Prisma.list_poCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.list_poCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          delete: {
+            args: Prisma.list_poDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          update: {
+            args: Prisma.list_poUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          deleteMany: {
+            args: Prisma.list_poDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.list_poUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.list_poUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
+          }
+          upsert: {
+            args: Prisma.list_poUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
+          }
+          aggregate: {
+            args: Prisma.List_poAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateList_po>
+          }
+          groupBy: {
+            args: Prisma.list_poGroupByArgs<ExtArgs>
+            result: $Utils.Optional<List_poGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.list_poCountArgs<ExtArgs>
+            result: $Utils.Optional<List_poCountAggregateOutputType> | number
           }
         }
       }
@@ -2371,80 +2535,6 @@ export namespace Prisma {
           count: {
             args: Prisma.jobsCountArgs<ExtArgs>
             result: $Utils.Optional<JobsCountAggregateOutputType> | number
-          }
-        }
-      }
-      list_po: {
-        payload: Prisma.$list_poPayload<ExtArgs>
-        fields: Prisma.list_poFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.list_poFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.list_poFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          findFirst: {
-            args: Prisma.list_poFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.list_poFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          findMany: {
-            args: Prisma.list_poFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
-          }
-          create: {
-            args: Prisma.list_poCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          createMany: {
-            args: Prisma.list_poCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.list_poCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
-          }
-          delete: {
-            args: Prisma.list_poDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          update: {
-            args: Prisma.list_poUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          deleteMany: {
-            args: Prisma.list_poDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.list_poUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.list_poUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>[]
-          }
-          upsert: {
-            args: Prisma.list_poUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$list_poPayload>
-          }
-          aggregate: {
-            args: Prisma.List_poAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateList_po>
-          }
-          groupBy: {
-            args: Prisma.list_poGroupByArgs<ExtArgs>
-            result: $Utils.Optional<List_poGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.list_poCountArgs<ExtArgs>
-            result: $Utils.Optional<List_poCountAggregateOutputType> | number
           }
         }
       }
@@ -3216,9 +3306,11 @@ export namespace Prisma {
     sosData?: SosDataOmit
     hsiData?: HsiDataOmit
     spmkMom?: SpmkMomOmit
+    reportTambahan?: ReportTambahanOmit
     documentData?: DocumentDataOmit
     orderProduct?: OrderProductOmit
     target?: TargetOmit
+    list_po?: list_poOmit
     customTarget?: CustomTargetOmit
     userTableConfiguration?: UserTableConfigurationOmit
     cache?: cacheOmit
@@ -3228,7 +3320,6 @@ export namespace Prisma {
     failed_jobs?: failed_jobsOmit
     job_batches?: job_batchesOmit
     jobs?: jobsOmit
-    list_po?: list_poOmit
     migrations?: migrationsOmit
     order_status_logs?: order_status_logsOmit
     password_reset_tokens?: password_reset_tokensOmit
@@ -12589,6 +12680,1333 @@ export namespace Prisma {
 
 
   /**
+   * Model ReportTambahan
+   */
+
+  export type AggregateReportTambahan = {
+    _count: ReportTambahanCountAggregateOutputType | null
+    _avg: ReportTambahanAvgAggregateOutputType | null
+    _sum: ReportTambahanSumAggregateOutputType | null
+    _min: ReportTambahanMinAggregateOutputType | null
+    _max: ReportTambahanMaxAggregateOutputType | null
+  }
+
+  export type ReportTambahanAvgAggregateOutputType = {
+    id: number | null
+    tahun: number | null
+    revenuePlan: number | null
+    usia: number | null
+  }
+
+  export type ReportTambahanSumAggregateOutputType = {
+    id: bigint | null
+    tahun: number | null
+    revenuePlan: number | null
+    usia: number | null
+  }
+
+  export type ReportTambahanMinAggregateOutputType = {
+    id: bigint | null
+    bulan: string | null
+    tahun: number | null
+    region: string | null
+    witelLama: string | null
+    witelBaru: string | null
+    idIHld: string | null
+    noNdeSpmk: string | null
+    uraianKegiatan: string | null
+    segmen: string | null
+    poName: string | null
+    tanggalGolive: Date | null
+    konfirmasiPo: string | null
+    tanggalCb: Date | null
+    jenisKegiatan: string | null
+    revenuePlan: number | null
+    usia: number | null
+    statusProyek: string | null
+    goLive: string | null
+    keteranganToc: string | null
+    mom: string | null
+    baDrop: string | null
+    statusTompsNew: string | null
+    statusIHld: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    batchId: string | null
+  }
+
+  export type ReportTambahanMaxAggregateOutputType = {
+    id: bigint | null
+    bulan: string | null
+    tahun: number | null
+    region: string | null
+    witelLama: string | null
+    witelBaru: string | null
+    idIHld: string | null
+    noNdeSpmk: string | null
+    uraianKegiatan: string | null
+    segmen: string | null
+    poName: string | null
+    tanggalGolive: Date | null
+    konfirmasiPo: string | null
+    tanggalCb: Date | null
+    jenisKegiatan: string | null
+    revenuePlan: number | null
+    usia: number | null
+    statusProyek: string | null
+    goLive: string | null
+    keteranganToc: string | null
+    mom: string | null
+    baDrop: string | null
+    statusTompsNew: string | null
+    statusIHld: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    batchId: string | null
+  }
+
+  export type ReportTambahanCountAggregateOutputType = {
+    id: number
+    bulan: number
+    tahun: number
+    region: number
+    witelLama: number
+    witelBaru: number
+    idIHld: number
+    noNdeSpmk: number
+    uraianKegiatan: number
+    segmen: number
+    poName: number
+    tanggalGolive: number
+    konfirmasiPo: number
+    tanggalCb: number
+    jenisKegiatan: number
+    revenuePlan: number
+    usia: number
+    statusProyek: number
+    goLive: number
+    keteranganToc: number
+    mom: number
+    baDrop: number
+    statusTompsNew: number
+    statusIHld: number
+    createdAt: number
+    updatedAt: number
+    batchId: number
+    _all: number
+  }
+
+
+  export type ReportTambahanAvgAggregateInputType = {
+    id?: true
+    tahun?: true
+    revenuePlan?: true
+    usia?: true
+  }
+
+  export type ReportTambahanSumAggregateInputType = {
+    id?: true
+    tahun?: true
+    revenuePlan?: true
+    usia?: true
+  }
+
+  export type ReportTambahanMinAggregateInputType = {
+    id?: true
+    bulan?: true
+    tahun?: true
+    region?: true
+    witelLama?: true
+    witelBaru?: true
+    idIHld?: true
+    noNdeSpmk?: true
+    uraianKegiatan?: true
+    segmen?: true
+    poName?: true
+    tanggalGolive?: true
+    konfirmasiPo?: true
+    tanggalCb?: true
+    jenisKegiatan?: true
+    revenuePlan?: true
+    usia?: true
+    statusProyek?: true
+    goLive?: true
+    keteranganToc?: true
+    mom?: true
+    baDrop?: true
+    statusTompsNew?: true
+    statusIHld?: true
+    createdAt?: true
+    updatedAt?: true
+    batchId?: true
+  }
+
+  export type ReportTambahanMaxAggregateInputType = {
+    id?: true
+    bulan?: true
+    tahun?: true
+    region?: true
+    witelLama?: true
+    witelBaru?: true
+    idIHld?: true
+    noNdeSpmk?: true
+    uraianKegiatan?: true
+    segmen?: true
+    poName?: true
+    tanggalGolive?: true
+    konfirmasiPo?: true
+    tanggalCb?: true
+    jenisKegiatan?: true
+    revenuePlan?: true
+    usia?: true
+    statusProyek?: true
+    goLive?: true
+    keteranganToc?: true
+    mom?: true
+    baDrop?: true
+    statusTompsNew?: true
+    statusIHld?: true
+    createdAt?: true
+    updatedAt?: true
+    batchId?: true
+  }
+
+  export type ReportTambahanCountAggregateInputType = {
+    id?: true
+    bulan?: true
+    tahun?: true
+    region?: true
+    witelLama?: true
+    witelBaru?: true
+    idIHld?: true
+    noNdeSpmk?: true
+    uraianKegiatan?: true
+    segmen?: true
+    poName?: true
+    tanggalGolive?: true
+    konfirmasiPo?: true
+    tanggalCb?: true
+    jenisKegiatan?: true
+    revenuePlan?: true
+    usia?: true
+    statusProyek?: true
+    goLive?: true
+    keteranganToc?: true
+    mom?: true
+    baDrop?: true
+    statusTompsNew?: true
+    statusIHld?: true
+    createdAt?: true
+    updatedAt?: true
+    batchId?: true
+    _all?: true
+  }
+
+  export type ReportTambahanAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReportTambahan to aggregate.
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReportTambahans to fetch.
+     */
+    orderBy?: ReportTambahanOrderByWithRelationInput | ReportTambahanOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ReportTambahanWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReportTambahans from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReportTambahans.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ReportTambahans
+    **/
+    _count?: true | ReportTambahanCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ReportTambahanAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ReportTambahanSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ReportTambahanMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ReportTambahanMaxAggregateInputType
+  }
+
+  export type GetReportTambahanAggregateType<T extends ReportTambahanAggregateArgs> = {
+        [P in keyof T & keyof AggregateReportTambahan]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateReportTambahan[P]>
+      : GetScalarType<T[P], AggregateReportTambahan[P]>
+  }
+
+
+
+
+  export type ReportTambahanGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReportTambahanWhereInput
+    orderBy?: ReportTambahanOrderByWithAggregationInput | ReportTambahanOrderByWithAggregationInput[]
+    by: ReportTambahanScalarFieldEnum[] | ReportTambahanScalarFieldEnum
+    having?: ReportTambahanScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ReportTambahanCountAggregateInputType | true
+    _avg?: ReportTambahanAvgAggregateInputType
+    _sum?: ReportTambahanSumAggregateInputType
+    _min?: ReportTambahanMinAggregateInputType
+    _max?: ReportTambahanMaxAggregateInputType
+  }
+
+  export type ReportTambahanGroupByOutputType = {
+    id: bigint
+    bulan: string | null
+    tahun: number | null
+    region: string | null
+    witelLama: string | null
+    witelBaru: string | null
+    idIHld: string | null
+    noNdeSpmk: string | null
+    uraianKegiatan: string | null
+    segmen: string | null
+    poName: string | null
+    tanggalGolive: Date | null
+    konfirmasiPo: string | null
+    tanggalCb: Date | null
+    jenisKegiatan: string | null
+    revenuePlan: number | null
+    usia: number | null
+    statusProyek: string | null
+    goLive: string | null
+    keteranganToc: string | null
+    mom: string | null
+    baDrop: string | null
+    statusTompsNew: string | null
+    statusIHld: string | null
+    createdAt: Date
+    updatedAt: Date
+    batchId: string | null
+    _count: ReportTambahanCountAggregateOutputType | null
+    _avg: ReportTambahanAvgAggregateOutputType | null
+    _sum: ReportTambahanSumAggregateOutputType | null
+    _min: ReportTambahanMinAggregateOutputType | null
+    _max: ReportTambahanMaxAggregateOutputType | null
+  }
+
+  type GetReportTambahanGroupByPayload<T extends ReportTambahanGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ReportTambahanGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ReportTambahanGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ReportTambahanGroupByOutputType[P]>
+            : GetScalarType<T[P], ReportTambahanGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ReportTambahanSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    bulan?: boolean
+    tahun?: boolean
+    region?: boolean
+    witelLama?: boolean
+    witelBaru?: boolean
+    idIHld?: boolean
+    noNdeSpmk?: boolean
+    uraianKegiatan?: boolean
+    segmen?: boolean
+    poName?: boolean
+    tanggalGolive?: boolean
+    konfirmasiPo?: boolean
+    tanggalCb?: boolean
+    jenisKegiatan?: boolean
+    revenuePlan?: boolean
+    usia?: boolean
+    statusProyek?: boolean
+    goLive?: boolean
+    keteranganToc?: boolean
+    mom?: boolean
+    baDrop?: boolean
+    statusTompsNew?: boolean
+    statusIHld?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    batchId?: boolean
+  }, ExtArgs["result"]["reportTambahan"]>
+
+  export type ReportTambahanSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    bulan?: boolean
+    tahun?: boolean
+    region?: boolean
+    witelLama?: boolean
+    witelBaru?: boolean
+    idIHld?: boolean
+    noNdeSpmk?: boolean
+    uraianKegiatan?: boolean
+    segmen?: boolean
+    poName?: boolean
+    tanggalGolive?: boolean
+    konfirmasiPo?: boolean
+    tanggalCb?: boolean
+    jenisKegiatan?: boolean
+    revenuePlan?: boolean
+    usia?: boolean
+    statusProyek?: boolean
+    goLive?: boolean
+    keteranganToc?: boolean
+    mom?: boolean
+    baDrop?: boolean
+    statusTompsNew?: boolean
+    statusIHld?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    batchId?: boolean
+  }, ExtArgs["result"]["reportTambahan"]>
+
+  export type ReportTambahanSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    bulan?: boolean
+    tahun?: boolean
+    region?: boolean
+    witelLama?: boolean
+    witelBaru?: boolean
+    idIHld?: boolean
+    noNdeSpmk?: boolean
+    uraianKegiatan?: boolean
+    segmen?: boolean
+    poName?: boolean
+    tanggalGolive?: boolean
+    konfirmasiPo?: boolean
+    tanggalCb?: boolean
+    jenisKegiatan?: boolean
+    revenuePlan?: boolean
+    usia?: boolean
+    statusProyek?: boolean
+    goLive?: boolean
+    keteranganToc?: boolean
+    mom?: boolean
+    baDrop?: boolean
+    statusTompsNew?: boolean
+    statusIHld?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    batchId?: boolean
+  }, ExtArgs["result"]["reportTambahan"]>
+
+  export type ReportTambahanSelectScalar = {
+    id?: boolean
+    bulan?: boolean
+    tahun?: boolean
+    region?: boolean
+    witelLama?: boolean
+    witelBaru?: boolean
+    idIHld?: boolean
+    noNdeSpmk?: boolean
+    uraianKegiatan?: boolean
+    segmen?: boolean
+    poName?: boolean
+    tanggalGolive?: boolean
+    konfirmasiPo?: boolean
+    tanggalCb?: boolean
+    jenisKegiatan?: boolean
+    revenuePlan?: boolean
+    usia?: boolean
+    statusProyek?: boolean
+    goLive?: boolean
+    keteranganToc?: boolean
+    mom?: boolean
+    baDrop?: boolean
+    statusTompsNew?: boolean
+    statusIHld?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    batchId?: boolean
+  }
+
+  export type ReportTambahanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "bulan" | "tahun" | "region" | "witelLama" | "witelBaru" | "idIHld" | "noNdeSpmk" | "uraianKegiatan" | "segmen" | "poName" | "tanggalGolive" | "konfirmasiPo" | "tanggalCb" | "jenisKegiatan" | "revenuePlan" | "usia" | "statusProyek" | "goLive" | "keteranganToc" | "mom" | "baDrop" | "statusTompsNew" | "statusIHld" | "createdAt" | "updatedAt" | "batchId", ExtArgs["result"]["reportTambahan"]>
+
+  export type $ReportTambahanPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ReportTambahan"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      bulan: string | null
+      tahun: number | null
+      region: string | null
+      witelLama: string | null
+      witelBaru: string | null
+      idIHld: string | null
+      noNdeSpmk: string | null
+      uraianKegiatan: string | null
+      segmen: string | null
+      poName: string | null
+      tanggalGolive: Date | null
+      konfirmasiPo: string | null
+      tanggalCb: Date | null
+      jenisKegiatan: string | null
+      revenuePlan: number | null
+      usia: number | null
+      statusProyek: string | null
+      goLive: string | null
+      keteranganToc: string | null
+      mom: string | null
+      baDrop: string | null
+      statusTompsNew: string | null
+      statusIHld: string | null
+      createdAt: Date
+      updatedAt: Date
+      batchId: string | null
+    }, ExtArgs["result"]["reportTambahan"]>
+    composites: {}
+  }
+
+  type ReportTambahanGetPayload<S extends boolean | null | undefined | ReportTambahanDefaultArgs> = $Result.GetResult<Prisma.$ReportTambahanPayload, S>
+
+  type ReportTambahanCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ReportTambahanFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ReportTambahanCountAggregateInputType | true
+    }
+
+  export interface ReportTambahanDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ReportTambahan'], meta: { name: 'ReportTambahan' } }
+    /**
+     * Find zero or one ReportTambahan that matches the filter.
+     * @param {ReportTambahanFindUniqueArgs} args - Arguments to find a ReportTambahan
+     * @example
+     * // Get one ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ReportTambahanFindUniqueArgs>(args: SelectSubset<T, ReportTambahanFindUniqueArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ReportTambahan that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ReportTambahanFindUniqueOrThrowArgs} args - Arguments to find a ReportTambahan
+     * @example
+     * // Get one ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ReportTambahanFindUniqueOrThrowArgs>(args: SelectSubset<T, ReportTambahanFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ReportTambahan that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanFindFirstArgs} args - Arguments to find a ReportTambahan
+     * @example
+     * // Get one ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ReportTambahanFindFirstArgs>(args?: SelectSubset<T, ReportTambahanFindFirstArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ReportTambahan that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanFindFirstOrThrowArgs} args - Arguments to find a ReportTambahan
+     * @example
+     * // Get one ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ReportTambahanFindFirstOrThrowArgs>(args?: SelectSubset<T, ReportTambahanFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ReportTambahans that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ReportTambahans
+     * const reportTambahans = await prisma.reportTambahan.findMany()
+     * 
+     * // Get first 10 ReportTambahans
+     * const reportTambahans = await prisma.reportTambahan.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const reportTambahanWithIdOnly = await prisma.reportTambahan.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ReportTambahanFindManyArgs>(args?: SelectSubset<T, ReportTambahanFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ReportTambahan.
+     * @param {ReportTambahanCreateArgs} args - Arguments to create a ReportTambahan.
+     * @example
+     * // Create one ReportTambahan
+     * const ReportTambahan = await prisma.reportTambahan.create({
+     *   data: {
+     *     // ... data to create a ReportTambahan
+     *   }
+     * })
+     * 
+     */
+    create<T extends ReportTambahanCreateArgs>(args: SelectSubset<T, ReportTambahanCreateArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ReportTambahans.
+     * @param {ReportTambahanCreateManyArgs} args - Arguments to create many ReportTambahans.
+     * @example
+     * // Create many ReportTambahans
+     * const reportTambahan = await prisma.reportTambahan.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ReportTambahanCreateManyArgs>(args?: SelectSubset<T, ReportTambahanCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ReportTambahans and returns the data saved in the database.
+     * @param {ReportTambahanCreateManyAndReturnArgs} args - Arguments to create many ReportTambahans.
+     * @example
+     * // Create many ReportTambahans
+     * const reportTambahan = await prisma.reportTambahan.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ReportTambahans and only return the `id`
+     * const reportTambahanWithIdOnly = await prisma.reportTambahan.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ReportTambahanCreateManyAndReturnArgs>(args?: SelectSubset<T, ReportTambahanCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ReportTambahan.
+     * @param {ReportTambahanDeleteArgs} args - Arguments to delete one ReportTambahan.
+     * @example
+     * // Delete one ReportTambahan
+     * const ReportTambahan = await prisma.reportTambahan.delete({
+     *   where: {
+     *     // ... filter to delete one ReportTambahan
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ReportTambahanDeleteArgs>(args: SelectSubset<T, ReportTambahanDeleteArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ReportTambahan.
+     * @param {ReportTambahanUpdateArgs} args - Arguments to update one ReportTambahan.
+     * @example
+     * // Update one ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ReportTambahanUpdateArgs>(args: SelectSubset<T, ReportTambahanUpdateArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ReportTambahans.
+     * @param {ReportTambahanDeleteManyArgs} args - Arguments to filter ReportTambahans to delete.
+     * @example
+     * // Delete a few ReportTambahans
+     * const { count } = await prisma.reportTambahan.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ReportTambahanDeleteManyArgs>(args?: SelectSubset<T, ReportTambahanDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ReportTambahans.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ReportTambahans
+     * const reportTambahan = await prisma.reportTambahan.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ReportTambahanUpdateManyArgs>(args: SelectSubset<T, ReportTambahanUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ReportTambahans and returns the data updated in the database.
+     * @param {ReportTambahanUpdateManyAndReturnArgs} args - Arguments to update many ReportTambahans.
+     * @example
+     * // Update many ReportTambahans
+     * const reportTambahan = await prisma.reportTambahan.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ReportTambahans and only return the `id`
+     * const reportTambahanWithIdOnly = await prisma.reportTambahan.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ReportTambahanUpdateManyAndReturnArgs>(args: SelectSubset<T, ReportTambahanUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ReportTambahan.
+     * @param {ReportTambahanUpsertArgs} args - Arguments to update or create a ReportTambahan.
+     * @example
+     * // Update or create a ReportTambahan
+     * const reportTambahan = await prisma.reportTambahan.upsert({
+     *   create: {
+     *     // ... data to create a ReportTambahan
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ReportTambahan we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ReportTambahanUpsertArgs>(args: SelectSubset<T, ReportTambahanUpsertArgs<ExtArgs>>): Prisma__ReportTambahanClient<$Result.GetResult<Prisma.$ReportTambahanPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ReportTambahans.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanCountArgs} args - Arguments to filter ReportTambahans to count.
+     * @example
+     * // Count the number of ReportTambahans
+     * const count = await prisma.reportTambahan.count({
+     *   where: {
+     *     // ... the filter for the ReportTambahans we want to count
+     *   }
+     * })
+    **/
+    count<T extends ReportTambahanCountArgs>(
+      args?: Subset<T, ReportTambahanCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ReportTambahanCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ReportTambahan.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ReportTambahanAggregateArgs>(args: Subset<T, ReportTambahanAggregateArgs>): Prisma.PrismaPromise<GetReportTambahanAggregateType<T>>
+
+    /**
+     * Group by ReportTambahan.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportTambahanGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ReportTambahanGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ReportTambahanGroupByArgs['orderBy'] }
+        : { orderBy?: ReportTambahanGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ReportTambahanGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReportTambahanGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ReportTambahan model
+   */
+  readonly fields: ReportTambahanFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ReportTambahan.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ReportTambahanClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ReportTambahan model
+   */
+  interface ReportTambahanFieldRefs {
+    readonly id: FieldRef<"ReportTambahan", 'BigInt'>
+    readonly bulan: FieldRef<"ReportTambahan", 'String'>
+    readonly tahun: FieldRef<"ReportTambahan", 'Int'>
+    readonly region: FieldRef<"ReportTambahan", 'String'>
+    readonly witelLama: FieldRef<"ReportTambahan", 'String'>
+    readonly witelBaru: FieldRef<"ReportTambahan", 'String'>
+    readonly idIHld: FieldRef<"ReportTambahan", 'String'>
+    readonly noNdeSpmk: FieldRef<"ReportTambahan", 'String'>
+    readonly uraianKegiatan: FieldRef<"ReportTambahan", 'String'>
+    readonly segmen: FieldRef<"ReportTambahan", 'String'>
+    readonly poName: FieldRef<"ReportTambahan", 'String'>
+    readonly tanggalGolive: FieldRef<"ReportTambahan", 'DateTime'>
+    readonly konfirmasiPo: FieldRef<"ReportTambahan", 'String'>
+    readonly tanggalCb: FieldRef<"ReportTambahan", 'DateTime'>
+    readonly jenisKegiatan: FieldRef<"ReportTambahan", 'String'>
+    readonly revenuePlan: FieldRef<"ReportTambahan", 'Float'>
+    readonly usia: FieldRef<"ReportTambahan", 'Int'>
+    readonly statusProyek: FieldRef<"ReportTambahan", 'String'>
+    readonly goLive: FieldRef<"ReportTambahan", 'String'>
+    readonly keteranganToc: FieldRef<"ReportTambahan", 'String'>
+    readonly mom: FieldRef<"ReportTambahan", 'String'>
+    readonly baDrop: FieldRef<"ReportTambahan", 'String'>
+    readonly statusTompsNew: FieldRef<"ReportTambahan", 'String'>
+    readonly statusIHld: FieldRef<"ReportTambahan", 'String'>
+    readonly createdAt: FieldRef<"ReportTambahan", 'DateTime'>
+    readonly updatedAt: FieldRef<"ReportTambahan", 'DateTime'>
+    readonly batchId: FieldRef<"ReportTambahan", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ReportTambahan findUnique
+   */
+  export type ReportTambahanFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter, which ReportTambahan to fetch.
+     */
+    where: ReportTambahanWhereUniqueInput
+  }
+
+  /**
+   * ReportTambahan findUniqueOrThrow
+   */
+  export type ReportTambahanFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter, which ReportTambahan to fetch.
+     */
+    where: ReportTambahanWhereUniqueInput
+  }
+
+  /**
+   * ReportTambahan findFirst
+   */
+  export type ReportTambahanFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter, which ReportTambahan to fetch.
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReportTambahans to fetch.
+     */
+    orderBy?: ReportTambahanOrderByWithRelationInput | ReportTambahanOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReportTambahans.
+     */
+    cursor?: ReportTambahanWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReportTambahans from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReportTambahans.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReportTambahans.
+     */
+    distinct?: ReportTambahanScalarFieldEnum | ReportTambahanScalarFieldEnum[]
+  }
+
+  /**
+   * ReportTambahan findFirstOrThrow
+   */
+  export type ReportTambahanFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter, which ReportTambahan to fetch.
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReportTambahans to fetch.
+     */
+    orderBy?: ReportTambahanOrderByWithRelationInput | ReportTambahanOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ReportTambahans.
+     */
+    cursor?: ReportTambahanWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReportTambahans from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReportTambahans.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ReportTambahans.
+     */
+    distinct?: ReportTambahanScalarFieldEnum | ReportTambahanScalarFieldEnum[]
+  }
+
+  /**
+   * ReportTambahan findMany
+   */
+  export type ReportTambahanFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter, which ReportTambahans to fetch.
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ReportTambahans to fetch.
+     */
+    orderBy?: ReportTambahanOrderByWithRelationInput | ReportTambahanOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ReportTambahans.
+     */
+    cursor?: ReportTambahanWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ReportTambahans from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ReportTambahans.
+     */
+    skip?: number
+    distinct?: ReportTambahanScalarFieldEnum | ReportTambahanScalarFieldEnum[]
+  }
+
+  /**
+   * ReportTambahan create
+   */
+  export type ReportTambahanCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ReportTambahan.
+     */
+    data: XOR<ReportTambahanCreateInput, ReportTambahanUncheckedCreateInput>
+  }
+
+  /**
+   * ReportTambahan createMany
+   */
+  export type ReportTambahanCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ReportTambahans.
+     */
+    data: ReportTambahanCreateManyInput | ReportTambahanCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ReportTambahan createManyAndReturn
+   */
+  export type ReportTambahanCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * The data used to create many ReportTambahans.
+     */
+    data: ReportTambahanCreateManyInput | ReportTambahanCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ReportTambahan update
+   */
+  export type ReportTambahanUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ReportTambahan.
+     */
+    data: XOR<ReportTambahanUpdateInput, ReportTambahanUncheckedUpdateInput>
+    /**
+     * Choose, which ReportTambahan to update.
+     */
+    where: ReportTambahanWhereUniqueInput
+  }
+
+  /**
+   * ReportTambahan updateMany
+   */
+  export type ReportTambahanUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ReportTambahans.
+     */
+    data: XOR<ReportTambahanUpdateManyMutationInput, ReportTambahanUncheckedUpdateManyInput>
+    /**
+     * Filter which ReportTambahans to update
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * Limit how many ReportTambahans to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReportTambahan updateManyAndReturn
+   */
+  export type ReportTambahanUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * The data used to update ReportTambahans.
+     */
+    data: XOR<ReportTambahanUpdateManyMutationInput, ReportTambahanUncheckedUpdateManyInput>
+    /**
+     * Filter which ReportTambahans to update
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * Limit how many ReportTambahans to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReportTambahan upsert
+   */
+  export type ReportTambahanUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ReportTambahan to update in case it exists.
+     */
+    where: ReportTambahanWhereUniqueInput
+    /**
+     * In case the ReportTambahan found by the `where` argument doesn't exist, create a new ReportTambahan with this data.
+     */
+    create: XOR<ReportTambahanCreateInput, ReportTambahanUncheckedCreateInput>
+    /**
+     * In case the ReportTambahan was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ReportTambahanUpdateInput, ReportTambahanUncheckedUpdateInput>
+  }
+
+  /**
+   * ReportTambahan delete
+   */
+  export type ReportTambahanDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+    /**
+     * Filter which ReportTambahan to delete.
+     */
+    where: ReportTambahanWhereUniqueInput
+  }
+
+  /**
+   * ReportTambahan deleteMany
+   */
+  export type ReportTambahanDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ReportTambahans to delete
+     */
+    where?: ReportTambahanWhereInput
+    /**
+     * Limit how many ReportTambahans to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ReportTambahan without action
+   */
+  export type ReportTambahanDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReportTambahan
+     */
+    select?: ReportTambahanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReportTambahan
+     */
+    omit?: ReportTambahanOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model DocumentData
    */
 
@@ -16061,6 +17479,1074 @@ export namespace Prisma {
      * Omit specific fields from the Target
      */
     omit?: TargetOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model list_po
+   */
+
+  export type AggregateList_po = {
+    _count: List_poCountAggregateOutputType | null
+    _avg: List_poAvgAggregateOutputType | null
+    _sum: List_poSumAggregateOutputType | null
+    _min: List_poMinAggregateOutputType | null
+    _max: List_poMaxAggregateOutputType | null
+  }
+
+  export type List_poAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type List_poSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type List_poMinAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    po: string | null
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type List_poMaxAggregateOutputType = {
+    id: bigint | null
+    nipnas: string | null
+    po: string | null
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+  }
+
+  export type List_poCountAggregateOutputType = {
+    id: number
+    nipnas: number
+    po: number
+    segment: number
+    bill_city: number
+    witel: number
+    created_at: number
+    updated_at: number
+    _all: number
+  }
+
+
+  export type List_poAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type List_poSumAggregateInputType = {
+    id?: true
+  }
+
+  export type List_poMinAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type List_poMaxAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+  }
+
+  export type List_poCountAggregateInputType = {
+    id?: true
+    nipnas?: true
+    po?: true
+    segment?: true
+    bill_city?: true
+    witel?: true
+    created_at?: true
+    updated_at?: true
+    _all?: true
+  }
+
+  export type List_poAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which list_po to aggregate.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned list_pos
+    **/
+    _count?: true | List_poCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: List_poAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: List_poSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: List_poMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: List_poMaxAggregateInputType
+  }
+
+  export type GetList_poAggregateType<T extends List_poAggregateArgs> = {
+        [P in keyof T & keyof AggregateList_po]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateList_po[P]>
+      : GetScalarType<T[P], AggregateList_po[P]>
+  }
+
+
+
+
+  export type list_poGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: list_poWhereInput
+    orderBy?: list_poOrderByWithAggregationInput | list_poOrderByWithAggregationInput[]
+    by: List_poScalarFieldEnum[] | List_poScalarFieldEnum
+    having?: list_poScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: List_poCountAggregateInputType | true
+    _avg?: List_poAvgAggregateInputType
+    _sum?: List_poSumAggregateInputType
+    _min?: List_poMinAggregateInputType
+    _max?: List_poMaxAggregateInputType
+  }
+
+  export type List_poGroupByOutputType = {
+    id: bigint
+    nipnas: string | null
+    po: string
+    segment: string | null
+    bill_city: string | null
+    witel: string | null
+    created_at: Date | null
+    updated_at: Date | null
+    _count: List_poCountAggregateOutputType | null
+    _avg: List_poAvgAggregateOutputType | null
+    _sum: List_poSumAggregateOutputType | null
+    _min: List_poMinAggregateOutputType | null
+    _max: List_poMaxAggregateOutputType | null
+  }
+
+  type GetList_poGroupByPayload<T extends list_poGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<List_poGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof List_poGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], List_poGroupByOutputType[P]>
+            : GetScalarType<T[P], List_poGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type list_poSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }, ExtArgs["result"]["list_po"]>
+
+  export type list_poSelectScalar = {
+    id?: boolean
+    nipnas?: boolean
+    po?: boolean
+    segment?: boolean
+    bill_city?: boolean
+    witel?: boolean
+    created_at?: boolean
+    updated_at?: boolean
+  }
+
+  export type list_poOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "po" | "segment" | "bill_city" | "witel" | "created_at" | "updated_at", ExtArgs["result"]["list_po"]>
+
+  export type $list_poPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "list_po"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      nipnas: string | null
+      po: string
+      segment: string | null
+      bill_city: string | null
+      witel: string | null
+      created_at: Date | null
+      updated_at: Date | null
+    }, ExtArgs["result"]["list_po"]>
+    composites: {}
+  }
+
+  type list_poGetPayload<S extends boolean | null | undefined | list_poDefaultArgs> = $Result.GetResult<Prisma.$list_poPayload, S>
+
+  type list_poCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<list_poFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: List_poCountAggregateInputType | true
+    }
+
+  export interface list_poDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['list_po'], meta: { name: 'list_po' } }
+    /**
+     * Find zero or one List_po that matches the filter.
+     * @param {list_poFindUniqueArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends list_poFindUniqueArgs>(args: SelectSubset<T, list_poFindUniqueArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one List_po that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {list_poFindUniqueOrThrowArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends list_poFindUniqueOrThrowArgs>(args: SelectSubset<T, list_poFindUniqueOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first List_po that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindFirstArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends list_poFindFirstArgs>(args?: SelectSubset<T, list_poFindFirstArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first List_po that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindFirstOrThrowArgs} args - Arguments to find a List_po
+     * @example
+     * // Get one List_po
+     * const list_po = await prisma.list_po.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends list_poFindFirstOrThrowArgs>(args?: SelectSubset<T, list_poFindFirstOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more List_pos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all List_pos
+     * const list_pos = await prisma.list_po.findMany()
+     * 
+     * // Get first 10 List_pos
+     * const list_pos = await prisma.list_po.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const list_poWithIdOnly = await prisma.list_po.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends list_poFindManyArgs>(args?: SelectSubset<T, list_poFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a List_po.
+     * @param {list_poCreateArgs} args - Arguments to create a List_po.
+     * @example
+     * // Create one List_po
+     * const List_po = await prisma.list_po.create({
+     *   data: {
+     *     // ... data to create a List_po
+     *   }
+     * })
+     * 
+     */
+    create<T extends list_poCreateArgs>(args: SelectSubset<T, list_poCreateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many List_pos.
+     * @param {list_poCreateManyArgs} args - Arguments to create many List_pos.
+     * @example
+     * // Create many List_pos
+     * const list_po = await prisma.list_po.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends list_poCreateManyArgs>(args?: SelectSubset<T, list_poCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many List_pos and returns the data saved in the database.
+     * @param {list_poCreateManyAndReturnArgs} args - Arguments to create many List_pos.
+     * @example
+     * // Create many List_pos
+     * const list_po = await prisma.list_po.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many List_pos and only return the `id`
+     * const list_poWithIdOnly = await prisma.list_po.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends list_poCreateManyAndReturnArgs>(args?: SelectSubset<T, list_poCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a List_po.
+     * @param {list_poDeleteArgs} args - Arguments to delete one List_po.
+     * @example
+     * // Delete one List_po
+     * const List_po = await prisma.list_po.delete({
+     *   where: {
+     *     // ... filter to delete one List_po
+     *   }
+     * })
+     * 
+     */
+    delete<T extends list_poDeleteArgs>(args: SelectSubset<T, list_poDeleteArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one List_po.
+     * @param {list_poUpdateArgs} args - Arguments to update one List_po.
+     * @example
+     * // Update one List_po
+     * const list_po = await prisma.list_po.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends list_poUpdateArgs>(args: SelectSubset<T, list_poUpdateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more List_pos.
+     * @param {list_poDeleteManyArgs} args - Arguments to filter List_pos to delete.
+     * @example
+     * // Delete a few List_pos
+     * const { count } = await prisma.list_po.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends list_poDeleteManyArgs>(args?: SelectSubset<T, list_poDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more List_pos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many List_pos
+     * const list_po = await prisma.list_po.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends list_poUpdateManyArgs>(args: SelectSubset<T, list_poUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more List_pos and returns the data updated in the database.
+     * @param {list_poUpdateManyAndReturnArgs} args - Arguments to update many List_pos.
+     * @example
+     * // Update many List_pos
+     * const list_po = await prisma.list_po.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more List_pos and only return the `id`
+     * const list_poWithIdOnly = await prisma.list_po.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends list_poUpdateManyAndReturnArgs>(args: SelectSubset<T, list_poUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one List_po.
+     * @param {list_poUpsertArgs} args - Arguments to update or create a List_po.
+     * @example
+     * // Update or create a List_po
+     * const list_po = await prisma.list_po.upsert({
+     *   create: {
+     *     // ... data to create a List_po
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the List_po we want to update
+     *   }
+     * })
+     */
+    upsert<T extends list_poUpsertArgs>(args: SelectSubset<T, list_poUpsertArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of List_pos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poCountArgs} args - Arguments to filter List_pos to count.
+     * @example
+     * // Count the number of List_pos
+     * const count = await prisma.list_po.count({
+     *   where: {
+     *     // ... the filter for the List_pos we want to count
+     *   }
+     * })
+    **/
+    count<T extends list_poCountArgs>(
+      args?: Subset<T, list_poCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], List_poCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a List_po.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {List_poAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends List_poAggregateArgs>(args: Subset<T, List_poAggregateArgs>): Prisma.PrismaPromise<GetList_poAggregateType<T>>
+
+    /**
+     * Group by List_po.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {list_poGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends list_poGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: list_poGroupByArgs['orderBy'] }
+        : { orderBy?: list_poGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, list_poGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetList_poGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the list_po model
+   */
+  readonly fields: list_poFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for list_po.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__list_poClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the list_po model
+   */
+  interface list_poFieldRefs {
+    readonly id: FieldRef<"list_po", 'BigInt'>
+    readonly nipnas: FieldRef<"list_po", 'String'>
+    readonly po: FieldRef<"list_po", 'String'>
+    readonly segment: FieldRef<"list_po", 'String'>
+    readonly bill_city: FieldRef<"list_po", 'String'>
+    readonly witel: FieldRef<"list_po", 'String'>
+    readonly created_at: FieldRef<"list_po", 'DateTime'>
+    readonly updated_at: FieldRef<"list_po", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * list_po findUnique
+   */
+  export type list_poFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po findUniqueOrThrow
+   */
+  export type list_poFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po findFirst
+   */
+  export type list_poFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of list_pos.
+     */
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po findFirstOrThrow
+   */
+  export type list_poFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_po to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of list_pos.
+     */
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po findMany
+   */
+  export type list_poFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter, which list_pos to fetch.
+     */
+    where?: list_poWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of list_pos to fetch.
+     */
+    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing list_pos.
+     */
+    cursor?: list_poWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` list_pos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` list_pos.
+     */
+    skip?: number
+    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
+  }
+
+  /**
+   * list_po create
+   */
+  export type list_poCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data needed to create a list_po.
+     */
+    data: XOR<list_poCreateInput, list_poUncheckedCreateInput>
+  }
+
+  /**
+   * list_po createMany
+   */
+  export type list_poCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many list_pos.
+     */
+    data: list_poCreateManyInput | list_poCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * list_po createManyAndReturn
+   */
+  export type list_poCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data used to create many list_pos.
+     */
+    data: list_poCreateManyInput | list_poCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * list_po update
+   */
+  export type list_poUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data needed to update a list_po.
+     */
+    data: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
+    /**
+     * Choose, which list_po to update.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po updateMany
+   */
+  export type list_poUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update list_pos.
+     */
+    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
+    /**
+     * Filter which list_pos to update
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po updateManyAndReturn
+   */
+  export type list_poUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The data used to update list_pos.
+     */
+    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
+    /**
+     * Filter which list_pos to update
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po upsert
+   */
+  export type list_poUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * The filter to search for the list_po to update in case it exists.
+     */
+    where: list_poWhereUniqueInput
+    /**
+     * In case the list_po found by the `where` argument doesn't exist, create a new list_po with this data.
+     */
+    create: XOR<list_poCreateInput, list_poUncheckedCreateInput>
+    /**
+     * In case the list_po was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
+  }
+
+  /**
+   * list_po delete
+   */
+  export type list_poDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
+    /**
+     * Filter which list_po to delete.
+     */
+    where: list_poWhereUniqueInput
+  }
+
+  /**
+   * list_po deleteMany
+   */
+  export type list_poDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which list_pos to delete
+     */
+    where?: list_poWhereInput
+    /**
+     * Limit how many list_pos to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * list_po without action
+   */
+  export type list_poDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the list_po
+     */
+    select?: list_poSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the list_po
+     */
+    omit?: list_poOmit<ExtArgs> | null
   }
 
 
@@ -25568,1074 +28054,6 @@ export namespace Prisma {
      * Omit specific fields from the jobs
      */
     omit?: jobsOmit<ExtArgs> | null
-  }
-
-
-  /**
-   * Model list_po
-   */
-
-  export type AggregateList_po = {
-    _count: List_poCountAggregateOutputType | null
-    _avg: List_poAvgAggregateOutputType | null
-    _sum: List_poSumAggregateOutputType | null
-    _min: List_poMinAggregateOutputType | null
-    _max: List_poMaxAggregateOutputType | null
-  }
-
-  export type List_poAvgAggregateOutputType = {
-    id: number | null
-  }
-
-  export type List_poSumAggregateOutputType = {
-    id: bigint | null
-  }
-
-  export type List_poMinAggregateOutputType = {
-    id: bigint | null
-    nipnas: string | null
-    po: string | null
-    segment: string | null
-    bill_city: string | null
-    witel: string | null
-    created_at: Date | null
-    updated_at: Date | null
-  }
-
-  export type List_poMaxAggregateOutputType = {
-    id: bigint | null
-    nipnas: string | null
-    po: string | null
-    segment: string | null
-    bill_city: string | null
-    witel: string | null
-    created_at: Date | null
-    updated_at: Date | null
-  }
-
-  export type List_poCountAggregateOutputType = {
-    id: number
-    nipnas: number
-    po: number
-    segment: number
-    bill_city: number
-    witel: number
-    created_at: number
-    updated_at: number
-    _all: number
-  }
-
-
-  export type List_poAvgAggregateInputType = {
-    id?: true
-  }
-
-  export type List_poSumAggregateInputType = {
-    id?: true
-  }
-
-  export type List_poMinAggregateInputType = {
-    id?: true
-    nipnas?: true
-    po?: true
-    segment?: true
-    bill_city?: true
-    witel?: true
-    created_at?: true
-    updated_at?: true
-  }
-
-  export type List_poMaxAggregateInputType = {
-    id?: true
-    nipnas?: true
-    po?: true
-    segment?: true
-    bill_city?: true
-    witel?: true
-    created_at?: true
-    updated_at?: true
-  }
-
-  export type List_poCountAggregateInputType = {
-    id?: true
-    nipnas?: true
-    po?: true
-    segment?: true
-    bill_city?: true
-    witel?: true
-    created_at?: true
-    updated_at?: true
-    _all?: true
-  }
-
-  export type List_poAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which list_po to aggregate.
-     */
-    where?: list_poWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of list_pos to fetch.
-     */
-    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: list_poWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` list_pos from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` list_pos.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned list_pos
-    **/
-    _count?: true | List_poCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: List_poAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: List_poSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: List_poMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: List_poMaxAggregateInputType
-  }
-
-  export type GetList_poAggregateType<T extends List_poAggregateArgs> = {
-        [P in keyof T & keyof AggregateList_po]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateList_po[P]>
-      : GetScalarType<T[P], AggregateList_po[P]>
-  }
-
-
-
-
-  export type list_poGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: list_poWhereInput
-    orderBy?: list_poOrderByWithAggregationInput | list_poOrderByWithAggregationInput[]
-    by: List_poScalarFieldEnum[] | List_poScalarFieldEnum
-    having?: list_poScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: List_poCountAggregateInputType | true
-    _avg?: List_poAvgAggregateInputType
-    _sum?: List_poSumAggregateInputType
-    _min?: List_poMinAggregateInputType
-    _max?: List_poMaxAggregateInputType
-  }
-
-  export type List_poGroupByOutputType = {
-    id: bigint
-    nipnas: string | null
-    po: string
-    segment: string | null
-    bill_city: string | null
-    witel: string | null
-    created_at: Date | null
-    updated_at: Date | null
-    _count: List_poCountAggregateOutputType | null
-    _avg: List_poAvgAggregateOutputType | null
-    _sum: List_poSumAggregateOutputType | null
-    _min: List_poMinAggregateOutputType | null
-    _max: List_poMaxAggregateOutputType | null
-  }
-
-  type GetList_poGroupByPayload<T extends list_poGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<List_poGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof List_poGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], List_poGroupByOutputType[P]>
-            : GetScalarType<T[P], List_poGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type list_poSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    nipnas?: boolean
-    po?: boolean
-    segment?: boolean
-    bill_city?: boolean
-    witel?: boolean
-    created_at?: boolean
-    updated_at?: boolean
-  }, ExtArgs["result"]["list_po"]>
-
-  export type list_poSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    nipnas?: boolean
-    po?: boolean
-    segment?: boolean
-    bill_city?: boolean
-    witel?: boolean
-    created_at?: boolean
-    updated_at?: boolean
-  }, ExtArgs["result"]["list_po"]>
-
-  export type list_poSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    nipnas?: boolean
-    po?: boolean
-    segment?: boolean
-    bill_city?: boolean
-    witel?: boolean
-    created_at?: boolean
-    updated_at?: boolean
-  }, ExtArgs["result"]["list_po"]>
-
-  export type list_poSelectScalar = {
-    id?: boolean
-    nipnas?: boolean
-    po?: boolean
-    segment?: boolean
-    bill_city?: boolean
-    witel?: boolean
-    created_at?: boolean
-    updated_at?: boolean
-  }
-
-  export type list_poOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "po" | "segment" | "bill_city" | "witel" | "created_at" | "updated_at", ExtArgs["result"]["list_po"]>
-
-  export type $list_poPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "list_po"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      id: bigint
-      nipnas: string | null
-      po: string
-      segment: string | null
-      bill_city: string | null
-      witel: string | null
-      created_at: Date | null
-      updated_at: Date | null
-    }, ExtArgs["result"]["list_po"]>
-    composites: {}
-  }
-
-  type list_poGetPayload<S extends boolean | null | undefined | list_poDefaultArgs> = $Result.GetResult<Prisma.$list_poPayload, S>
-
-  type list_poCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<list_poFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: List_poCountAggregateInputType | true
-    }
-
-  export interface list_poDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['list_po'], meta: { name: 'list_po' } }
-    /**
-     * Find zero or one List_po that matches the filter.
-     * @param {list_poFindUniqueArgs} args - Arguments to find a List_po
-     * @example
-     * // Get one List_po
-     * const list_po = await prisma.list_po.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends list_poFindUniqueArgs>(args: SelectSubset<T, list_poFindUniqueArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one List_po that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {list_poFindUniqueOrThrowArgs} args - Arguments to find a List_po
-     * @example
-     * // Get one List_po
-     * const list_po = await prisma.list_po.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends list_poFindUniqueOrThrowArgs>(args: SelectSubset<T, list_poFindUniqueOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first List_po that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poFindFirstArgs} args - Arguments to find a List_po
-     * @example
-     * // Get one List_po
-     * const list_po = await prisma.list_po.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends list_poFindFirstArgs>(args?: SelectSubset<T, list_poFindFirstArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first List_po that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poFindFirstOrThrowArgs} args - Arguments to find a List_po
-     * @example
-     * // Get one List_po
-     * const list_po = await prisma.list_po.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends list_poFindFirstOrThrowArgs>(args?: SelectSubset<T, list_poFindFirstOrThrowArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more List_pos that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all List_pos
-     * const list_pos = await prisma.list_po.findMany()
-     * 
-     * // Get first 10 List_pos
-     * const list_pos = await prisma.list_po.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const list_poWithIdOnly = await prisma.list_po.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends list_poFindManyArgs>(args?: SelectSubset<T, list_poFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a List_po.
-     * @param {list_poCreateArgs} args - Arguments to create a List_po.
-     * @example
-     * // Create one List_po
-     * const List_po = await prisma.list_po.create({
-     *   data: {
-     *     // ... data to create a List_po
-     *   }
-     * })
-     * 
-     */
-    create<T extends list_poCreateArgs>(args: SelectSubset<T, list_poCreateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many List_pos.
-     * @param {list_poCreateManyArgs} args - Arguments to create many List_pos.
-     * @example
-     * // Create many List_pos
-     * const list_po = await prisma.list_po.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends list_poCreateManyArgs>(args?: SelectSubset<T, list_poCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many List_pos and returns the data saved in the database.
-     * @param {list_poCreateManyAndReturnArgs} args - Arguments to create many List_pos.
-     * @example
-     * // Create many List_pos
-     * const list_po = await prisma.list_po.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many List_pos and only return the `id`
-     * const list_poWithIdOnly = await prisma.list_po.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends list_poCreateManyAndReturnArgs>(args?: SelectSubset<T, list_poCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Delete a List_po.
-     * @param {list_poDeleteArgs} args - Arguments to delete one List_po.
-     * @example
-     * // Delete one List_po
-     * const List_po = await prisma.list_po.delete({
-     *   where: {
-     *     // ... filter to delete one List_po
-     *   }
-     * })
-     * 
-     */
-    delete<T extends list_poDeleteArgs>(args: SelectSubset<T, list_poDeleteArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one List_po.
-     * @param {list_poUpdateArgs} args - Arguments to update one List_po.
-     * @example
-     * // Update one List_po
-     * const list_po = await prisma.list_po.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends list_poUpdateArgs>(args: SelectSubset<T, list_poUpdateArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more List_pos.
-     * @param {list_poDeleteManyArgs} args - Arguments to filter List_pos to delete.
-     * @example
-     * // Delete a few List_pos
-     * const { count } = await prisma.list_po.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends list_poDeleteManyArgs>(args?: SelectSubset<T, list_poDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more List_pos.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many List_pos
-     * const list_po = await prisma.list_po.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends list_poUpdateManyArgs>(args: SelectSubset<T, list_poUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more List_pos and returns the data updated in the database.
-     * @param {list_poUpdateManyAndReturnArgs} args - Arguments to update many List_pos.
-     * @example
-     * // Update many List_pos
-     * const list_po = await prisma.list_po.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more List_pos and only return the `id`
-     * const list_poWithIdOnly = await prisma.list_po.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends list_poUpdateManyAndReturnArgs>(args: SelectSubset<T, list_poUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
-     * Create or update one List_po.
-     * @param {list_poUpsertArgs} args - Arguments to update or create a List_po.
-     * @example
-     * // Update or create a List_po
-     * const list_po = await prisma.list_po.upsert({
-     *   create: {
-     *     // ... data to create a List_po
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the List_po we want to update
-     *   }
-     * })
-     */
-    upsert<T extends list_poUpsertArgs>(args: SelectSubset<T, list_poUpsertArgs<ExtArgs>>): Prisma__list_poClient<$Result.GetResult<Prisma.$list_poPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of List_pos.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poCountArgs} args - Arguments to filter List_pos to count.
-     * @example
-     * // Count the number of List_pos
-     * const count = await prisma.list_po.count({
-     *   where: {
-     *     // ... the filter for the List_pos we want to count
-     *   }
-     * })
-    **/
-    count<T extends list_poCountArgs>(
-      args?: Subset<T, list_poCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], List_poCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a List_po.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {List_poAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends List_poAggregateArgs>(args: Subset<T, List_poAggregateArgs>): Prisma.PrismaPromise<GetList_poAggregateType<T>>
-
-    /**
-     * Group by List_po.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {list_poGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends list_poGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: list_poGroupByArgs['orderBy'] }
-        : { orderBy?: list_poGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, list_poGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetList_poGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the list_po model
-   */
-  readonly fields: list_poFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for list_po.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__list_poClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the list_po model
-   */
-  interface list_poFieldRefs {
-    readonly id: FieldRef<"list_po", 'BigInt'>
-    readonly nipnas: FieldRef<"list_po", 'String'>
-    readonly po: FieldRef<"list_po", 'String'>
-    readonly segment: FieldRef<"list_po", 'String'>
-    readonly bill_city: FieldRef<"list_po", 'String'>
-    readonly witel: FieldRef<"list_po", 'String'>
-    readonly created_at: FieldRef<"list_po", 'DateTime'>
-    readonly updated_at: FieldRef<"list_po", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * list_po findUnique
-   */
-  export type list_poFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter, which list_po to fetch.
-     */
-    where: list_poWhereUniqueInput
-  }
-
-  /**
-   * list_po findUniqueOrThrow
-   */
-  export type list_poFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter, which list_po to fetch.
-     */
-    where: list_poWhereUniqueInput
-  }
-
-  /**
-   * list_po findFirst
-   */
-  export type list_poFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter, which list_po to fetch.
-     */
-    where?: list_poWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of list_pos to fetch.
-     */
-    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for list_pos.
-     */
-    cursor?: list_poWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` list_pos from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` list_pos.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of list_pos.
-     */
-    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
-  }
-
-  /**
-   * list_po findFirstOrThrow
-   */
-  export type list_poFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter, which list_po to fetch.
-     */
-    where?: list_poWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of list_pos to fetch.
-     */
-    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for list_pos.
-     */
-    cursor?: list_poWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` list_pos from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` list_pos.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of list_pos.
-     */
-    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
-  }
-
-  /**
-   * list_po findMany
-   */
-  export type list_poFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter, which list_pos to fetch.
-     */
-    where?: list_poWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of list_pos to fetch.
-     */
-    orderBy?: list_poOrderByWithRelationInput | list_poOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing list_pos.
-     */
-    cursor?: list_poWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` list_pos from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` list_pos.
-     */
-    skip?: number
-    distinct?: List_poScalarFieldEnum | List_poScalarFieldEnum[]
-  }
-
-  /**
-   * list_po create
-   */
-  export type list_poCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * The data needed to create a list_po.
-     */
-    data: XOR<list_poCreateInput, list_poUncheckedCreateInput>
-  }
-
-  /**
-   * list_po createMany
-   */
-  export type list_poCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many list_pos.
-     */
-    data: list_poCreateManyInput | list_poCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * list_po createManyAndReturn
-   */
-  export type list_poCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * The data used to create many list_pos.
-     */
-    data: list_poCreateManyInput | list_poCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * list_po update
-   */
-  export type list_poUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * The data needed to update a list_po.
-     */
-    data: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
-    /**
-     * Choose, which list_po to update.
-     */
-    where: list_poWhereUniqueInput
-  }
-
-  /**
-   * list_po updateMany
-   */
-  export type list_poUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update list_pos.
-     */
-    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
-    /**
-     * Filter which list_pos to update
-     */
-    where?: list_poWhereInput
-    /**
-     * Limit how many list_pos to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * list_po updateManyAndReturn
-   */
-  export type list_poUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * The data used to update list_pos.
-     */
-    data: XOR<list_poUpdateManyMutationInput, list_poUncheckedUpdateManyInput>
-    /**
-     * Filter which list_pos to update
-     */
-    where?: list_poWhereInput
-    /**
-     * Limit how many list_pos to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * list_po upsert
-   */
-  export type list_poUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * The filter to search for the list_po to update in case it exists.
-     */
-    where: list_poWhereUniqueInput
-    /**
-     * In case the list_po found by the `where` argument doesn't exist, create a new list_po with this data.
-     */
-    create: XOR<list_poCreateInput, list_poUncheckedCreateInput>
-    /**
-     * In case the list_po was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<list_poUpdateInput, list_poUncheckedUpdateInput>
-  }
-
-  /**
-   * list_po delete
-   */
-  export type list_poDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
-    /**
-     * Filter which list_po to delete.
-     */
-    where: list_poWhereUniqueInput
-  }
-
-  /**
-   * list_po deleteMany
-   */
-  export type list_poDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which list_pos to delete
-     */
-    where?: list_poWhereInput
-    /**
-     * Limit how many list_pos to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * list_po without action
-   */
-  export type list_poDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the list_po
-     */
-    select?: list_poSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the list_po
-     */
-    omit?: list_poOmit<ExtArgs> | null
   }
 
 
@@ -37522,6 +38940,39 @@ export namespace Prisma {
   export type SpmkMomScalarFieldEnum = (typeof SpmkMomScalarFieldEnum)[keyof typeof SpmkMomScalarFieldEnum]
 
 
+  export const ReportTambahanScalarFieldEnum: {
+    id: 'id',
+    bulan: 'bulan',
+    tahun: 'tahun',
+    region: 'region',
+    witelLama: 'witelLama',
+    witelBaru: 'witelBaru',
+    idIHld: 'idIHld',
+    noNdeSpmk: 'noNdeSpmk',
+    uraianKegiatan: 'uraianKegiatan',
+    segmen: 'segmen',
+    poName: 'poName',
+    tanggalGolive: 'tanggalGolive',
+    konfirmasiPo: 'konfirmasiPo',
+    tanggalCb: 'tanggalCb',
+    jenisKegiatan: 'jenisKegiatan',
+    revenuePlan: 'revenuePlan',
+    usia: 'usia',
+    statusProyek: 'statusProyek',
+    goLive: 'goLive',
+    keteranganToc: 'keteranganToc',
+    mom: 'mom',
+    baDrop: 'baDrop',
+    statusTompsNew: 'statusTompsNew',
+    statusIHld: 'statusIHld',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    batchId: 'batchId'
+  };
+
+  export type ReportTambahanScalarFieldEnum = (typeof ReportTambahanScalarFieldEnum)[keyof typeof ReportTambahanScalarFieldEnum]
+
+
   export const DocumentDataScalarFieldEnum: {
     id: 'id',
     batchId: 'batchId',
@@ -37582,6 +39033,20 @@ export namespace Prisma {
   };
 
   export type TargetScalarFieldEnum = (typeof TargetScalarFieldEnum)[keyof typeof TargetScalarFieldEnum]
+
+
+  export const List_poScalarFieldEnum: {
+    id: 'id',
+    nipnas: 'nipnas',
+    po: 'po',
+    segment: 'segment',
+    bill_city: 'bill_city',
+    witel: 'witel',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+  };
+
+  export type List_poScalarFieldEnum = (typeof List_poScalarFieldEnum)[keyof typeof List_poScalarFieldEnum]
 
 
   export const CustomTargetScalarFieldEnum: {
@@ -37688,20 +39153,6 @@ export namespace Prisma {
   };
 
   export type JobsScalarFieldEnum = (typeof JobsScalarFieldEnum)[keyof typeof JobsScalarFieldEnum]
-
-
-  export const List_poScalarFieldEnum: {
-    id: 'id',
-    nipnas: 'nipnas',
-    po: 'po',
-    segment: 'segment',
-    bill_city: 'bill_city',
-    witel: 'witel',
-    created_at: 'created_at',
-    updated_at: 'updated_at'
-  };
-
-  export type List_poScalarFieldEnum = (typeof List_poScalarFieldEnum)[keyof typeof List_poScalarFieldEnum]
 
 
   export const MigrationsScalarFieldEnum: {
@@ -38021,6 +39472,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Boolean'
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -38038,20 +39503,6 @@ export namespace Prisma {
    * Reference to a field of type 'QueryMode'
    */
   export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-  /**
-   * Reference to a field of type 'Float'
-   */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-  /**
-   * Reference to a field of type 'Float[]'
-   */
-  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
   /**
    * Deep Input Types
@@ -39498,6 +40949,170 @@ export namespace Prisma {
     batchId?: StringNullableWithAggregatesFilter<"SpmkMom"> | string | null
   }
 
+  export type ReportTambahanWhereInput = {
+    AND?: ReportTambahanWhereInput | ReportTambahanWhereInput[]
+    OR?: ReportTambahanWhereInput[]
+    NOT?: ReportTambahanWhereInput | ReportTambahanWhereInput[]
+    id?: BigIntFilter<"ReportTambahan"> | bigint | number
+    bulan?: StringNullableFilter<"ReportTambahan"> | string | null
+    tahun?: IntNullableFilter<"ReportTambahan"> | number | null
+    region?: StringNullableFilter<"ReportTambahan"> | string | null
+    witelLama?: StringNullableFilter<"ReportTambahan"> | string | null
+    witelBaru?: StringNullableFilter<"ReportTambahan"> | string | null
+    idIHld?: StringNullableFilter<"ReportTambahan"> | string | null
+    noNdeSpmk?: StringNullableFilter<"ReportTambahan"> | string | null
+    uraianKegiatan?: StringNullableFilter<"ReportTambahan"> | string | null
+    segmen?: StringNullableFilter<"ReportTambahan"> | string | null
+    poName?: StringNullableFilter<"ReportTambahan"> | string | null
+    tanggalGolive?: DateTimeNullableFilter<"ReportTambahan"> | Date | string | null
+    konfirmasiPo?: StringNullableFilter<"ReportTambahan"> | string | null
+    tanggalCb?: DateTimeNullableFilter<"ReportTambahan"> | Date | string | null
+    jenisKegiatan?: StringNullableFilter<"ReportTambahan"> | string | null
+    revenuePlan?: FloatNullableFilter<"ReportTambahan"> | number | null
+    usia?: IntNullableFilter<"ReportTambahan"> | number | null
+    statusProyek?: StringNullableFilter<"ReportTambahan"> | string | null
+    goLive?: StringNullableFilter<"ReportTambahan"> | string | null
+    keteranganToc?: StringNullableFilter<"ReportTambahan"> | string | null
+    mom?: StringNullableFilter<"ReportTambahan"> | string | null
+    baDrop?: StringNullableFilter<"ReportTambahan"> | string | null
+    statusTompsNew?: StringNullableFilter<"ReportTambahan"> | string | null
+    statusIHld?: StringNullableFilter<"ReportTambahan"> | string | null
+    createdAt?: DateTimeFilter<"ReportTambahan"> | Date | string
+    updatedAt?: DateTimeFilter<"ReportTambahan"> | Date | string
+    batchId?: StringNullableFilter<"ReportTambahan"> | string | null
+  }
+
+  export type ReportTambahanOrderByWithRelationInput = {
+    id?: SortOrder
+    bulan?: SortOrderInput | SortOrder
+    tahun?: SortOrderInput | SortOrder
+    region?: SortOrderInput | SortOrder
+    witelLama?: SortOrderInput | SortOrder
+    witelBaru?: SortOrderInput | SortOrder
+    idIHld?: SortOrderInput | SortOrder
+    noNdeSpmk?: SortOrderInput | SortOrder
+    uraianKegiatan?: SortOrderInput | SortOrder
+    segmen?: SortOrderInput | SortOrder
+    poName?: SortOrderInput | SortOrder
+    tanggalGolive?: SortOrderInput | SortOrder
+    konfirmasiPo?: SortOrderInput | SortOrder
+    tanggalCb?: SortOrderInput | SortOrder
+    jenisKegiatan?: SortOrderInput | SortOrder
+    revenuePlan?: SortOrderInput | SortOrder
+    usia?: SortOrderInput | SortOrder
+    statusProyek?: SortOrderInput | SortOrder
+    goLive?: SortOrderInput | SortOrder
+    keteranganToc?: SortOrderInput | SortOrder
+    mom?: SortOrderInput | SortOrder
+    baDrop?: SortOrderInput | SortOrder
+    statusTompsNew?: SortOrderInput | SortOrder
+    statusIHld?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    batchId?: SortOrderInput | SortOrder
+  }
+
+  export type ReportTambahanWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: ReportTambahanWhereInput | ReportTambahanWhereInput[]
+    OR?: ReportTambahanWhereInput[]
+    NOT?: ReportTambahanWhereInput | ReportTambahanWhereInput[]
+    bulan?: StringNullableFilter<"ReportTambahan"> | string | null
+    tahun?: IntNullableFilter<"ReportTambahan"> | number | null
+    region?: StringNullableFilter<"ReportTambahan"> | string | null
+    witelLama?: StringNullableFilter<"ReportTambahan"> | string | null
+    witelBaru?: StringNullableFilter<"ReportTambahan"> | string | null
+    idIHld?: StringNullableFilter<"ReportTambahan"> | string | null
+    noNdeSpmk?: StringNullableFilter<"ReportTambahan"> | string | null
+    uraianKegiatan?: StringNullableFilter<"ReportTambahan"> | string | null
+    segmen?: StringNullableFilter<"ReportTambahan"> | string | null
+    poName?: StringNullableFilter<"ReportTambahan"> | string | null
+    tanggalGolive?: DateTimeNullableFilter<"ReportTambahan"> | Date | string | null
+    konfirmasiPo?: StringNullableFilter<"ReportTambahan"> | string | null
+    tanggalCb?: DateTimeNullableFilter<"ReportTambahan"> | Date | string | null
+    jenisKegiatan?: StringNullableFilter<"ReportTambahan"> | string | null
+    revenuePlan?: FloatNullableFilter<"ReportTambahan"> | number | null
+    usia?: IntNullableFilter<"ReportTambahan"> | number | null
+    statusProyek?: StringNullableFilter<"ReportTambahan"> | string | null
+    goLive?: StringNullableFilter<"ReportTambahan"> | string | null
+    keteranganToc?: StringNullableFilter<"ReportTambahan"> | string | null
+    mom?: StringNullableFilter<"ReportTambahan"> | string | null
+    baDrop?: StringNullableFilter<"ReportTambahan"> | string | null
+    statusTompsNew?: StringNullableFilter<"ReportTambahan"> | string | null
+    statusIHld?: StringNullableFilter<"ReportTambahan"> | string | null
+    createdAt?: DateTimeFilter<"ReportTambahan"> | Date | string
+    updatedAt?: DateTimeFilter<"ReportTambahan"> | Date | string
+    batchId?: StringNullableFilter<"ReportTambahan"> | string | null
+  }, "id">
+
+  export type ReportTambahanOrderByWithAggregationInput = {
+    id?: SortOrder
+    bulan?: SortOrderInput | SortOrder
+    tahun?: SortOrderInput | SortOrder
+    region?: SortOrderInput | SortOrder
+    witelLama?: SortOrderInput | SortOrder
+    witelBaru?: SortOrderInput | SortOrder
+    idIHld?: SortOrderInput | SortOrder
+    noNdeSpmk?: SortOrderInput | SortOrder
+    uraianKegiatan?: SortOrderInput | SortOrder
+    segmen?: SortOrderInput | SortOrder
+    poName?: SortOrderInput | SortOrder
+    tanggalGolive?: SortOrderInput | SortOrder
+    konfirmasiPo?: SortOrderInput | SortOrder
+    tanggalCb?: SortOrderInput | SortOrder
+    jenisKegiatan?: SortOrderInput | SortOrder
+    revenuePlan?: SortOrderInput | SortOrder
+    usia?: SortOrderInput | SortOrder
+    statusProyek?: SortOrderInput | SortOrder
+    goLive?: SortOrderInput | SortOrder
+    keteranganToc?: SortOrderInput | SortOrder
+    mom?: SortOrderInput | SortOrder
+    baDrop?: SortOrderInput | SortOrder
+    statusTompsNew?: SortOrderInput | SortOrder
+    statusIHld?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    batchId?: SortOrderInput | SortOrder
+    _count?: ReportTambahanCountOrderByAggregateInput
+    _avg?: ReportTambahanAvgOrderByAggregateInput
+    _max?: ReportTambahanMaxOrderByAggregateInput
+    _min?: ReportTambahanMinOrderByAggregateInput
+    _sum?: ReportTambahanSumOrderByAggregateInput
+  }
+
+  export type ReportTambahanScalarWhereWithAggregatesInput = {
+    AND?: ReportTambahanScalarWhereWithAggregatesInput | ReportTambahanScalarWhereWithAggregatesInput[]
+    OR?: ReportTambahanScalarWhereWithAggregatesInput[]
+    NOT?: ReportTambahanScalarWhereWithAggregatesInput | ReportTambahanScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"ReportTambahan"> | bigint | number
+    bulan?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    tahun?: IntNullableWithAggregatesFilter<"ReportTambahan"> | number | null
+    region?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    witelLama?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    witelBaru?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    idIHld?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    noNdeSpmk?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    uraianKegiatan?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    segmen?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    poName?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    tanggalGolive?: DateTimeNullableWithAggregatesFilter<"ReportTambahan"> | Date | string | null
+    konfirmasiPo?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    tanggalCb?: DateTimeNullableWithAggregatesFilter<"ReportTambahan"> | Date | string | null
+    jenisKegiatan?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    revenuePlan?: FloatNullableWithAggregatesFilter<"ReportTambahan"> | number | null
+    usia?: IntNullableWithAggregatesFilter<"ReportTambahan"> | number | null
+    statusProyek?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    goLive?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    keteranganToc?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    mom?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    baDrop?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    statusTompsNew?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    statusIHld?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ReportTambahan"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ReportTambahan"> | Date | string
+    batchId?: StringNullableWithAggregatesFilter<"ReportTambahan"> | string | null
+  }
+
   export type DocumentDataWhereInput = {
     AND?: DocumentDataWhereInput | DocumentDataWhereInput[]
     OR?: DocumentDataWhereInput[]
@@ -39803,6 +41418,75 @@ export namespace Prisma {
     period?: DateTimeWithAggregatesFilter<"Target"> | Date | string
     createdAt?: DateTimeNullableWithAggregatesFilter<"Target"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"Target"> | Date | string | null
+  }
+
+  export type list_poWhereInput = {
+    AND?: list_poWhereInput | list_poWhereInput[]
+    OR?: list_poWhereInput[]
+    NOT?: list_poWhereInput | list_poWhereInput[]
+    id?: BigIntFilter<"list_po"> | bigint | number
+    nipnas?: StringNullableFilter<"list_po"> | string | null
+    po?: StringFilter<"list_po"> | string
+    segment?: StringNullableFilter<"list_po"> | string | null
+    bill_city?: StringNullableFilter<"list_po"> | string | null
+    witel?: StringNullableFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+  }
+
+  export type list_poOrderByWithRelationInput = {
+    id?: SortOrder
+    nipnas?: SortOrderInput | SortOrder
+    po?: SortOrder
+    segment?: SortOrderInput | SortOrder
+    bill_city?: SortOrderInput | SortOrder
+    witel?: SortOrderInput | SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+  }
+
+  export type list_poWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: list_poWhereInput | list_poWhereInput[]
+    OR?: list_poWhereInput[]
+    NOT?: list_poWhereInput | list_poWhereInput[]
+    nipnas?: StringNullableFilter<"list_po"> | string | null
+    po?: StringFilter<"list_po"> | string
+    segment?: StringNullableFilter<"list_po"> | string | null
+    bill_city?: StringNullableFilter<"list_po"> | string | null
+    witel?: StringNullableFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
+  }, "id">
+
+  export type list_poOrderByWithAggregationInput = {
+    id?: SortOrder
+    nipnas?: SortOrderInput | SortOrder
+    po?: SortOrder
+    segment?: SortOrderInput | SortOrder
+    bill_city?: SortOrderInput | SortOrder
+    witel?: SortOrderInput | SortOrder
+    created_at?: SortOrderInput | SortOrder
+    updated_at?: SortOrderInput | SortOrder
+    _count?: list_poCountOrderByAggregateInput
+    _avg?: list_poAvgOrderByAggregateInput
+    _max?: list_poMaxOrderByAggregateInput
+    _min?: list_poMinOrderByAggregateInput
+    _sum?: list_poSumOrderByAggregateInput
+  }
+
+  export type list_poScalarWhereWithAggregatesInput = {
+    AND?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
+    OR?: list_poScalarWhereWithAggregatesInput[]
+    NOT?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"list_po"> | bigint | number
+    nipnas?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    po?: StringWithAggregatesFilter<"list_po"> | string
+    segment?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    bill_city?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    witel?: StringNullableWithAggregatesFilter<"list_po"> | string | null
+    created_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
+    updated_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
   }
 
   export type CustomTargetWhereInput = {
@@ -40328,75 +42012,6 @@ export namespace Prisma {
     reserved_at?: IntNullableWithAggregatesFilter<"jobs"> | number | null
     available_at?: IntWithAggregatesFilter<"jobs"> | number
     created_at?: IntWithAggregatesFilter<"jobs"> | number
-  }
-
-  export type list_poWhereInput = {
-    AND?: list_poWhereInput | list_poWhereInput[]
-    OR?: list_poWhereInput[]
-    NOT?: list_poWhereInput | list_poWhereInput[]
-    id?: BigIntFilter<"list_po"> | bigint | number
-    nipnas?: StringNullableFilter<"list_po"> | string | null
-    po?: StringFilter<"list_po"> | string
-    segment?: StringNullableFilter<"list_po"> | string | null
-    bill_city?: StringNullableFilter<"list_po"> | string | null
-    witel?: StringNullableFilter<"list_po"> | string | null
-    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
-    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
-  }
-
-  export type list_poOrderByWithRelationInput = {
-    id?: SortOrder
-    nipnas?: SortOrderInput | SortOrder
-    po?: SortOrder
-    segment?: SortOrderInput | SortOrder
-    bill_city?: SortOrderInput | SortOrder
-    witel?: SortOrderInput | SortOrder
-    created_at?: SortOrderInput | SortOrder
-    updated_at?: SortOrderInput | SortOrder
-  }
-
-  export type list_poWhereUniqueInput = Prisma.AtLeast<{
-    id?: bigint | number
-    AND?: list_poWhereInput | list_poWhereInput[]
-    OR?: list_poWhereInput[]
-    NOT?: list_poWhereInput | list_poWhereInput[]
-    nipnas?: StringNullableFilter<"list_po"> | string | null
-    po?: StringFilter<"list_po"> | string
-    segment?: StringNullableFilter<"list_po"> | string | null
-    bill_city?: StringNullableFilter<"list_po"> | string | null
-    witel?: StringNullableFilter<"list_po"> | string | null
-    created_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
-    updated_at?: DateTimeNullableFilter<"list_po"> | Date | string | null
-  }, "id">
-
-  export type list_poOrderByWithAggregationInput = {
-    id?: SortOrder
-    nipnas?: SortOrderInput | SortOrder
-    po?: SortOrder
-    segment?: SortOrderInput | SortOrder
-    bill_city?: SortOrderInput | SortOrder
-    witel?: SortOrderInput | SortOrder
-    created_at?: SortOrderInput | SortOrder
-    updated_at?: SortOrderInput | SortOrder
-    _count?: list_poCountOrderByAggregateInput
-    _avg?: list_poAvgOrderByAggregateInput
-    _max?: list_poMaxOrderByAggregateInput
-    _min?: list_poMinOrderByAggregateInput
-    _sum?: list_poSumOrderByAggregateInput
-  }
-
-  export type list_poScalarWhereWithAggregatesInput = {
-    AND?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
-    OR?: list_poScalarWhereWithAggregatesInput[]
-    NOT?: list_poScalarWhereWithAggregatesInput | list_poScalarWhereWithAggregatesInput[]
-    id?: BigIntWithAggregatesFilter<"list_po"> | bigint | number
-    nipnas?: StringNullableWithAggregatesFilter<"list_po"> | string | null
-    po?: StringWithAggregatesFilter<"list_po"> | string
-    segment?: StringNullableWithAggregatesFilter<"list_po"> | string | null
-    bill_city?: StringNullableWithAggregatesFilter<"list_po"> | string | null
-    witel?: StringNullableWithAggregatesFilter<"list_po"> | string | null
-    created_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
-    updated_at?: DateTimeNullableWithAggregatesFilter<"list_po"> | Date | string | null
   }
 
   export type migrationsWhereInput = {
@@ -43291,6 +44906,216 @@ export namespace Prisma {
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type ReportTambahanCreateInput = {
+    id?: bigint | number
+    bulan?: string | null
+    tahun?: number | null
+    region?: string | null
+    witelLama?: string | null
+    witelBaru?: string | null
+    idIHld?: string | null
+    noNdeSpmk?: string | null
+    uraianKegiatan?: string | null
+    segmen?: string | null
+    poName?: string | null
+    tanggalGolive?: Date | string | null
+    konfirmasiPo?: string | null
+    tanggalCb?: Date | string | null
+    jenisKegiatan?: string | null
+    revenuePlan?: number | null
+    usia?: number | null
+    statusProyek?: string | null
+    goLive?: string | null
+    keteranganToc?: string | null
+    mom?: string | null
+    baDrop?: string | null
+    statusTompsNew?: string | null
+    statusIHld?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    batchId?: string | null
+  }
+
+  export type ReportTambahanUncheckedCreateInput = {
+    id?: bigint | number
+    bulan?: string | null
+    tahun?: number | null
+    region?: string | null
+    witelLama?: string | null
+    witelBaru?: string | null
+    idIHld?: string | null
+    noNdeSpmk?: string | null
+    uraianKegiatan?: string | null
+    segmen?: string | null
+    poName?: string | null
+    tanggalGolive?: Date | string | null
+    konfirmasiPo?: string | null
+    tanggalCb?: Date | string | null
+    jenisKegiatan?: string | null
+    revenuePlan?: number | null
+    usia?: number | null
+    statusProyek?: string | null
+    goLive?: string | null
+    keteranganToc?: string | null
+    mom?: string | null
+    baDrop?: string | null
+    statusTompsNew?: string | null
+    statusIHld?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    batchId?: string | null
+  }
+
+  export type ReportTambahanUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    witelLama?: NullableStringFieldUpdateOperationsInput | string | null
+    witelBaru?: NullableStringFieldUpdateOperationsInput | string | null
+    idIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    noNdeSpmk?: NullableStringFieldUpdateOperationsInput | string | null
+    uraianKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    segmen?: NullableStringFieldUpdateOperationsInput | string | null
+    poName?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalGolive?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    konfirmasiPo?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalCb?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    jenisKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    revenuePlan?: NullableFloatFieldUpdateOperationsInput | number | null
+    usia?: NullableIntFieldUpdateOperationsInput | number | null
+    statusProyek?: NullableStringFieldUpdateOperationsInput | string | null
+    goLive?: NullableStringFieldUpdateOperationsInput | string | null
+    keteranganToc?: NullableStringFieldUpdateOperationsInput | string | null
+    mom?: NullableStringFieldUpdateOperationsInput | string | null
+    baDrop?: NullableStringFieldUpdateOperationsInput | string | null
+    statusTompsNew?: NullableStringFieldUpdateOperationsInput | string | null
+    statusIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportTambahanUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    witelLama?: NullableStringFieldUpdateOperationsInput | string | null
+    witelBaru?: NullableStringFieldUpdateOperationsInput | string | null
+    idIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    noNdeSpmk?: NullableStringFieldUpdateOperationsInput | string | null
+    uraianKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    segmen?: NullableStringFieldUpdateOperationsInput | string | null
+    poName?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalGolive?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    konfirmasiPo?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalCb?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    jenisKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    revenuePlan?: NullableFloatFieldUpdateOperationsInput | number | null
+    usia?: NullableIntFieldUpdateOperationsInput | number | null
+    statusProyek?: NullableStringFieldUpdateOperationsInput | string | null
+    goLive?: NullableStringFieldUpdateOperationsInput | string | null
+    keteranganToc?: NullableStringFieldUpdateOperationsInput | string | null
+    mom?: NullableStringFieldUpdateOperationsInput | string | null
+    baDrop?: NullableStringFieldUpdateOperationsInput | string | null
+    statusTompsNew?: NullableStringFieldUpdateOperationsInput | string | null
+    statusIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportTambahanCreateManyInput = {
+    id?: bigint | number
+    bulan?: string | null
+    tahun?: number | null
+    region?: string | null
+    witelLama?: string | null
+    witelBaru?: string | null
+    idIHld?: string | null
+    noNdeSpmk?: string | null
+    uraianKegiatan?: string | null
+    segmen?: string | null
+    poName?: string | null
+    tanggalGolive?: Date | string | null
+    konfirmasiPo?: string | null
+    tanggalCb?: Date | string | null
+    jenisKegiatan?: string | null
+    revenuePlan?: number | null
+    usia?: number | null
+    statusProyek?: string | null
+    goLive?: string | null
+    keteranganToc?: string | null
+    mom?: string | null
+    baDrop?: string | null
+    statusTompsNew?: string | null
+    statusIHld?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    batchId?: string | null
+  }
+
+  export type ReportTambahanUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    witelLama?: NullableStringFieldUpdateOperationsInput | string | null
+    witelBaru?: NullableStringFieldUpdateOperationsInput | string | null
+    idIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    noNdeSpmk?: NullableStringFieldUpdateOperationsInput | string | null
+    uraianKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    segmen?: NullableStringFieldUpdateOperationsInput | string | null
+    poName?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalGolive?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    konfirmasiPo?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalCb?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    jenisKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    revenuePlan?: NullableFloatFieldUpdateOperationsInput | number | null
+    usia?: NullableIntFieldUpdateOperationsInput | number | null
+    statusProyek?: NullableStringFieldUpdateOperationsInput | string | null
+    goLive?: NullableStringFieldUpdateOperationsInput | string | null
+    keteranganToc?: NullableStringFieldUpdateOperationsInput | string | null
+    mom?: NullableStringFieldUpdateOperationsInput | string | null
+    baDrop?: NullableStringFieldUpdateOperationsInput | string | null
+    statusTompsNew?: NullableStringFieldUpdateOperationsInput | string | null
+    statusIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportTambahanUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tahun?: NullableIntFieldUpdateOperationsInput | number | null
+    region?: NullableStringFieldUpdateOperationsInput | string | null
+    witelLama?: NullableStringFieldUpdateOperationsInput | string | null
+    witelBaru?: NullableStringFieldUpdateOperationsInput | string | null
+    idIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    noNdeSpmk?: NullableStringFieldUpdateOperationsInput | string | null
+    uraianKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    segmen?: NullableStringFieldUpdateOperationsInput | string | null
+    poName?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalGolive?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    konfirmasiPo?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggalCb?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    jenisKegiatan?: NullableStringFieldUpdateOperationsInput | string | null
+    revenuePlan?: NullableFloatFieldUpdateOperationsInput | number | null
+    usia?: NullableIntFieldUpdateOperationsInput | number | null
+    statusProyek?: NullableStringFieldUpdateOperationsInput | string | null
+    goLive?: NullableStringFieldUpdateOperationsInput | string | null
+    keteranganToc?: NullableStringFieldUpdateOperationsInput | string | null
+    mom?: NullableStringFieldUpdateOperationsInput | string | null
+    baDrop?: NullableStringFieldUpdateOperationsInput | string | null
+    statusTompsNew?: NullableStringFieldUpdateOperationsInput | string | null
+    statusIHld?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type DocumentDataCreateInput = {
     id?: bigint | number
     batchId?: string | null
@@ -43660,6 +45485,83 @@ export namespace Prisma {
     period?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poCreateInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUncheckedCreateInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poCreateManyInput = {
+    id?: bigint | number
+    nipnas?: string | null
+    po: string
+    segment?: string | null
+    bill_city?: string | null
+    witel?: string | null
+    created_at?: Date | string | null
+    updated_at?: Date | string | null
+  }
+
+  export type list_poUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type list_poUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
+    po?: StringFieldUpdateOperationsInput | string
+    segment?: NullableStringFieldUpdateOperationsInput | string | null
+    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
+    witel?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type CustomTargetCreateInput = {
@@ -44211,83 +46113,6 @@ export namespace Prisma {
     reserved_at?: NullableIntFieldUpdateOperationsInput | number | null
     available_at?: IntFieldUpdateOperationsInput | number
     created_at?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type list_poCreateInput = {
-    id?: bigint | number
-    nipnas?: string | null
-    po: string
-    segment?: string | null
-    bill_city?: string | null
-    witel?: string | null
-    created_at?: Date | string | null
-    updated_at?: Date | string | null
-  }
-
-  export type list_poUncheckedCreateInput = {
-    id?: bigint | number
-    nipnas?: string | null
-    po: string
-    segment?: string | null
-    bill_city?: string | null
-    witel?: string | null
-    created_at?: Date | string | null
-    updated_at?: Date | string | null
-  }
-
-  export type list_poUpdateInput = {
-    id?: BigIntFieldUpdateOperationsInput | bigint | number
-    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
-    po?: StringFieldUpdateOperationsInput | string
-    segment?: NullableStringFieldUpdateOperationsInput | string | null
-    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
-    witel?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  }
-
-  export type list_poUncheckedUpdateInput = {
-    id?: BigIntFieldUpdateOperationsInput | bigint | number
-    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
-    po?: StringFieldUpdateOperationsInput | string
-    segment?: NullableStringFieldUpdateOperationsInput | string | null
-    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
-    witel?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  }
-
-  export type list_poCreateManyInput = {
-    id?: bigint | number
-    nipnas?: string | null
-    po: string
-    segment?: string | null
-    bill_city?: string | null
-    witel?: string | null
-    created_at?: Date | string | null
-    updated_at?: Date | string | null
-  }
-
-  export type list_poUpdateManyMutationInput = {
-    id?: BigIntFieldUpdateOperationsInput | bigint | number
-    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
-    po?: StringFieldUpdateOperationsInput | string
-    segment?: NullableStringFieldUpdateOperationsInput | string | null
-    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
-    witel?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  }
-
-  export type list_poUncheckedUpdateManyInput = {
-    id?: BigIntFieldUpdateOperationsInput | bigint | number
-    nipnas?: NullableStringFieldUpdateOperationsInput | string | null
-    po?: StringFieldUpdateOperationsInput | string
-    segment?: NullableStringFieldUpdateOperationsInput | string | null
-    bill_city?: NullableStringFieldUpdateOperationsInput | string | null
-    witel?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type migrationsCreateInput = {
@@ -46673,6 +48498,137 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type ReportTambahanCountOrderByAggregateInput = {
+    id?: SortOrder
+    bulan?: SortOrder
+    tahun?: SortOrder
+    region?: SortOrder
+    witelLama?: SortOrder
+    witelBaru?: SortOrder
+    idIHld?: SortOrder
+    noNdeSpmk?: SortOrder
+    uraianKegiatan?: SortOrder
+    segmen?: SortOrder
+    poName?: SortOrder
+    tanggalGolive?: SortOrder
+    konfirmasiPo?: SortOrder
+    tanggalCb?: SortOrder
+    jenisKegiatan?: SortOrder
+    revenuePlan?: SortOrder
+    usia?: SortOrder
+    statusProyek?: SortOrder
+    goLive?: SortOrder
+    keteranganToc?: SortOrder
+    mom?: SortOrder
+    baDrop?: SortOrder
+    statusTompsNew?: SortOrder
+    statusIHld?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    batchId?: SortOrder
+  }
+
+  export type ReportTambahanAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tahun?: SortOrder
+    revenuePlan?: SortOrder
+    usia?: SortOrder
+  }
+
+  export type ReportTambahanMaxOrderByAggregateInput = {
+    id?: SortOrder
+    bulan?: SortOrder
+    tahun?: SortOrder
+    region?: SortOrder
+    witelLama?: SortOrder
+    witelBaru?: SortOrder
+    idIHld?: SortOrder
+    noNdeSpmk?: SortOrder
+    uraianKegiatan?: SortOrder
+    segmen?: SortOrder
+    poName?: SortOrder
+    tanggalGolive?: SortOrder
+    konfirmasiPo?: SortOrder
+    tanggalCb?: SortOrder
+    jenisKegiatan?: SortOrder
+    revenuePlan?: SortOrder
+    usia?: SortOrder
+    statusProyek?: SortOrder
+    goLive?: SortOrder
+    keteranganToc?: SortOrder
+    mom?: SortOrder
+    baDrop?: SortOrder
+    statusTompsNew?: SortOrder
+    statusIHld?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    batchId?: SortOrder
+  }
+
+  export type ReportTambahanMinOrderByAggregateInput = {
+    id?: SortOrder
+    bulan?: SortOrder
+    tahun?: SortOrder
+    region?: SortOrder
+    witelLama?: SortOrder
+    witelBaru?: SortOrder
+    idIHld?: SortOrder
+    noNdeSpmk?: SortOrder
+    uraianKegiatan?: SortOrder
+    segmen?: SortOrder
+    poName?: SortOrder
+    tanggalGolive?: SortOrder
+    konfirmasiPo?: SortOrder
+    tanggalCb?: SortOrder
+    jenisKegiatan?: SortOrder
+    revenuePlan?: SortOrder
+    usia?: SortOrder
+    statusProyek?: SortOrder
+    goLive?: SortOrder
+    keteranganToc?: SortOrder
+    mom?: SortOrder
+    baDrop?: SortOrder
+    statusTompsNew?: SortOrder
+    statusIHld?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    batchId?: SortOrder
+  }
+
+  export type ReportTambahanSumOrderByAggregateInput = {
+    id?: SortOrder
+    tahun?: SortOrder
+    revenuePlan?: SortOrder
+    usia?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type BoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolFilter<$PrismaModel> | boolean
@@ -46873,6 +48829,47 @@ export namespace Prisma {
   export type TargetSumOrderByAggregateInput = {
     id?: SortOrder
     targetValue?: SortOrder
+  }
+
+  export type list_poCountOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type list_poMaxOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poMinOrderByAggregateInput = {
+    id?: SortOrder
+    nipnas?: SortOrder
+    po?: SortOrder
+    segment?: SortOrder
+    bill_city?: SortOrder
+    witel?: SortOrder
+    created_at?: SortOrder
+    updated_at?: SortOrder
+  }
+
+  export type list_poSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type UserScalarRelationFilter = {
@@ -47282,47 +49279,6 @@ export namespace Prisma {
     reserved_at?: SortOrder
     available_at?: SortOrder
     created_at?: SortOrder
-  }
-
-  export type list_poCountOrderByAggregateInput = {
-    id?: SortOrder
-    nipnas?: SortOrder
-    po?: SortOrder
-    segment?: SortOrder
-    bill_city?: SortOrder
-    witel?: SortOrder
-    created_at?: SortOrder
-    updated_at?: SortOrder
-  }
-
-  export type list_poAvgOrderByAggregateInput = {
-    id?: SortOrder
-  }
-
-  export type list_poMaxOrderByAggregateInput = {
-    id?: SortOrder
-    nipnas?: SortOrder
-    po?: SortOrder
-    segment?: SortOrder
-    bill_city?: SortOrder
-    witel?: SortOrder
-    created_at?: SortOrder
-    updated_at?: SortOrder
-  }
-
-  export type list_poMinOrderByAggregateInput = {
-    id?: SortOrder
-    nipnas?: SortOrder
-    po?: SortOrder
-    segment?: SortOrder
-    bill_city?: SortOrder
-    witel?: SortOrder
-    created_at?: SortOrder
-    updated_at?: SortOrder
-  }
-
-  export type list_poSumOrderByAggregateInput = {
-    id?: SortOrder
   }
 
   export type migrationsCountOrderByAggregateInput = {
@@ -48065,6 +50021,14 @@ export namespace Prisma {
     divide?: Decimal | DecimalJsLike | number | string
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type BoolFieldUpdateOperationsInput = {
     set?: boolean
   }
@@ -48374,6 +50338,22 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type NestedBoolFilter<$PrismaModel = never> = {

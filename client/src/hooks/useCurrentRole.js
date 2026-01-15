@@ -9,7 +9,10 @@ import { roleService } from '../services/dashboardService'
  */
 export const useCurrentRole = () => {
   const { user } = useAuth()
-  const [currentRole, setCurrentRole] = useState(user?.currentRoleAs || user?.role || 'user')
+  const [currentRole, setCurrentRole] = useState(() => {
+    // Priority: user object currentRoleAs > localStorage currentRole > user object role > default 'user'
+    return user?.currentRoleAs || localStorage.getItem('currentRole') || user?.role || 'user'
+  })
 
   useEffect(() => {
     if (!user) return

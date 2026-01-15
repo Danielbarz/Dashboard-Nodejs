@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { FiDownload } from 'react-icons/fi'
+import { FiDownload, FiRefreshCw } from 'react-icons/fi'
 import axios from 'axios'
 import api from '../services/api'
 import FileUploadForm from '../components/FileUploadForm'
@@ -160,35 +160,6 @@ const ReportsHSI = () => {
                                 <th className="border border-slate-400 p-1 font-normal">ASP</th>
                                 <th className="border border-slate-400 p-1 font-normal">OSM</th>
                                 <th className="border border-slate-400 p-1 bg-gray-500">TOTAL</th>
-
-  const handleExport = async () => {
-    if (!startDate || !endDate) {
-      alert('Silakan pilih tanggal mulai dan tanggal akhir terlebih dahulu')
-      return
-    }
-    
-    try {
-      const response = await api.get('/dashboard/export/report-hsi', {
-        params: { 
-          start_date: startDate.toISOString(), 
-          end_date: endDate.toISOString() 
-        },
-        responseType: 'blob'
-      })
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `report-hsi-${new Date().getTime()}.xlsx`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Export failed:', error)
-      alert('Gagal export data. Silakan coba lagi.')
-    }
-  }
 
                                 <th className="border border-slate-400 p-1 bg-indigo-600">PI/RE</th>
                                 <th className="border border-slate-400 p-1 bg-indigo-600">PS/RE</th>

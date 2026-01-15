@@ -3,11 +3,12 @@ import {
   FiPlus, FiEdit2, FiTrash2, FiCheck, FiX,
   FiChevronLeft, FiChevronRight, FiAlertCircle, FiDatabase, FiUser
 } from 'react-icons/fi'
-import axios from 'axios'
+import api from '../services/api'
 
 const MasterDataPO = () => {
   // --- States ---
   const [activeTab, setActiveTab] = useState('po') // 'po', 'ao', 'mapping'
+  const [error, setError] = useState(null)
 
   const [accountOfficers, setAccountOfficers] = useState([])
   const [poMaster, setPoMaster] = useState([])
@@ -43,49 +44,45 @@ const MasterDataPO = () => {
   }, [])
 
   // --- Fetch Functions ---
-  const getAuthHeader = () => {
-    const token = localStorage.getItem('accessToken')
-    return { headers: { Authorization: `Bearer ${token}` } }
-  }
+    const fetchAccountOfficers = async () => {
+      try {
+        setError(null)
+        const response = await api.get('/master/account-officers')
+        const data = response.data.data
+        setAccountOfficers(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching AO:', error)
+        setError('Gagal memuat data Account Officer')
+      }
+    }
 
-  const fetchAccountOfficers = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers`,
-        getAuthHeader()
-      )
-      setAccountOfficers(response.data.data || [])
-    } catch (error) { console.error('Error fetching AO:', error) }
-  }
-
-  const fetchPOMaster = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po`,
-        getAuthHeader()
-      )
-      setPoMaster(response.data.data || [])
-    } catch (error) { console.error('Error fetching PO:', error) }
-  }
-
+    const fetchPOMaster = async () => {
+      try {
+        setError(null)
+        const response = await api.get('/master/po')
+        const data = response.data.data
+        setPoMaster(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching PO:', error)
+        setError('Gagal memuat data Master PO')
+      }
+    }
   const fetchUnmappedOrders = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/unmapped-orders`,
-        getAuthHeader()
-      )
+      setError(null)
+      const response = await api.get('/master/unmapped-orders')
       const data = response.data.data
       setUnmappedOrders(Array.isArray(data) ? data : (data?.items || []))
-    } catch (error) { console.error('Error fetching unmapped:', error) }
+    } catch (error) {
+      console.error('Error fetching unmapped:', error)
+      setError('Gagal memuat data Unmapped Orders')
+    }
   }
 
   // --- Handlers ---
   const handleAddAO = async () => {
     try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers`,
-        aoForm, getAuthHeader()
-      )
+      await api.post('/master/account-officers', aoForm)
       setShowAOModal(false)
       setAoForm({ name: '', displayWitel: '', filterWitelLama: '', specialFilterColumn: '', specialFilterValue: '' })
       fetchAccountOfficers()
@@ -95,20 +92,14 @@ const MasterDataPO = () => {
   const handleDeleteAO = async (id) => {
     if (!window.confirm('Hapus Account Officer ini?')) return
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/account-officers/${id}`,
-        getAuthHeader()
-      )
+      await api.delete(`/master/account-officers/${id}`)
       fetchAccountOfficers()
     } catch (error) { alert('Gagal menghapus AO') }
   }
 
   const handleAddPO = async () => {
     try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po`,
-        poForm, getAuthHeader()
-      )
+      await api.post('/master/po', poForm)
       setShowPOModal(false)
       setPoForm({ nipnas: '', namaPo: '', segment: '', witel: '' })
       fetchPOMaster()
@@ -118,10 +109,7 @@ const MasterDataPO = () => {
   const handleDeletePO = async (id) => {
     if (!window.confirm('Hapus PO ini?')) return
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/po/${id}`,
-        getAuthHeader()
-      )
+      await api.delete(`/master/po/${id}`)
       fetchPOMaster()
     } catch (error) { alert('Gagal menghapus PO') }
   }
@@ -139,10 +127,7 @@ const MasterDataPO = () => {
 
   const handleUpdateMapping = async () => {
     try {
-      await axios.put(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/update-mapping/${selectedOrder.id}`,
-        editForm, getAuthHeader()
-      )
+      await api.put(`/master/update-mapping/${selectedOrder.id}`, editForm)
       setShowEditModal(false)
       fetchUnmappedOrders()
     } catch (error) { alert('Gagal update mapping') }
@@ -150,10 +135,7 @@ const MasterDataPO = () => {
 
   const handleAutoMapping = async () => {
     try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/master/auto-mapping`,
-        {}, getAuthHeader()
-      )
+      await api.post('/master/auto-mapping', {})
       fetchUnmappedOrders()
       alert('Mapping otomatis selesai!')
     } catch (error) { alert('Gagal auto mapping') }
@@ -219,6 +201,19 @@ const MasterDataPO = () => {
 
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 shadow-sm rounded-r-lg">
+          <div className="flex items-center">
+            <FiAlertCircle className="text-red-400 mr-3" size={20} />
+            <p className="text-sm text-red-700 font-medium">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+              <FiX size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header & Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 bg-white">

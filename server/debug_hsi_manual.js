@@ -18,7 +18,7 @@ const getValue = (record, keyMap, ...candidates) => {
 const parseDate = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value;
-  
+
   if (typeof value === 'number') {
     return new Date(Math.round((value - 25569) * 86400 * 1000));
   }
@@ -36,7 +36,7 @@ const parseDate = (value) => {
     const p1 = parseInt(parts[0]);
     const p2 = parseInt(parts[1]);
     const p3 = parseInt(parts[2]);
-    
+
     let m, d, y;
     if (p1 > 12) {
        d = p1; m = p2; y = p3;
@@ -124,7 +124,7 @@ async function run() {
   console.log('Processing records...');
   const dataToCreate = rawData.map(record => {
     const keyMap = buildKeyMap(record);
-    
+
     const orderId = getValue(record, keyMap, 'order_id', 'orderid', 'no_order', 'noorder');
     const noorder = getValue(record, keyMap, 'no_order', 'noorder');
     const finalOrderId = orderId || noorder || `hsi_${Date.now()}_${Math.random()}`;

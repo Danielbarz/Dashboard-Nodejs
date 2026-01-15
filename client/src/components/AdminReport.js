@@ -1,7 +1,16 @@
 import React, { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import FileUploadForm from './FileUploadForm'
 
 const AdminReport = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('adminTab') || 'inprogress'
+
+  const setActiveTab = (tab) => {
+    const params = Object.fromEntries(searchParams.entries())
+    setSearchParams({ ...params, adminTab: tab }, { replace: true })
+  }
+
   const [targets, setTargets] = useState({
     BALI: { netmonk: 0, oca: 0, antares: 0, pijarSekolah: 0 },
     JATIM_BARAT: { netmonk: 0, oca: 0, antares: 0, pijarSekolah: 0 },
@@ -259,10 +268,30 @@ const AdminReport = () => {
         {/* Data Orders Table */}
         <div className="mt-6">
           <div className="flex gap-2 mb-4">
-            <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">In Progress (83)</button>
-            <button className="px-3 py-1 text-gray-600 text-sm">Complete (13300)</button>
-            <button className="px-3 py-1 text-gray-600 text-sm">QC (6)</button>
-            <button className="px-3 py-1 text-gray-600 text-sm">History (159)</button>
+            <button
+              onClick={() => setActiveTab('inprogress')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'inprogress' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              In Progress (83)
+            </button>
+            <button
+              onClick={() => setActiveTab('complete')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'complete' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              Complete (13300)
+            </button>
+            <button
+              onClick={() => setActiveTab('qc')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'qc' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              QC (6)
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'history' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              History (159)
+            </button>
           </div>
 
           <div className="flex gap-2 mb-4">

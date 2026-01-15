@@ -5,7 +5,7 @@ const prisma = new PrismaClient()
 async function insertData() {
   try {
     console.log('Inserting sample data...')
-    
+
     const product = await prisma.digitalProduct.create({
       data: {
         orderNumber: 'ORD-TEST-001',
@@ -18,12 +18,12 @@ async function insertData() {
         subType: 'Internet Retail'
       }
     })
-    
+
     console.log('✓ Created:', product.orderNumber)
-    
+
     const all = await prisma.digitalProduct.findMany()
     console.log(`Total products: ${all.length}`)
-    
+
   } catch (error) {
     console.error('Error:', error.message)
   } finally {

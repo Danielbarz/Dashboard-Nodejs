@@ -3,7 +3,7 @@ import prisma from './src/lib/prisma.js'
 async function debugData() {
   try {
     console.log('🔍 Checking SPMK MOM Data...')
-    
+
     const count = await prisma.spmkMom.count()
     console.log(`📊 Total Rows: ${count}`)
 
@@ -26,7 +26,7 @@ async function debugData() {
     })
 
     console.log('📄 Latest 5 Rows Data:')
-    console.log(JSON.stringify(rows, (key, value) => 
+    console.log(JSON.stringify(rows, (key, value) =>
       typeof value === 'bigint' ? value.toString() : value
     , 2))
 

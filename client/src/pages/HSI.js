@@ -77,7 +77,7 @@ export default function DashboardHSI() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, [startDate, endDate, selectedWitels, selectedBranches, selectedMapStatus, currentPage]);
+    const [localSearch, setLocalSearch] = useState(searchQuery);
 
     const handleSearch = (e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchData(); } };
     const resetFilter = () => {

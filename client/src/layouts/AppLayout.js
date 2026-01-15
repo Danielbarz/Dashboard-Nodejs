@@ -303,7 +303,8 @@ const AppLayout = ({ children, pageTitle }) => {
     const pathMap = {
       '/': 'Home',
       '/home': 'Home',
-      '/analysis': 'Dashboard Digital Product',
+      '/dashboard': 'Dashboard Digital Product',
+      '/analysis': 'Analysis Digital Product',
       '/tambahan': 'Dashboard Jaringan Tambahan',
       '/datin': 'Dashboard Datin',
       '/hsi': 'Dashboard HSI',
