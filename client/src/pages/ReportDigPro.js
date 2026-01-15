@@ -377,9 +377,9 @@ const ReportDigPro = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data?.data?.filters) {
-          if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
-            setWitelOptions(response.data.data.filters.witels)
-          }
+          // if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
+          //   setWitelOptions(response.data.data.filters.witels)
+          // }
         }
       } catch (error) {
         console.error('Failed to fetch filter options:', error)

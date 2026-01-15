@@ -871,6 +871,7 @@ export const getHSIDateRange = async (req, res, next) => {
 };
 
 export const getReportDetails = async (req, res, next) => {
+  console.log('[getReportDetails] Start', req.query);
   try {
     const { start_date, end_date, segment, witel, status } = req.query;
     let where = {};
@@ -920,7 +921,7 @@ export const getReportDetails = async (req, res, next) => {
       if (targets.length > 0) where.witel = { in: targets };
     }
     const data = await prisma.digitalProduct.findMany({
-      where: finalWhere,
+      where: where,
       select: {
         orderNumber: true,
         productName: true,
@@ -989,15 +990,20 @@ export const getReportDetails = async (req, res, next) => {
 }
 
 // Get KPI PO Data
+// Get KPI PO Data
 export const getKPIPOData = async (req, res, next) => {
+  console.log('[getKPIPOData] Start', req.query);
   try {
     const { start_date, end_date, witel } = req.query;
     const aos = await prisma.accountOfficer.findMany({
       orderBy: { name: "asc" },
     });
+    console.log('[getKPIPOData] AOs found:', aos.length);
     let where = {};
     if (start_date && end_date)
       where.orderDate = { gte: new Date(start_date), lte: new Date(end_date) };
+    
+    console.log('[getKPIPOData] Querying digital products with:', JSON.stringify(where));
     const digital = await prisma.digitalProduct.findMany({
       where: {
         AND: [
@@ -1013,6 +1019,7 @@ export const getKPIPOData = async (req, res, next) => {
         ],
       },
     });
+    console.log('[getKPIPOData] Digital products found:', digital.length);
     const result = aos.map((ao) => {
       const relevant = digital.filter((row) => {
         const filters = (ao.filterWitelLama || "")
@@ -1021,7 +1028,10 @@ export const getKPIPOData = async (req, res, next) => {
           .map((s) => s.trim());
         const rowW = (row.witel || "").toLowerCase();
         const wMatch = filters.some((f) => rowW.includes(f));
+        
         let sMatch = true;
+        let specialMatch = true;
+
         if (ao.specialFilterColumn && ao.specialFilterValue) {
            const col = ao.specialFilterColumn // e.g. 'segment'
            const val = ao.specialFilterValue.toUpperCase() // e.g. 'SME' or 'LEGS'
@@ -1039,8 +1049,7 @@ export const getKPIPOData = async (req, res, next) => {
                    const smeKeywords = ['SME', 'RBS', 'DSS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'ERM']
                    specialMatch = smeKeywords.some(k => rowVal.includes(k))
                 } else if (val === 'LEGS') {
-                   // LEGS Group (Assuming REG falls here based on distribution, verify if needed)
-                   // Added 'REG' to LEGS based on implicit requirement usually found in Telkom projects
+                   // LEGS Group
                    const legsKeywords = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT']
                    specialMatch = legsKeywords.some(k => rowVal.includes(k))
                 } else {
@@ -1051,9 +1060,10 @@ export const getKPIPOData = async (req, res, next) => {
                 specialMatch = rowVal.includes(val)
              }
            }
+           sMatch = specialMatch
         }
 
-        return witelMatch && specialMatch
+        return wMatch && sMatch
       })
 
       // Calculate Metrics
@@ -1062,7 +1072,7 @@ export const getKPIPOData = async (req, res, next) => {
       let ogp_ncx = 0
       let ogp_scone = 0
 
-      relevantData.forEach(row => {
+      relevant.forEach(row => {
         const channelRaw = (row.channel || '').toUpperCase().trim()
         const isNcx = (channelRaw === 'NCX')
         // Match SC-ONE, SC ONE, SCONE, SC-One, etc.
@@ -1079,20 +1089,24 @@ export const getKPIPOData = async (req, res, next) => {
           else if (isScOne) ogp_scone++
         }
       });
-      const total = d_ncx + d_scone + o_ncx + o_scone;
+      
+      const total = done_ncx + done_scone + ogp_ncx + ogp_scone;
+      
       return {
         nama_po: ao.name,
         witel: ao.displayWitel,
-        done_ncx: d_ncx,
-        done_scone: d_scone,
-        ogp_ncx: o_ncx,
-        ogp_scone: o_scone,
+        done_ncx: done_ncx,
+        done_scone: done_scone,
+        ogp_ncx: ogp_ncx,
+        ogp_scone: ogp_scone,
         total,
-        ach_ytd: total > 0 ? (((d_ncx + d_scone) / total) * 100).toFixed(1) : 0,
+        ach_ytd: total > 0 ? (((done_ncx + done_scone) / total) * 100).toFixed(1) : 0,
+        ach_q3: 0 // Placeholder
       };
     });
     successResponse(res, result, "KPI PO data retrieved successfully");
   } catch (error) {
+    console.error('[getKPIPOData] Error:', error);
     next(error);
   }
 };

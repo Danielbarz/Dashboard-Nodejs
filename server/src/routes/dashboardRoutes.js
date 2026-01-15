@@ -31,9 +31,48 @@ import {
 } from '../controllers/dashboardController.js'
 
 const router = express.Router()
-// ... existing routes ...
+
+// Dashboard Main Data
+router.get('/', authenticate, getDashboardData)
+
+// SOS Dashboard Charts
+router.get('/revenue-by-witel', authenticate, getRevenueByWitel)
+router.get('/amount-by-witel', authenticate, getAmountByWitel)
+router.get('/kpi', authenticate, getKPIData)
+router.get('/total-order-by-regional', authenticate, getTotalOrderByRegional)
+router.get('/sebaran-data-ps', authenticate, getSebaranDataPS)
+router.get('/cancel-by-fcc', authenticate, getCancelByFCC)
+router.get('/filter-options', authenticate, getFilterOptions)
+
+// SOS Datin Dashboard
+router.get('/sos-datin/filters', authenticate, getSOSDatinFilters)
+router.get('/sos-datin/stats', authenticate, getSOSDatinDashboard)
+
 // Digital Product Dashboard Charts
 router.get('/digital-product/filters', authenticate, getDigitalProductFilters)
 router.get('/digital-product/stats', authenticate, getDigitalProductDashboard)
+
+// HSI Dashboard
+router.get('/hsi', authenticate, getHSIDashboard)
+router.get('/hsi/flow-stats', authenticate, getHSIFlowStats)
+router.get('/hsi/flow-detail', authenticate, getHSIFlowDetail)
+
+// JT (Jaringan Tambahan) Dashboard
+router.get('/jt/stats', authenticate, getJTDashboard)
+router.get('/jt/filters', authenticate, getJTFilters)
+router.get('/jt/report', authenticate, getJTReport)
+
+// Reports (Data Table View)
+router.get('/report-tambahan', authenticate, getReportTambahan)
+router.get('/report-datin', authenticate, getReportDatin)
+router.get('/report-analysis', authenticate, getReportAnalysis)
+router.get('/report-hsi', authenticate, getReportHSI)
+
+// Exports
+router.get('/export/report-analysis', exportReportAnalysis)
+router.get('/export/report-datin', exportReportDatin)
+router.get('/export/report-tambahan', exportReportTambahan)
+router.get('/export/report-hsi', exportReportHSI)
+router.get('/export/jt-report', exportJTReport)
 
 export default router
