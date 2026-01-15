@@ -1,19 +1,27 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
-import DropdownCheckbox from '../components/DropdownCheckbox'
-import StackedBarChart from '../components/StackedBarChart'
-import PieDonutChart from '../components/PieDonutChart'
-import { FiSearch, FiRefreshCw } from 'react-icons/fi'
+import KPICard from '../components/KPICard'
+import {
+  OrderByStatusChart,
+  RevenueByStatusChart,
+  StatusPerWitelChart,
+  RevenueTrendChart,
+  RevenuePerWitelChart,
+  OrderPerWitelChart,
+  RevenuePerProductChart
+} from '../components/DatinCharts'
+import { FiChevronDown, FiDollarSign, FiActivity, FiShoppingCart } from 'react-icons/fi'
 
 const DATIN = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentRole = useCurrentRole()
+  // eslint-disable-next-line no-unused-vars
   const isAdmin = ['admin', 'superadmin'].includes(currentRole)
 
   // Derived states from URL
-  const startDate = searchParams.get('start_date') || '2025-01-01'
+  const startDate = searchParams.get('start_date') || '2020-01-01'
   const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0]
   const selectedWitels = searchParams.get('witels')?.split(',').filter(Boolean) || []
   const selectedSegments = searchParams.get('segments')?.split(',').filter(Boolean) || []
@@ -46,21 +54,22 @@ const DATIN = () => {
     updateFilters({ page: pageNum.toString() })
   }
 
+  // Dropdown Open States
+  const [isWitelDropdownOpen, setIsWitelDropdownOpen] = useState(false)
+  const [isSegmentDropdownOpen, setIsSegmentDropdownOpen] = useState(false)
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
+
   // Options from API
   const [filterOptions, setFilterOptions] = useState({ witels: [], segments: [], categories: [] })
 
   // Dashboard Data
   const [stats, setStats] = useState({
-    ordersByCategory: [],
-    revenueByCategory: [],
-    witelDistribution: [],
-    segmenDistribution: []
+    kpi: { realizedRevenue: 0, pipelineRevenue: 0, totalOrder: 0 },
+    section2: { orderByStatus: [], revenueByStatus: [], statusPerWitel: [] },
+    section3: { revenueTrend: [], revenuePerWitel: [], orderPerWitel: [], revenuePerProduct: [] }
   })
 
-  const [tableData, setTableData] = useState([])
-  const [loading, setLoading] = useState(false)
   const [statsLoading, setStatsLoading] = useState(false)
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
   const [refreshKey, setRefreshKey] = useState(0)
 
   // 1. Fetch Filter Options
@@ -97,296 +106,230 @@ const DATIN = () => {
     }
   }
 
-  // 3. Fetch Table Data (Preview)
-  const fetchTableData = async () => {
-    setLoading(true)
-    try {
-      const params = {
-        start_date: startDate,
-        end_date: endDate,
-        witel: selectedWitels.join(','),
-        segment: selectedSegments.join(','),
-        kategori: selectedCategories.join(','),
-        search: search,
-        page: currentPage,
-        limit: pageSize
-      }
-      // Re-using the same report details endpoint if available, otherwise adjust
-      const response = await api.get('/report/sos-details', { params })
-      if (response.data?.data) {
-        setTableData(response.data.data.data)
-        setPagination(response.data.data.pagination)
-      }
-    } catch (error) {
-      console.error('Failed to fetch table data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     fetchFilterOptions()
   }, [])
 
   useEffect(() => {
     fetchDashboardStats()
-    fetchTableData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, selectedWitels, selectedSegments, selectedCategories, refreshKey])
 
-  useEffect(() => {
-    fetchTableData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize])
-
-  const handleApplyFilter = () => {
-    updateFilters({ search: localSearch, page: '1' })
-    setRefreshKey(prev => prev + 1)
-  }
+  const handleApplyFilter = () => setRefreshKey(prev => prev + 1)
 
   const handleResetFilter = () => {
-    setSearchParams({}, { replace: true })
-    setLocalSearch('')
+    setStartDate('2020-01-01')
+    setEndDate(new Date().toISOString().split('T')[0])
+    setSelectedWitels([])
+    setSelectedSegments([])
+    setSelectedCategories([])
   }
 
-  // --- Chart 1: Jumlah Order Data Mapping ---
-  const chart1Data = useMemo(() => stats.ordersByCategory.map(i => ({
-    name: i.kategori,
-    '< 3 BLN': i.lt_3bln_total,
-    '> 3 BLN': i.gt_3bln_total
-  })), [stats.ordersByCategory])
+  const toggleSelection = (option, selectedList, setter) => {
+    if (selectedList.includes(option)) {
+      setter(selectedList.filter(item => item !== option))
+    } else {
+      setter([...selectedList, option])
+    }
+  }
 
-  // --- Chart 2: Estimasi Revenue Data Mapping ---
-  const chart2Data = useMemo(() => stats.revenueByCategory.map(i => ({
-    name: i.kategori,
-    '< 3 BLN (Juta)': i.lt_3bln_revenue,
-    '> 3 BLN (Juta)': i.gt_3bln_revenue
-  })), [stats.revenueByCategory])
-
-  // --- Chart 3: Witel Distribution Mapping ---
-  const chart3Data = useMemo(() => stats.witelDistribution.map(i => ({
-    name: i.witel,
-    'Jumlah Order': i.value
-  })), [stats.witelDistribution])
+  const LoadingPlaceholder = ({ height = '300px' }) => (
+    <div className={`bg-white rounded-lg shadow p-6 flex items-center justify-center text-gray-400`} style={{ height }}>
+      Loading...
+    </div>
+  )
 
   return (
     <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard SOS Datin</h1>
-          <p className="text-gray-500 text-sm">Analisis Order dan Revenue berdasarkan Kategori & Umur</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard DATIN</h1>
+          <p className="text-gray-500 text-sm">Monitoring & Performance Analysis</p>
         </div>
-        <button
-          onClick={handleApplyFilter}
-          className="p-2 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition-colors"
-          title="Refresh Data"
-        >
-          <FiRefreshCw className={statsLoading ? 'animate-spin' : ''} />
-        </button>
       </div>
 
-      {/* Modern Filter Section */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-gray-100 p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* --- FILTERS --- */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-4 sticky top-0 z-20 border-b border-gray-200">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Date Picker */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Periode</label>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full text-xs p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700"
               />
-              <span className="text-gray-300">-</span>
+            </div>
+            <span className="text-gray-400 font-light">|</span>
+            <div className="flex flex-col justify-center px-1">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full text-xs p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700"
               />
             </div>
           </div>
 
           {/* Witel */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Witel</label>
-            <DropdownCheckbox
-              title="Semua Witel"
-              options={filterOptions.witels}
-              selectedOptions={selectedWitels}
-              onSelectionChange={setSelectedWitels}
-            />
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+            <div className="flex flex-col justify-center px-2 h-full w-40">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
+              <div
+                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
+              >
+                <span className="truncate">{selectedWitels.length > 0 ? `${selectedWitels.length} Selected` : 'Semua Witel'}</span>
+                <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            {isWitelDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                {filterOptions.witels.map(option => (
+                  <div
+                    key={option}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    onClick={() => toggleSelection(option, selectedWitels, setSelectedWitels)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedWitels.includes(option)}
+                      readOnly
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                    />
+                    <span className="text-sm text-gray-700">{option}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Segmen */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Segmen</label>
-            <DropdownCheckbox
-              title="Semua Segmen"
-              options={filterOptions.segments}
-              selectedOptions={selectedSegments}
-              onSelectionChange={setSelectedSegments}
-            />
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+            <div className="flex flex-col justify-center px-2 h-full w-40">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Segmen</span>
+              <div
+                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
+              >
+                <span className="truncate">{selectedSegments.length > 0 ? `${selectedSegments.length} Selected` : 'Semua Segmen'}</span>
+                <FiChevronDown className={`ml-1 transition-transform ${isSegmentDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            {isSegmentDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                {filterOptions.segments.map(option => (
+                  <div
+                    key={option}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    onClick={() => toggleSelection(option, selectedSegments, setSelectedSegments)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSegments.includes(option)}
+                      readOnly
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                    />
+                    <span className="text-sm text-gray-700">{option}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Kategori */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Kategori</label>
-            <DropdownCheckbox
-              title="Semua Kategori"
-              options={filterOptions.categories}
-              selectedOptions={selectedCategories}
-              onSelectionChange={setSelectedCategories}
-            />
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
+            <div className="flex flex-col justify-center px-2 h-full w-40">
+              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Kategori</span>
+              <div
+                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+              >
+                <span className="truncate">{selectedCategories.length > 0 ? `${selectedCategories.length} Selected` : 'Semua Kategori'}</span>
+                <FiChevronDown className={`ml-1 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            {isCategoryDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                {filterOptions.categories.map(option => (
+                  <div
+                    key={option}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                    onClick={() => toggleSelection(option, selectedCategories, setSelectedCategories)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(option)}
+                      readOnly
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 pointer-events-none"
+                    />
+                    <span className="text-sm text-gray-700">{option}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Reset */}
-          <div className="flex items-end">
+          <div className="flex gap-2">
             <button
               onClick={handleResetFilter}
-              className="w-full py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200 transition-all"
+              className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold uppercase hover:bg-gray-200 h-10"
             >
-              Reset Filter
+              Reset
             </button>
           </div>
         </div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* C1: Jumlah Order by Kategori */}
-        <div className="h-full">
-          {statsLoading ? <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 flex items-center justify-center text-gray-400 h-[400px]">Loading...</div> : (
-            <StackedBarChart
-              title="Jumlah Order by Kategori"
-              data={chart1Data}
-              colors={['#3b82f6', '#ef4444']}
-            />
-          )}
-        </div>
+      {/* --- SECTION 1: KPI CARDS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <KPICard
+          title="REALIZED REVENUE (Ready to Bill)"
+          value={`Rp ${stats.kpi.realizedRevenue.toLocaleString('id-ID')}`}
+          icon={<FiDollarSign />}
+          color="green"
+        />
+        <KPICard
+          title="PIPELINE REVENUE (On Progress)"
+          value={`Rp ${stats.kpi.pipelineRevenue.toLocaleString('id-ID')}`}
+          icon={<FiActivity />}
+          color="orange"
+        />
+        <KPICard
+          title="TOTAL ORDER"
+          value={stats.kpi.totalOrder}
+          icon={<FiShoppingCart />}
+          color="blue"
+        />
+      </div>
 
-        {/* C2: Estimasi Revenue by Kategori */}
-        <div className="h-full">
-          {statsLoading ? <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 flex items-center justify-center text-gray-400 h-[400px]">Loading...</div> : (
-            <StackedBarChart
-              title="Estimasi Revenue by Kategori (Juta)"
-              data={chart2Data}
-              colors={['#3b82f6', '#ef4444']}
-            />
-          )}
-        </div>
-
-        {/* C3: Distribusi Order by Witel */}
-        <div className="h-full">
-          {statsLoading ? <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 flex items-center justify-center text-gray-400 h-[400px]">Loading...</div> : (
-            <StackedBarChart
-              title="Distribusi Order by Witel"
-              data={chart3Data}
-              colors={['#f59e0b']}
-            />
-          )}
-        </div>
-
-        {/* C4: Distribusi Order by Segmen */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 h-full min-h-[400px]">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            Distribusi Order by Segmen
-          </h3>
-          <div className="h-[320px] flex items-center justify-center">
-            {statsLoading ? <div className="flex items-center justify-center h-full text-gray-400">Loading...</div> : (
-              <PieDonutChart
-                data={stats.segmenDistribution}
-                title=""
-              />
-            )}
-          </div>
+      {/* --- SECTION 2: STATUS & DELIVERY MONITORING --- */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">Status & Delivery Monitoring</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {statsLoading ? <LoadingPlaceholder /> : <OrderByStatusChart data={stats.section2.orderByStatus} />}
+          {statsLoading ? <LoadingPlaceholder /> : <RevenueByStatusChart data={stats.section2.revenueByStatus} />}
+          {statsLoading ? <LoadingPlaceholder /> : <StatusPerWitelChart data={stats.section2.statusPerWitel} />}
         </div>
       </div>
 
-      {/* Data Preview Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap border-b border-gray-50 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-              <FiSearch size={20} />
-            </div>
-            <h2 className="text-lg font-bold text-gray-800">Data Preview Details</h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <input
-                placeholder="Cari Order ID / Pelanggan..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
-                className="pl-4 pr-10 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
-              />
-              <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            </div>
-            <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-              className="px-2 py-2 border border-gray-200 rounded-xl text-sm outline-none"
-            >
-              {[10, 25, 50].map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
+      {/* --- SECTION 3: PERFORMANCE MONITORING --- */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-purple-600 pl-3">Performance Monitoring</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {statsLoading ? <LoadingPlaceholder /> : <RevenueTrendChart data={stats.section3.revenueTrend} />}
+          {statsLoading ? <LoadingPlaceholder /> : <RevenuePerWitelChart data={stats.section3.revenuePerWitel} />}
         </div>
-
-        <div className="overflow-x-auto rounded-xl border border-gray-100">
-          <table className="min-w-full text-xs">
-            <thead className="bg-gray-50/50 text-gray-500 uppercase tracking-wider font-bold">
-              <tr>
-                {['Order ID', 'Order Date', 'NIPNAS', 'Standard Name', 'Produk', 'Revenue', 'Segmen', 'Kategori', 'Umur', 'Bill Witel', 'Status', 'Witel Baru'].map((col) => (
-                  <th key={col} className="px-4 py-3 text-left whitespace-nowrap">{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400">Loading table data...</td></tr>
-              ) : tableData.length > 0 ? (
-                tableData.map((row) => (
-                  <tr key={row.orderId} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-4 py-3 font-medium text-blue-600">{row.orderId}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{row.orderCreatedDate ? new Date(row.orderCreatedDate).toLocaleDateString('id-ID') : '-'}</td>
-                    <td className="px-4 py-3">{row.nipnas}</td>
-                    <td className="px-4 py-3 font-semibold truncate max-w-[150px]" title={row.standardName}>{row.standardName}</td>
-                    <td className="px-4 py-3">{row.liProductName}</td>
-                    <td className="px-4 py-3 font-mono text-gray-600">{Number(row.revenue).toLocaleString('id-ID')}</td>
-                    <td className="px-4 py-3">{row.segmen}</td>
-                    <td className="px-4 py-3">{row.kategori}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${row.kategoriUmur === '< 3 BLN' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                        {row.kategoriUmur}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{row.billWitel}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 bg-gray-100 rounded-md text-gray-600">{row.liStatus}</span>
-                    </td>
-                    <td className="px-4 py-3 font-bold">{row.witelBaru}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={12} className="px-4 py-10 text-center text-gray-400 font-medium">Belum ada data ditemukan</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-gray-500 gap-4 pt-4">
-          <span>Menampilkan <b>{(currentPage - 1) * pageSize + 1}</b> - <b>{Math.min(currentPage * pageSize, pagination.total)}</b> dari <b>{pagination.total}</b> hasil</span>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30">Previous</button>
-            <div className="flex items-center px-4 font-bold text-gray-700">Page {currentPage} of {pagination.totalPages || 1}</div>
-            <button onClick={() => setCurrentPage(p => Math.min(p + 1, pagination.totalPages))} disabled={currentPage === pagination.totalPages || pagination.totalPages === 0} className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30">Next</button>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {statsLoading ? <LoadingPlaceholder /> : <OrderPerWitelChart data={stats.section3.orderPerWitel} />}
+          {statsLoading ? <LoadingPlaceholder /> : <RevenuePerProductChart data={stats.section3.revenuePerProduct} />}
         </div>
       </div>
+
     </div>
   )
 }

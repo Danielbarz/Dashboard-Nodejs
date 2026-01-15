@@ -1,7 +1,9 @@
 import React from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts'
 
-const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981', '#EF4444'] }) => {
+const StackedBarChart = ({ title, data, colors = ['#3b82f6', '#ef4444', '#10B981', '#F59E0B'], layout, xAxisLabel, yAxisLabel, grouped = false }) => {
+  console.log(`[StackedBarChart Debug] Rendering "${title}"`, { layout, xAxisLabel, yAxisLabel, dataLen: data?.length, sample: data?.[0] })
+  
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -13,7 +15,10 @@ const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981
     )
   }
 
-  // Sort by total value and ambil top 10 supaya label tidak menumpuk
+  // Debugging: Cek data di console
+  // console.log(`Chart Data [${title}]:`, data)
+
+  // Ambil data untuk ditampilkan (Top 10)
   const sortableKeys = Object.keys(data[0]).filter(key => key !== 'name' && key !== 'Name')
   const topData = [...data]
     .map(item => {
@@ -25,30 +30,75 @@ const StackedBarChart = ({ title, data, colors = ['#FFA500', '#4F46E5', '#10B981
     .map(d => d.item)
 
   const keys = sortableKeys.slice(0, 4)
+  const isHorizontal = layout === 'horizontal'
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-      <ResponsiveContainer width="100%" height={380}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="name"
-            angle={-45}
-            textAnchor="end"
-            height={100}
-            tick={{ fontSize: 12 }}
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart
+          data={topData}
+          layout={isHorizontal ? 'vertical' : 'horizontal'} // Recharts layout logic: 'vertical' means bars are horizontal
+          margin={{ top: 20, right: 50, left: 50, bottom: 50 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={!isHorizontal} horizontal={isHorizontal} />
+          
+          {isHorizontal ? (
+            // === HORIZONTAL CHART (e.g. Witel) ===
+            // Y-Axis = Kategori (Bali, Jatim)
+            // X-Axis = Angka (0, 100, 200)
+            <>
+              <XAxis type="number" tick={{ fontSize: 12 }}>
+                <Label value={xAxisLabel} position="bottom" offset={0} style={{ fontSize: '12px', fontWeight: 'bold' }} />
+              </XAxis>
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                width={120} 
+                tick={{ fontSize: 11, fontWeight: 600 }}
+              >
+                <Label value={yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: '12px', fontWeight: 'bold' }} />
+              </YAxis>
+            </>
+          ) : (
+            // === VERTICAL CHART (e.g. Status, Revenue) ===
+            // X-Axis = Kategori (In Process, Ready to Bill)
+            // Y-Axis = Angka (0, 500, 1000)
+            <>
+              <XAxis
+                dataKey="name"
+                type="category"
+                tick={{ fontSize: 11, fontWeight: 600 }}
+                interval={0} // Force show all labels
+              >
+                <Label value={xAxisLabel} position="bottom" offset={10} style={{ fontSize: '12px', fontWeight: 'bold' }} />
+              </XAxis>
+              <YAxis type="number" tick={{ fontSize: 12 }}>
+                <Label value={yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: '12px', fontWeight: 'bold' }} />
+              </YAxis>
+            </>
+          )}
+
+          <Tooltip 
+            formatter={(value) => value.toLocaleString('id-ID')}
+            cursor={{ fill: 'rgba(0,0,0,0.05)' }}
           />
-          <YAxis />
-          <Tooltip formatter={(value) => value.toLocaleString('id-ID')} />
-          <Legend />
+          <Legend verticalAlign="top" height={36} />
+          
           {keys.map((key, index) => (
             <Bar
               key={key}
               dataKey={key}
-              stackId="a"
+              stackId={grouped ? undefined : "a"}
               fill={colors[index % colors.length]}
               name={key}
+              // Label angka pada bar
+              label={{ 
+                position: isHorizontal ? 'right' : 'top', 
+                formatter: (val) => val > 0 ? val.toLocaleString('id-ID') : '',
+                fontSize: 10,
+                fill: '#666'
+              }}
             />
           ))}
         </BarChart>

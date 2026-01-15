@@ -1,36 +1,29 @@
-// server/src/controllers/masterController.js
 import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 
 // --- ACCOUNT OFFICERS ---
 export const getAccountOfficers = async (req, res) => {
   try {
-    const data = await prisma.accountOfficer.findMany({
-      orderBy: { name: 'asc' }
+    const data = await prisma.list_po.findMany({
+      orderBy: { po: 'asc' }
     })
     // Konversi BigInt ke string agar JSON aman
     const formatted = data.map(item => ({
       ...item,
       id: item.id.toString()
     }))
-    return successResponse(res, formatted, 'Account Officers retrieved')
+    successResponse(res, formattedData, 'Data PO retrieved successfully')
   } catch (error) {
-    console.error('Get AO Error:', error)
-    return errorResponse(res, 'Failed to fetch Account Officers', 500)
+    console.error(error)
+    errorResponse(res, 'Failed to fetch PO Master', 500)
   }
 }
 
-export const createAccountOfficer = async (req, res) => {
+// Get All Account Officers
+export const getAccountOfficers = async (req, res) => {
   try {
-    const { name, displayWitel, filterWitelLama, specialFilterColumn, specialFilterValue } = req.body
-    await prisma.accountOfficer.create({
-      data: {
-        name,
-        displayWitel,
-        filterWitelLama,
-        specialFilterColumn,
-        specialFilterValue
-      }
+    const data = await prisma.accountOfficer.findMany({
+        orderBy: { name: 'asc' }
     })
     return successResponse(res, null, 'Account Officer created')
   } catch (error) {
@@ -61,10 +54,10 @@ export const getPOMaster = async (req, res) => {
       billCity: item.bill_city,
       witel: item.witel
     }))
-    return successResponse(res, formatted, 'PO Master retrieved')
+    successResponse(res, formattedData, 'AO retrieved successfully')
   } catch (error) {
-    console.error('Get PO Error:', error)
-    return errorResponse(res, 'Failed to fetch PO Master', 500)
+    console.error(error)
+    errorResponse(res, 'Failed to fetch Account Officers', 500)
   }
 }
 
@@ -125,15 +118,15 @@ export const getUnmappedOrders = async (req, res) => {
       take: 50
     })
 
-    const formatted = data.map(item => ({
-      id: item.id.toString(),
-      orderId: item.orderId,
-      nipnas: item.nipnas,
-      customerName: item.standardName || item.customerName,
-      custCity: item.custCity,
-      billCity: item.billCity,
-      servCity: item.servCity,
-      billWitel: item.billWitel
+    const formattedData = unmappedSos.map(item => ({
+        id: item.id.toString(),
+        orderId: item.orderId,
+        customerName: item.standardName || item.customerName, // Sesuaikan kolom
+        nipnas: item.nipnas,
+        custCity: item.custCity,
+        billCity: item.billCity,
+        billWitel: item.billWitel,
+        segment: item.segmen
     }))
     return successResponse(res, formatted, 'Unmapped orders retrieved')
   } catch (error) {
@@ -147,13 +140,10 @@ export const updateMapping = async (req, res) => {
     const { id } = req.params
     const { poName, billCity, billWitel, segment } = req.body
 
-    await prisma.sosData.update({
-      where: { id: BigInt(id) },
-      data: { poName, billCity, billWitel, segmen: segment }
-    })
-    return successResponse(res, null, 'Mapping updated')
+    successResponse(res, formattedData, 'Unmapped orders retrieved')
   } catch (error) {
-    return errorResponse(res, 'Failed to update mapping', 500)
+    console.error(error)
+    errorResponse(res, 'Failed to fetch unmapped orders', 500)
   }
 }
 
