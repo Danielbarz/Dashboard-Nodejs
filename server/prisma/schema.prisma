@@ -390,6 +390,7 @@ model Target {
   id          BigInt   @id @default(autoincrement())
   periodType  String   @map("period_type") @db.VarChar(50) // BULANAN, KUARTAL, TAHUNAN
   targetType  String   @map("target_type") @db.VarChar(50) // REVENUE, ORDER
+  dashboardType String @default("DIGITAL") @map("dashboard_type") @db.VarChar(50) // DIGITAL, DATIN
   witel       String   @db.VarChar(100) // ALL, BALI, etc.
   product     String   @db.VarChar(100) // ALL, OCA, etc.
   value       Decimal  @map("target_value") @db.Decimal(18, 2)

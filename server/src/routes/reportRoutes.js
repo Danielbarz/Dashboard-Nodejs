@@ -3,7 +3,6 @@ import { authenticate } from '../middleware/auth.js'
 import {
   getReportTambahan,
   getReportDatin,
-  getReportAnalysis,
   getReportHSI,
   getHSIDateRange,
   getReportDetails,
@@ -18,7 +17,6 @@ router.get('/tambahan', authenticate, getReportTambahan)
 router.get('/datin', authenticate, getReportDatin)
 router.get('/datin-details', authenticate, getReportDatinDetails)
 router.get('/datin-summary', authenticate, getReportDatinSummary)
-router.get('/analysis', authenticate, getReportAnalysis)
 router.get('/hsi', authenticate, getReportHSI)
 router.get('/hsi/date-range', authenticate, getHSIDateRange)
 router.get('/details', authenticate, getReportDetails)

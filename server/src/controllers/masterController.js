@@ -227,7 +227,14 @@ export const autoMapping = async (req, res) => {
 
 export const getTargets = async (req, res) => {
   try {
+    const { type } = req.query
+    const where = {}
+    if (type) {
+      where.dashboardType = type
+    }
+
     const data = await prisma.target.findMany({
+      where,
       orderBy: { periodDate: 'desc' }
     })
     const formatted = data.map(item => ({
@@ -262,11 +269,12 @@ export const getTargetById = async (req, res) => {
 
 export const createTarget = async (req, res) => {
   try {
-    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const { periodType, targetType, dashboardType, witel, product, value, periodDate } = req.body
     const newItem = await prisma.target.create({
       data: {
         periodType,
         targetType,
+        dashboardType: dashboardType || 'DIGITAL',
         witel,
         product,
         value: parseFloat(value),
@@ -282,12 +290,13 @@ export const createTarget = async (req, res) => {
 export const updateTarget = async (req, res) => {
   try {
     const { id } = req.params
-    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const { periodType, targetType, dashboardType, witel, product, value, periodDate } = req.body
     const updated = await prisma.target.update({
       where: { id: BigInt(id) },
       data: {
         periodType,
         targetType,
+        dashboardType,
         witel,
         product,
         value: parseFloat(value),

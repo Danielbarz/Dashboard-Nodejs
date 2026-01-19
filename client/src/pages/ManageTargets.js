@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { FiEdit2, FiPlus, FiTrash2, FiArrowLeft, FiX, FiSave, FiAlertCircle } from 'react-icons/fi'
 import api from '../services/api'
 
 const ManageTargets = () => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [targets, setTargets] = useState([])
   const [loading, setLoading] = useState(false)
+  const [datinProducts, setDatinProducts] = useState([])
   
+  // Dashboard Type State
+  const initialType = searchParams.get('type') || 'DIGITAL'
+  const [dashboardType, setDashboardType] = useState(initialType)
+
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -17,16 +23,40 @@ const ManageTargets = () => {
   const [formData, setFormData] = useState({
     periodType: 'BULANAN',
     targetType: 'REVENUE',
+    dashboardType: initialType,
     witel: 'ALL',
     product: 'ALL',
     value: '',
     periodDate: new Date().toISOString().split('T')[0]
   })
 
+  // Update URL when dashboardType changes
+  useEffect(() => {
+    setSearchParams({ type: dashboardType })
+    setFormData(prev => ({ ...prev, dashboardType }))
+  }, [dashboardType, setSearchParams])
+
+  const fetchDatinOptions = async () => {
+    try {
+      const res = await api.get('/dashboard/sos-datin/filters')
+      if (res.data?.data?.products) {
+        setDatinProducts(res.data.data.products)
+      }
+    } catch (err) {
+      console.error('Failed to fetch DATIN options', err)
+    }
+  }
+
+  useEffect(() => {
+    if (dashboardType === 'DATIN') {
+      fetchDatinOptions()
+    }
+  }, [dashboardType])
+
   const fetchTargets = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/master/targets')
+      const res = await api.get('/master/targets', { params: { type: dashboardType } })
       if (res.data.success) {
         setTargets(res.data.data)
       }
@@ -39,7 +69,7 @@ const ManageTargets = () => {
 
   useEffect(() => {
     fetchTargets()
-  }, [])
+  }, [dashboardType])
 
   const openModal = (target = null) => {
     if (target) {
@@ -47,6 +77,7 @@ const ManageTargets = () => {
       setFormData({
         periodType: target.periodType,
         targetType: target.targetType,
+        dashboardType: target.dashboardType || dashboardType,
         witel: target.witel,
         product: target.product,
         value: target.value,
@@ -57,6 +88,7 @@ const ManageTargets = () => {
       setFormData({
         periodType: 'BULANAN',
         targetType: 'REVENUE',
+        dashboardType: dashboardType,
         witel: 'ALL',
         product: 'ALL',
         value: '',
@@ -109,24 +141,26 @@ const ManageTargets = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(dashboardType === 'DATIN' ? '/datin' : '/dashboard')}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
           >
             <FiArrowLeft size={20} />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Manajemen Target</h1>
-            <p className="text-gray-500 text-sm">Kelola target KPI Bulanan, Kuartal, dan Tahunan</p>
+            <p className="text-gray-500 text-sm">Kelola target KPI {dashboardType === 'DATIN' ? 'DATIN' : 'Digital Product'}</p>
           </div>
         </div>
         
-        <button
-          onClick={() => openModal()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
-        >
-          <FiPlus size={18} />
-          Tambah Target
-        </button>
+        <div className="flex items-center gap-4">
+            <button
+            onClick={() => openModal()}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+            >
+            <FiPlus size={18} />
+            Tambah Target
+            </button>
+        </div>
       </div>
 
       {/* Table Area */}
@@ -139,7 +173,7 @@ const ManageTargets = () => {
                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Jenis</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Witel</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Produk</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Produk / Segmen</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Nilai Target</th>
                 <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
@@ -148,7 +182,7 @@ const ManageTargets = () => {
               {loading && targets.length === 0 ? (
                 <tr><td colSpan="7" className="px-6 py-10 text-center text-gray-400">Memuat data...</td></tr>
               ) : targets.length === 0 ? (
-                <tr><td colSpan="7" className="px-6 py-10 text-center text-gray-400">Belum ada target yang diatur.</td></tr>
+                <tr><td colSpan="7" className="px-6 py-10 text-center text-gray-400">Belum ada target yang diatur untuk {dashboardType}.</td></tr>
               ) : (
                 targets.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
@@ -208,7 +242,7 @@ const ManageTargets = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">{editingId ? 'Edit Detail Target' : 'Tambah Target Baru'}</h2>
-                  <p className="text-sm text-gray-500">Lengkapi detail target KPI di bawah ini</p>
+                  <p className="text-sm text-gray-500">Lengkapi detail target KPI ({formData.dashboardType}) di bawah ini</p>
                 </div>
                 <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
                   <FiX size={24} />
@@ -224,6 +258,7 @@ const ManageTargets = () => {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Dashboard Type - Hidden/Readonly or Selectable if needed, but easier to just use current tab context */}
                   {/* Kategori Waktu */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Kategori Waktu</label>
@@ -293,20 +328,36 @@ const ManageTargets = () => {
                     </select>
                   </div>
 
-                  {/* Product */}
+                  {/* Product / Segment - DYNAMIC based on Dashboard Type */}
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Product</label>
-                    <select
-                      value={formData.product}
-                      onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium bg-gray-50 focus:bg-white"
-                    >
-                      <option value="ALL">ALL</option>
-                      <option value="OCA">OCA</option>
-                      <option value="Netmonk">Netmonk</option>
-                      <option value="Pijar">Pijar</option>
-                      <option value="Antares">Antares</option>
-                    </select>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Produk
+                    </label>
+                    
+                    {formData.dashboardType === 'DIGITAL' ? (
+                        <select
+                        value={formData.product}
+                        onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium bg-gray-50 focus:bg-white"
+                        >
+                        <option value="ALL">ALL</option>
+                        <option value="OCA">OCA</option>
+                        <option value="Netmonk">Netmonk</option>
+                        <option value="Pijar">Pijar</option>
+                        <option value="Antares">Antares</option>
+                        </select>
+                    ) : (
+                        <select
+                        value={formData.product}
+                        onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium bg-gray-50 focus:bg-white"
+                        >
+                        <option value="ALL">ALL</option>
+                        {datinProducts.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                        </select>
+                    )}
                   </div>
                 </div>
 

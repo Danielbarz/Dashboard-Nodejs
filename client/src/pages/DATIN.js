@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
 import KPICard from '../components/KPICard'
@@ -12,10 +12,11 @@ import {
   OrderPerWitelChart,
   RevenuePerProductChart
 } from '../components/DatinCharts'
-import { FiChevronDown, FiDollarSign, FiActivity, FiShoppingCart } from 'react-icons/fi'
+import { FiChevronDown, FiDollarSign, FiActivity, FiShoppingCart, FiTarget } from 'react-icons/fi'
 
 const DATIN = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const currentRole = useCurrentRole()
   // eslint-disable-next-line no-unused-vars
   const isAdmin = ['admin', 'superadmin'].includes(currentRole)
@@ -29,6 +30,11 @@ const DATIN = () => {
   const search = searchParams.get('search') || ''
   const pageSize = parseInt(searchParams.get('limit') || '10')
   const currentPage = parseInt(searchParams.get('page') || '1')
+
+  // Raw params for dependency array to avoid infinite loop
+  const rawWitels = searchParams.get('witels')
+  const rawSegments = searchParams.get('segments')
+  const rawCategories = searchParams.get('categories')
 
   const [localSearch, setLocalSearch] = useState(search)
 
@@ -69,7 +75,7 @@ const DATIN = () => {
     section3: { revenueTrend: [], revenuePerWitel: [], orderPerWitel: [], revenuePerProduct: [] }
   })
 
-  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
 
   // 1. Fetch Filter Options
@@ -113,7 +119,7 @@ const DATIN = () => {
   useEffect(() => {
     fetchDashboardStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, selectedWitels, selectedSegments, selectedCategories, refreshKey])
+  }, [startDate, endDate, rawWitels, rawSegments, rawCategories, refreshKey])
 
   const handleApplyFilter = () => setRefreshKey(prev => prev + 1)
 
@@ -281,6 +287,16 @@ const DATIN = () => {
             >
               Reset
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin/master-targets?type=DATIN')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-blue-700 h-10 flex items-center gap-2"
+              >
+                <FiTarget />
+                Atur Target
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -290,6 +306,8 @@ const DATIN = () => {
         <KPICard
           title="REALIZED REVENUE (Ready to Bill)"
           value={`Rp ${stats.kpi.realizedRevenue.toLocaleString('id-ID')}`}
+          target={`Rp ${stats.kpi.revTarget?.toLocaleString('id-ID')}`}
+          achievement={stats.kpi.revAchievement}
           icon={<FiDollarSign />}
           color="green"
         />
@@ -302,6 +320,8 @@ const DATIN = () => {
         <KPICard
           title="TOTAL ORDER"
           value={stats.kpi.totalOrder}
+          target={stats.kpi.orderTarget}
+          achievement={stats.kpi.orderAchievement}
           icon={<FiShoppingCart />}
           color="blue"
         />

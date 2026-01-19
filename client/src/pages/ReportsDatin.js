@@ -523,9 +523,9 @@ const ReportsDatin = () => {
                 <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Standard Name (PO)</th>
 
                 {/* Filterable columns */}
-                <FilterHeaderDatin title="Produk" columnKey="produk" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.produk} />
+                <FilterHeaderDatin title="Produk" columnKey="produk" bgClass="bg-blue-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.produk} />
 
-                <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Revenue</th>
+                <th className="bg-gray-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Revenue</th>
 
                 <FilterHeaderDatin title="Segmen" columnKey="segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.segmen} />
                 <FilterHeaderDatin title="Sub Segmen" columnKey="sub_segmen" bgClass="bg-gray-600" activeFilters={activeFilters} setActiveFilters={setActiveFilters} openFilter={openFilter} setOpenFilter={setOpenFilter} filterOptions={filterOptions.sub_segmen} />

@@ -3,21 +3,16 @@ import { authenticate } from '../middleware/auth.js'
 import {
   getRevenueByWitel,
   getAmountByWitel,
-  getKPIData,
   getTotalOrderByRegional,
   getSebaranDataPS,
   getCancelByFCC,
   getFilterOptions,
   getDashboardData,
   getReportTambahan,
-  getReportDatin,
-  getReportAnalysis,
   getReportHSI,
   getJTDashboard,
   getJTFilters,
   getJTReport,
-  exportReportAnalysis,
-  exportReportDatin,
   exportReportTambahan,
   exportReportHSI,
   exportJTReport,
@@ -29,6 +24,7 @@ import {
   getDigitalProductDashboard,
   getDigitalProductFilters
 } from '../controllers/dashboardController.js'
+import { exportReportAnalysis } from '../controllers/reportController.js'
 
 const router = express.Router()
 
@@ -38,7 +34,6 @@ router.get('/', authenticate, getDashboardData)
 // SOS Dashboard Charts
 router.get('/revenue-by-witel', authenticate, getRevenueByWitel)
 router.get('/amount-by-witel', authenticate, getAmountByWitel)
-router.get('/kpi', authenticate, getKPIData)
 router.get('/total-order-by-regional', authenticate, getTotalOrderByRegional)
 router.get('/sebaran-data-ps', authenticate, getSebaranDataPS)
 router.get('/cancel-by-fcc', authenticate, getCancelByFCC)
@@ -64,14 +59,11 @@ router.get('/jt/report', authenticate, getJTReport)
 
 // Reports (Data Table View)
 router.get('/report-tambahan', authenticate, getReportTambahan)
-router.get('/report-datin', authenticate, getReportDatin)
-router.get('/report-analysis', authenticate, getReportAnalysis)
 router.get('/report-hsi', authenticate, getReportHSI)
 
 // Exports
 router.get('/export/report-analysis', exportReportAnalysis)
-router.get('/export/report-datin', exportReportDatin)
-router.get('/export/report-tambahan', exportReportTambahan)
+
 router.get('/export/report-hsi', exportReportHSI)
 router.get('/export/jt-report', exportJTReport)
 
