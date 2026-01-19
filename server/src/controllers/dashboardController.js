@@ -335,199 +335,112 @@ export const getFilterOptions = async (req, res, next) => {
   }
 }
 
-// Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
+// --- CONTROLLERS ---
+
 export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
 
-    // Date filter
     let dateFilter = ''
-    const params = []
+    const queryParams = []
     if (start_date && end_date) {
       dateFilter = 'WHERE tanggal_mom BETWEEN $1 AND $2'
-      params.push(new Date(start_date))
-      params.push(new Date(end_date))
+      queryParams.push(new Date(start_date))
+      queryParams.push(new Date(end_date))
     }
 
+    const accountOfficers = await prisma.accountOfficer.findMany({ orderBy: { name: 'asc' } })
+    const sortedAOs = [...accountOfficers].sort((a, b) => {
+      if (!!a.specialFilterColumn && !b.specialFilterColumn) return -1
+      if (!a.specialFilterColumn && !!b.specialFilterColumn) return 1
+      return 0
+    })
 
+    const findAO = (cleanWitel, parentWitel, segment) => {
+      const witelNorm = (cleanWitel || '').toUpperCase()
+      const parentNorm = (parentWitel || '').toUpperCase()
+      const segmentNorm = (segment || '').toUpperCase()
+      for (const ao of sortedAOs) {
+        const wFilters = (ao.filterWitelLama || '').toUpperCase().split(',').map(s=>s.trim()).filter(s=>s)
+        const witelMatch = wFilters.some(f => witelNorm.includes(f) || parentNorm.includes(f))
+        if (!witelMatch) continue
+        if (ao.specialFilterColumn && ao.specialFilterValue) {
+           const col = ao.specialFilterColumn.toLowerCase()
+           const val = ao.specialFilterValue.toUpperCase()
+           if ((col === 'segment' || col === 'segmen') && segmentNorm.includes(val)) return ao
+        } else return ao
+      }
+      return null
+    }
 
-    // Aggregate per witel + region
+    // Aggregated Data for Table
     const rows = await prisma.$queryRawUnsafe(
       `SELECT
-        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
+        TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel,
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
         SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS jumlah_lop,
         SUM(COALESCE(revenue_plan,0)) AS rev_all,
         SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
         SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
         SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END)::int AS drop_cnt,
-        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
-        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
-        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
-        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
-        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
+        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
+        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
+        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
+        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
+        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
       FROM spmk_mom
       ${dateFilter}
-      GROUP BY witel_baru, witel_lama, region
-      ORDER BY witel_baru, witel_lama` ,
-      ...params
+      GROUP BY witel_baru, witel_lama
+      ORDER BY witel_baru, witel_lama`, ...queryParams
     )
 
-    const WITEL_HIERARCHY = {
-      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA'],
-      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG'],
-      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO'],
-      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB'],
-      'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA']
-    }
-
-    const findParent = (w) => {
-      for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
-        if (children.includes(w)) return p
-      }
-      return w
-    }
-
-    // Build table data with parent (region) rows
     const parents = new Map()
     const tableData = []
-
     rows.forEach((row) => {
       const witelNorm = row.witel
       const parentKey = row.parent_witel || findParent(witelNorm)
-
-      const jumlahLop = Number(row.jumlah_lop || 0)
-      const goliveJml = Number(row.golive_jml || 0)
-      const dropCnt = Number(row.drop_cnt || 0)
-      const revAll = Number(row.rev_all || 0)
-      const goliveRev = Number(row.golive_rev || 0)
-
-      const cntInitial = Number(row.cnt_initial || 0)
-      const cntSurvey = Number(row.cnt_survey || 0)
-      const cntPerizinan = Number(row.cnt_perizinan || 0)
-      const cntInstalasi = Number(row.cnt_instalasi || 0)
-      const cntFi = Number(row.cnt_fi || 0)
-
-      // child row
-      tableData.push({
-        isParent: false,
-        parentWitel: parentKey,
-        witel: witelNorm,
-        jumlahLop,
-        revAll,
-        initial: cntInitial,
-        survey: cntSurvey,
-        perizinan: cntPerizinan,
-        instalasi: cntInstalasi,
-        piOgp: cntFi,
-        golive_jml: goliveJml,
-        golive_rev: goliveRev,
-        drop: dropCnt,
-        persen_close: jumlahLop > 0 ? ((goliveJml / jumlahLop) * 100).toFixed(2) : '0.00'
-      })
-
-      // accumulate parent
+      const r = {
+        isParent: false, parentWitel: parentKey, witel: witelNorm,
+        jumlahLop: Number(row.jumlah_lop), revAll: Number(row.rev_all),
+        initial: Number(row.cnt_initial), survey: Number(row.cnt_survey),
+        perizinan: Number(row.cnt_perizinan), instalasi: Number(row.cnt_instalasi),
+        piOgp: Number(row.cnt_fi), golive_jml: Number(row.golive_jml),
+        golive_rev: Number(row.golive_rev), drop: Number(row.drop_cnt)
+      }
+      r.persen_close = r.jumlahLop > 0 ? ((r.golive_jml / r.jumlahLop) * 100).toFixed(2) : '0.00'
+      tableData.push(r)
       if (!parents.has(parentKey)) {
-        parents.set(parentKey, {
-          isParent: true,
-          parentWitel: parentKey,
-          witel: parentKey,
-          jumlahLop: 0,
-          revAll: 0,
-          initial: 0,
-          survey: 0,
-          perizinan: 0,
-          instalasi: 0,
-          piOgp: 0,
-          golive_jml: 0,
-          golive_rev: 0,
-          drop: 0
-        })
+        parents.set(parentKey, { isParent: true, parentWitel: parentKey, witel: parentKey, jumlahLop: 0, revAll: 0, initial: 0, survey: 0, perizinan: 0, instalasi: 0, piOgp: 0, golive_jml: 0, golive_rev: 0, drop: 0 })
       }
       const p = parents.get(parentKey)
-      p.jumlahLop += jumlahLop
-      p.revAll += revAll
-      p.golive_jml += goliveJml
-      p.golive_rev += goliveRev
-      p.drop += dropCnt
-      p.initial += cntInitial
-      p.survey += cntSurvey
-      p.perizinan += cntPerizinan
-      p.instalasi += cntInstalasi
-      p.piOgp += cntFi
-    })
-
-    // finalize parent rows and interleave
-    const groupedByParent = new Map()
-    tableData.forEach(row => {
-      if (!groupedByParent.has(row.parentWitel)) {
-        groupedByParent.set(row.parentWitel, [])
-      }
-      groupedByParent.get(row.parentWitel).push(row)
+      p.jumlahLop += r.jumlahLop; p.revAll += r.revAll; p.golive_jml += r.golive_jml; p.golive_rev += r.golive_rev; p.drop += r.drop;
+      p.initial += r.initial; p.survey += r.survey; p.perizinan += r.perizinan; p.instalasi += r.instalasi; p.piOgp += r.piOgp
     })
 
     const finalTable = []
     parents.forEach((p, key) => {
       p.persen_close = p.jumlahLop > 0 ? ((p.golive_jml / p.jumlahLop) * 100).toFixed(2) : '0.00'
-      finalTable.push(p)
-      finalTable.push(...(groupedByParent.get(key) || []))
+      finalTable.push(p); finalTable.push(...tableData.filter(r => r.parentWitel === key))
     })
 
-    // Project data (belum GO LIVE)
-    const projectRows = await prisma.$queryRawUnsafe(
-      `SELECT
-        TRIM(UPPER(REPLACE(witel_lama, 'WITEL ', ''))) AS witel,
-        TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
-        SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
-        SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
-      FROM spmk_mom
-      ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}
-      GROUP BY witel_baru, witel_lama
-      ORDER BY witel_baru, witel_lama`,
-      ...params
+    // TOC Data
+        const projectRowsSql = await prisma.$queryRawUnsafe(
+          `SELECT TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel, TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
+            SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
+            SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
+            SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
+          FROM spmk_mom ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}      GROUP BY witel_baru, witel_lama`, ...queryParams
     )
 
     const parentProjects = new Map()
     const projectData = []
-
-    projectRows.forEach((row) => {
-      const witelNorm = row.witel
-      const parentKey = row.parent_witel || findParent(witelNorm)
-      const dalam = Number(row.dalam_toc || 0)
-      const lewat = Number(row.lewat_toc || 0)
-      const progress = Number(row.lop_progress || 0)
-
-      projectData.push({
-        isParent: false,
-        parentWitel: parentKey,
-        witel: witelNorm,
-        dalam_toc: dalam,
-        lewat_toc: lewat,
-        jumlah_lop_progress: progress,
-        persen_dalam_toc: (dalam + lewat) > 0 ? ((dalam / (dalam + lewat)) * 100).toFixed(2) : '0.00'
-      })
-
-      if (!parentProjects.has(parentKey)) {
-        parentProjects.set(parentKey, {
-          isParent: true,
-          parentWitel: parentKey,
-          witel: parentKey,
-          dalam_toc: 0,
-          lewat_toc: 0,
-          jumlah_lop_progress: 0
-        })
-      }
-      const p = parentProjects.get(parentKey)
-      p.dalam_toc += dalam
-      p.lewat_toc += lewat
-      p.jumlah_lop_progress += progress
-    })
-
-    const groupedProject = new Map()
-    projectData.forEach(r => {
-      if (!groupedProject.has(r.parentWitel)) groupedProject.set(r.parentWitel, [])
-      groupedProject.get(r.parentWitel).push(r)
+    projectRowsSql.forEach((row) => {
+      const witelNorm = row.witel; const parentKey = row.parent_witel || findParent(witelNorm)
+      const d = { isParent: false, parentWitel: parentKey, witel: witelNorm, dalam_toc: Number(row.dalam_toc), lewat_toc: Number(row.lewat_toc), jumlah_lop_progress: Number(row.lop_progress) }
+      d.persen_dalam_toc = (d.dalam_toc + d.lewat_toc) > 0 ? ((d.dalam_toc / (d.dalam_toc + d.lewat_toc)) * 100).toFixed(2) : '0.00'
+      projectData.push(d)
+      if (!parentProjects.has(parentKey)) parentProjects.set(parentKey, { isParent: true, parentWitel: parentKey, witel: parentKey, dalam_toc: 0, lewat_toc: 0, jumlah_lop_progress: 0 })
+      const p = parentProjects.get(parentKey); p.dalam_toc += d.dalam_toc; p.lewat_toc += d.lewat_toc; p.jumlah_lop_progress += d.jumlah_lop_progress
     })
 
     const finalProjects = []

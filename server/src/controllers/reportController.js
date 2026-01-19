@@ -1,24 +1,107 @@
-import prisma from '../lib/prisma.js'
-import { successResponse, errorResponse } from '../utils/response.js'
-import PO_MAPPING from '../utils/poMapping.js'
+import prisma from "../lib/prisma.js";
+import { successResponse, errorResponse } from "../utils/response.js";
+import PO_MAPPING from "../utils/poMapping.js";
+
+// --- CONSTANTS & HELPERS FOR JARINGAN TAMBAHAN (JT) ---
+const RSO2_WITELS = [
+  "JATIM BARAT",
+  "JATIM TIMUR",
+  "SURAMADU",
+  "BALI",
+  "NUSA TENGGARA",
+];
+
+const WITEL_HIERARCHY = {
+  BALI: [
+    "BALI",
+    "DENPASAR",
+    "SINGARAJA",
+    "GIANYAR",
+    "TABANAN",
+    "KLUNGKUNG",
+    "BANGLI",
+    "KARANGASEM",
+    "JEMBRANA",
+    "BADUNG",
+  ],
+  "JATIM BARAT": [
+    "JATIM BARAT",
+    "KEDIRI",
+    "MADIUN",
+    "MALANG",
+    "MOJOKERTO",
+    "TULUNGAGUNG",
+    "BLITAR",
+    "JOMBANG",
+    "NGANJUK",
+    "PONOROGO",
+    "TRENGGALEK",
+    "PACITAN",
+    "NGAWI",
+    "MAGETAN",
+    "BOJONEGORO",
+    "TUBAN",
+    "LAMONGAN",
+    "BATU",
+  ],
+  "JATIM TIMUR": [
+    "JATIM TIMUR",
+    "JEMBER",
+    "PASURUAN",
+    "SIDOARJO",
+    "PROBOLINGGO",
+    "LUMAJANG",
+    "BONDOWOSO",
+    "SITUBONDO",
+    "BANYUWANGI",
+  ],
+  "NUSA TENGGARA": [
+    "NUSA TENGGARA",
+    "NTT",
+    "NTB",
+    "KUPANG",
+    "MATARAM",
+    "SUMBAWA",
+    "BIMA",
+    "MAUMERE",
+    "ENDE",
+    "FLORES",
+    "LOMBOK",
+  ],
+  SURAMADU: [
+    "SURAMADU",
+    "SURABAYA UTARA",
+    "SURABAYA SELATAN",
+    "MADURA",
+    "PAMEKASAN",
+    "SUMENEP",
+    "BANGKALAN",
+    "SAMPANG",
+    "GRESIK",
+    "SIDOARJO",
+  ],
+};
+
+const cleanWitelName = (w) =>
+  (w || "").toUpperCase().replace("WITEL ", "").trim();
+
+const findParent = (w) => {
+  const wClean = cleanWitelName(w);
+  if (WITEL_HIERARCHY[wClean]) return wClean;
+
+  for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
+    if (children.includes(wClean)) return p;
+    if (children.some((c) => wClean.includes(c))) return p;
+  }
+  return wClean;
+};
+
+// --- CONTROLLERS ---
 import ExcelJS from 'exceljs'
 
 export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query;
-
-    const applyDateFilter = (clause) => {
-        if (start_date && end_date) {
-            return {
-                ...clause,
-                tanggalMom: {
-                    gte: new Date(start_date),
-                    lte: new Date(end_date)
-                }
-            }
-        }
-        return clause
-    }
 
     let dateFilter = "";
     const queryParams = [];
@@ -26,27 +109,6 @@ export const getReportTambahan = async (req, res, next) => {
       dateFilter = "WHERE tanggal_mom BETWEEN $1 AND $2";
       queryParams.push(new Date(start_date));
       queryParams.push(new Date(end_date));
-    }
-
-    // Helper functions locally defined to ensure safety
-    const cleanWitelName = (w) => (w || '').toUpperCase().replace('WITEL ', '').trim()
-    
-    const WITEL_HIERARCHY = {
-        'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'TABANAN', 'KLUNGKUNG', 'BANGLI', 'KARANGASEM', 'JEMBRANA', 'BADUNG'],
-        'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'MOJOKERTO', 'TULUNGAGUNG', 'BLITAR', 'JOMBANG', 'NGANJUK', 'PONOROGO', 'TRENGGALEK', 'PACITAN', 'NGAWI', 'MAGETAN', 'BOJONEGORO', 'TUBAN', 'LAMONGAN', 'BATU'],
-        'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'PROBOLINGGO', 'LUMAJANG', 'BONDOWOSO', 'SITUBONDO', 'BANYUWANGI'],
-        'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB', 'KUPANG', 'MATARAM', 'SUMBAWA', 'BIMA', 'MAUMERE', 'ENDE', 'FLORES', 'LOMBOK'],
-        'SURAMADU': ['SURAMADU', 'SURABAYA UTARA', 'SURABAYA SELATAN', 'MADURA', 'PAMEKASAN', 'SUMENEP', 'BANGKALAN', 'SAMPANG', 'GRESIK', 'SIDOARJO']
-    }
-
-    const findParent = (w) => {
-        const wClean = cleanWitelName(w)
-        if (WITEL_HIERARCHY[wClean]) return wClean
-        for (const [p, children] of Object.entries(WITEL_HIERARCHY)) {
-            if (children.includes(wClean)) return p
-            if (children.some(c => wClean.includes(c))) return p
-        }
-        return wClean
     }
 
     const accountOfficers = await prisma.accountOfficer.findMany({
@@ -229,27 +291,10 @@ export const getReportTambahan = async (req, res, next) => {
     });
 
     const top3WitelRaw = await prisma.$queryRawUnsafe(
-      `WITH Ranked AS (
-         SELECT
-           TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) as witel_norm,
-           id_i_hld,
-           tanggal_mom,
-           revenue_plan,
-           status_tomps_new,
-           usia,
-           uraian_kegiatan,
-           ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) ORDER BY usia DESC) as rn
-         FROM spmk_mom
-         WHERE go_live = 'N' AND populasi_non_drop = 'Y'
-       )
-       SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`
+      `WITH Ranked AS (SELECT TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) as witel_norm, id_i_hld, tanggal_mom, revenue_plan, status_tomps_new, usia, uraian_kegiatan, ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) ORDER BY usia DESC) as rn FROM spmk_mom WHERE go_live = 'N' AND populasi_non_drop = 'Y') SELECT * FROM Ranked WHERE rn <= 3 ORDER BY witel_norm, rn`
     );
-
     const rawActiveProjects = await prisma.spmkMom.findMany({
-      where: {
-        goLive: 'N',
-        populasiNonDrop: 'Y',
-      },
+      where: { goLive: "N", populasiNonDrop: "Y" },
       select: {
         witelLama: true,
         witelBaru: true,
@@ -264,7 +309,6 @@ export const getReportTambahan = async (req, res, next) => {
       },
       orderBy: { usia: "desc" },
     });
-
     const poGroups = {};
     rawActiveProjects.forEach((proj) => {
       const rawWitel = cleanWitelName(proj.witelLama || proj.witelBaru);
@@ -587,18 +631,10 @@ export const getReportAnalysis = async (req, res, next) => {
             segment: { contains: k, mode: "insensitive" },
           })),
         },
-        select: {
-          witel: true,
-          productName: true,
-          status: true,
-          netPrice: true
-        }
-      })
-
-      // Process data
-      const witelMap = {}
-      
-      targetRows.forEach(w => {
+        select: { witel: true, productName: true, status: true, revenue: true },
+      });
+      const witelMap = {};
+      targetRows.forEach((w) => {
         witelMap[w] = {
           nama_witel: w,
           in_progress_n: 0,
@@ -671,32 +707,10 @@ export const getReportAnalysis = async (req, res, next) => {
           witelMap[mappedName][`in_progress_${productCode}`]++
           totalOgp++
         } else {
-          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
-          
-          // Use netPrice if available, otherwise fallback to extraction from productName (for AE products)
-          // Added Sanity Check: Ignore unreasonable amounts (> 10 Billion) likely due to data errors
-          let amount = 0
-          const np = row.netPrice
-          const MAX_REASONABLE_PRICE = 10000000000 // 10 Billion
-
-          if (np !== null && np !== undefined && Number(np) > 0) {
-             const val = Number(np)
-             if (val < MAX_REASONABLE_PRICE) {
-                amount = val
-             }
-          } else if (row.productName) {
-             // Fallback: Extract from "Total (Sebelum PPN) : 35000" (flexible spacing)
-             const match = row.productName.match(/Total \(Sebelum PPN\)\s*:\s*([0-9]+)/i)
-             if (match) {
-                const extracted = parseInt(match[1])
-                if (extracted < MAX_REASONABLE_PRICE) {
-                   amount = extracted
-                }
-             }
-          }
-
-          witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta
-          totalClosed++
+          witelMap[mappedName][`prov_comp_${pCode}_realisasi`]++;
+          witelMap[mappedName][`revenue_${pCode}_ach`] +=
+            parseFloat(row.revenue || 0) / 1000000;
+          totalClosed++;
         }
       });
       return {
@@ -759,158 +773,117 @@ const fetchHSIReportData = async (start_date, end_date) => {
     
     // Filter by Date
     if (start_date && end_date) {
-      conditions.push(`order_date >= '${start_date}'::date`)
-      conditions.push(`order_date < ('${end_date}'::date + INTERVAL '1 day')`)
+      const start = new Date(start_date);
+      const end = new Date(end_date);
+      dateFilter = `AND "order_date" >= '${
+        start.toISOString().split("T")[0]
+      }'::date AND "order_date" <= '${end.toISOString().split("T")[0]}'::date`;
     }
-
-    const whereSql = `WHERE ${conditions.join(' AND ')}`
-
-    const query = `
-      SELECT
-        witel,
-        witel_old,
-        
-        -- 1. PRE PI
-        SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi,
-        
-        -- 2. REGISTERED (RE)
-        COUNT(*) as registered,
-        
-        -- 3. INPROGRESS SC
-        SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc,
-        
-        -- 4. QC1
-        SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1,
-        
-        -- 5. FCC
-        SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc,
-        
-        -- 6. CANCEL BY FCC
-        SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc,
-        
-        -- 7. SURVEY NEW MANJA
-        SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja,
-        
-        -- 8. UN-SC
-        SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as un_sc,
-        
-        -- PI AGING (Based on last_updated_date)
-        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) < 24 THEN 1 ELSE 0 END) as pi_under_1_hari,
-        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) >= 24 AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) <= 72 THEN 1 ELSE 0 END) as pi_1_3_hari,
-        SUM(CASE WHEN kelompok_status = 'PI' AND (EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600) > 72 THEN 1 ELSE 0 END) as pi_over_3_hari,
-        SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi,
-
-        -- FALLOUT WFM
-        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn,
-        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis,
-        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys,
-        SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as fo_wfm_others,
-        
-        -- OTHER FALLOUTS
-        SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim,
-        SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp,
-        SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm,
-        
-        -- TOTAL FALLOUT
-        SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout,
-
-        -- COMPLETION
-        SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp,
-        SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps,
-
-        -- CANCEL DETAILS
-        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as cancel_kndl_plgn,
-        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as cancel_kndl_teknis,
-        SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as cancel_kndl_sys,
-        SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others,
-        SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel,
-
-        -- REVOKE
-        SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke
-
-      FROM hsi_data
-      ${whereSql}
-      GROUP BY witel, witel_old
-      ORDER BY witel, witel_old
-    `
-
-    const rawData = await prisma.$queryRawUnsafe(query)
-
-    // --- Process Logic in JS ---
-    const numericFields = [
-      'pre_pi', 'registered', 'inprogress_sc', 'qc1', 'fcc', 'cancel_by_fcc', 'survey_new_manja', 'un_sc',
-      'pi_under_1_hari', 'pi_1_3_hari', 'pi_over_3_hari', 'total_pi',
-      'fo_wfm_kndl_plgn', 'fo_wfm_kndl_teknis', 'fo_wfm_kndl_sys', 'fo_wfm_others',
-      'fo_uim', 'fo_asp', 'fo_osm', 'total_fallout',
-      'act_comp', 'jml_comp_ps',
-      'cancel_kndl_plgn', 'cancel_kndl_teknis', 'cancel_kndl_sys', 'cancel_others', 'total_cancel',
-      'revoke'
-    ]
-
-    const calculatePercentages = (item) => {
-        const val = (k) => Number(item[k] || 0)
-        const num_pire = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps') + val('total_cancel');
-        item.pi_re_percent = val('registered') > 0 ? ((num_pire / val('registered')) * 100).toFixed(2) : 0;
-
-        const denom_psre = val('registered') - val('cancel_by_fcc') - val('un_sc') - val('revoke');
-        item.ps_re_percent = denom_psre > 0 ? ((val('jml_comp_ps') / denom_psre) * 100).toFixed(2) : 0;
-
-        const denom_pspi = val('total_pi') + val('total_fallout') + val('act_comp') + val('jml_comp_ps');
-        item.ps_pi_percent = denom_pspi > 0 ? ((val('jml_comp_ps') / denom_pspi) * 100).toFixed(2) : 0;
+    const rawData = await prisma.$queryRawUnsafe(
+      `SELECT witel, witel_old, SUM(CASE WHEN kelompok_status = 'PRE PI' THEN 1 ELSE 0 END) as pre_pi, COUNT(*) as registered, SUM(CASE WHEN kelompok_status = 'INPROGRESS_SC' THEN 1 ELSE 0 END) as inprogress_sc, SUM(CASE WHEN kelompok_status = 'QC1' THEN 1 ELSE 0 END) as qc1, SUM(CASE WHEN kelompok_status = 'FCC' THEN 1 ELSE 0 END) as fcc, SUM(CASE WHEN kelompok_status = 'REJECT_FCC' THEN 1 ELSE 0 END) as cancel_by_fcc, SUM(CASE WHEN kelompok_status = 'SURVEY_NEW_MANJA' THEN 1 ELSE 0 END) as survey_new_manja, SUM(CASE WHEN kelompok_status = 'UNSC' THEN 1 ELSE 0 END) as unsc, SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 < 24 THEN 1 ELSE 0 END) as pi_under_1_hari, SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 >= 24 AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 <= 72 THEN 1 ELSE 0 END) as pi_1_3_hari, SUM(CASE WHEN kelompok_status = 'PI' AND EXTRACT(EPOCH FROM (NOW() - last_updated_date))/3600 > 72 THEN 1 ELSE 0 END) as pi_over_3_hari, SUM(CASE WHEN kelompok_status = 'PI' THEN 1 ELSE 0 END) as total_pi, SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as fo_wfm_kndl_plgn, SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as fo_wfm_kndl_teknis, SUM(CASE WHEN kelompok_status = 'FO_WFM' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as fo_wfm_kndl_sys, SUM(CASE WHEN kelompok_status = 'FO_WFM' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as fo_wfm_others, SUM(CASE WHEN kelompok_status = 'FO_UIM' THEN 1 ELSE 0 END) as fo_uim, SUM(CASE WHEN kelompok_status = 'FO_ASAP' THEN 1 ELSE 0 END) as fo_asp, SUM(CASE WHEN kelompok_status = 'FO_OSM' THEN 1 ELSE 0 END) as fo_osm, SUM(CASE WHEN kelompok_status IN ('FO_UIM', 'FO_ASAP', 'FO_OSM', 'FO_WFM') THEN 1 ELSE 0 END) as total_fallout, SUM(CASE WHEN kelompok_status = 'ACT_COM' THEN 1 ELSE 0 END) as act_comp, SUM(CASE WHEN kelompok_status = 'PS' THEN 1 ELSE 0 END) as jml_comp_ps, SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Pelanggan' THEN 1 ELSE 0 END) as cancel_kndl_plgn, SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Teknik' THEN 1 ELSE 0 END) as cancel_kndl_teknis, SUM(CASE WHEN kelompok_status = 'CANCEL' AND kelompok_kendala = 'Kendala Lainnya' THEN 1 ELSE 0 END) as cancel_kndl_sys, SUM(CASE WHEN kelompok_status = 'CANCEL' AND (kelompok_kendala IS NULL OR kelompok_kendala = '' OR kelompok_kendala = 'BLANK') THEN 1 ELSE 0 END) as cancel_others, SUM(CASE WHEN kelompok_status = 'CANCEL' THEN 1 ELSE 0 END) as total_cancel, SUM(CASE WHEN kelompok_status = 'REVOKE' THEN 1 ELSE 0 END) as revoke FROM hsi_data WHERE ${witelIncludeFilter} ${dateFilter} GROUP BY witel, witel_old HAVING witel_old IS NOT NULL AND witel_old != '' ORDER BY witel, witel_old`
+    );
+    const calc = (i) => {
+      const n_re =
+        Number(i.total_pi) +
+        Number(i.total_fallout) +
+        Number(i.act_comp) +
+        Number(i.jml_comp_ps) +
+        Number(i.total_cancel);
+      i.pi_re_percent =
+        i.registered > 0 ? ((n_re / i.registered) * 100).toFixed(2) : "0.00";
+      const d_re =
+        Number(i.registered) -
+        Number(i.cancel_by_fcc) -
+        Number(i.unsc) -
+        Number(i.revoke);
+      i.ps_re_percent =
+        d_re > 0 ? ((Number(i.jml_comp_ps) / d_re) * 100).toFixed(2) : "0.00";
+      const d_pi =
+        Number(i.total_pi) +
+        Number(i.total_fallout) +
+        Number(i.act_comp) +
+        Number(i.jml_comp_ps);
+      i.ps_pi_percent =
+        d_pi > 0 ? ((Number(i.jml_comp_ps) / d_pi) * 100).toFixed(2) : "0.00";
     };
-
-    const grouped = {}
-    rawData.forEach(row => {
-      const witel = row.witel
-      if (!grouped[witel]) {
-        grouped[witel] = {
-          witel_display: witel,
-          witel: witel,
-          row_type: 'main',
-          children: []
-        }
-        numericFields.forEach(f => grouped[witel][f] = 0)
-      }
-
-      const cleanRow = {}
-      for (const [k, v] of Object.entries(row)) cleanRow[k] = typeof v === 'bigint' ? Number(v) : v
-      
-      cleanRow.witel_display = cleanRow.witel_old || '(Blank)'
-      cleanRow.row_type = 'sub'
-      calculatePercentages(cleanRow)
-      grouped[witel].children.push(cleanRow)
-
-      numericFields.forEach(f => grouped[witel][f] += (cleanRow[f] || 0))
-    })
-
-    const finalReportData = []
-    const grandTotal = { witel_display: 'GRAND TOTAL', row_type: 'total' }
-    numericFields.forEach(f => grandTotal[f] = 0)
-
-    Object.values(grouped).forEach(parent => {
-      calculatePercentages(parent)
-      finalReportData.push(parent)
-      numericFields.forEach(f => grandTotal[f] += parent[f])
-      parent.children.forEach(child => finalReportData.push(child))
-      delete parent.children
-    })
-
-    calculatePercentages(grandTotal)
-
-    return { tableData: finalReportData, totals: grandTotal }
-}
-
-// Get Report HSI - from HSI data table
-export const getReportHSI = async (req, res, next) => {
-  try {
-    const { start_date, end_date } = req.query
-    const data = await fetchHSIReportData(start_date, end_date)
-    successResponse(res, data, 'Report HSI data retrieved successfully')
+    const grouped = {};
+    rawData.forEach((r) => {
+      if (!grouped[r.witel]) grouped[r.witel] = [];
+      grouped[r.witel].push(r);
+    });
+    const finalData = [];
+    const order = [
+      "BALI",
+      "JATIM BARAT",
+      "JATIM TIMUR",
+      "NUSA TENGGARA",
+      "SURAMADU",
+    ];
+    const fields = [
+      "pre_pi",
+      "registered",
+      "inprogress_sc",
+      "qc1",
+      "fcc",
+      "cancel_by_fcc",
+      "survey_new_manja",
+      "unsc",
+      "pi_under_1_hari",
+      "pi_1_3_hari",
+      "pi_over_3_hari",
+      "total_pi",
+      "fo_wfm_kndl_plgn",
+      "fo_wfm_kndl_teknis",
+      "fo_wfm_kndl_sys",
+      "fo_wfm_others",
+      "fo_uim",
+      "fo_asp",
+      "fo_osm",
+      "total_fallout",
+      "act_comp",
+      "jml_comp_ps",
+      "cancel_kndl_plgn",
+      "cancel_kndl_teknis",
+      "cancel_kndl_sys",
+      "cancel_others",
+      "total_cancel",
+      "revoke",
+    ];
+    order.forEach((w) => {
+      const c = grouped[w];
+      if (!c) return;
+      const p = { witel_display: w, row_type: "main" };
+      fields.forEach((f) => {
+        p[f] = c.reduce((s, x) => s + Number(x[f] || 0), 0);
+      });
+      calc(p);
+      finalData.push(p);
+      c.sort((a, b) =>
+        (a.witel_old || "").localeCompare(b.witel_old || "")
+      ).forEach((x) => {
+        x.witel_display = x.witel_old || "(Blank)";
+        x.row_type = "sub";
+        fields.forEach((f) => {
+          x[f] = Number(x[f] || 0);
+        });
+        calc(x);
+        finalData.push(x);
+      });
+    });
+    const totals = { witel: "GRAND TOTAL" };
+    fields.forEach((f) => {
+      totals[f] = rawData.reduce((s, r) => s + Number(r[f] || 0), 0);
+    });
+    calc(totals);
+    successResponse(
+      res,
+      { reportData: finalData, totals },
+      "Report HSI data retrieved successfully"
+    );
   } catch (error) {
     next(error);
-  }
-};
-
+  };
+``
 export const getHSIDateRange = async (req, res, next) => {
   try {
     const allowedWitels = [
@@ -940,7 +913,6 @@ export const getHSIDateRange = async (req, res, next) => {
 };
 
 export const getReportDetails = async (req, res, next) => {
-  console.log('[getReportDetails] Start', req.query);
   try {
     const { start_date, end_date, segment, witel, status } = req.query;
     let where = {};
@@ -990,89 +962,47 @@ export const getReportDetails = async (req, res, next) => {
       if (targets.length > 0) where.witel = { in: targets };
     }
     const data = await prisma.digitalProduct.findMany({
-      where: where,
-      select: {
-        orderNumber: true,
-        productName: true,
-        witel: true,
-        customerName: true,
-        milestone: true,
-        orderDate: true,
-        segment: true,
-        batchId: true,
-        subType: true,
-        status: true,
-        netPrice: true,
-        category: true,
-        channel: true
+      where: {
+        AND: [
+          where,
+          {
+            OR: [
+              { productName: { contains: "netmonk", mode: "insensitive" } },
+              { productName: { contains: "oca", mode: "insensitive" } },
+              { productName: { contains: "antares", mode: "insensitive" } },
+              { productName: { contains: "pijar", mode: "insensitive" } },
+            ],
+          },
+        ],
       },
-      orderBy: {
-        orderDate: 'desc'
-      }
-    })
-
-    const getWeekNumber = (d) => {
-      if (!d) return null;
-      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-      var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return weekNo;
-    }
-
-    const formattedData = data.map(row => {
-      // Product Name Shortening
-      let shortProductName = row.productName || '-'
-      const pNameLower = shortProductName.toLowerCase()
-      
-      if (pNameLower.includes('netmonk')) shortProductName = 'Netmonk'
-      else if (pNameLower.includes('oca')) shortProductName = 'OCA'
-      else if (pNameLower.includes('pijar')) shortProductName = 'Pijar'
-      else if (pNameLower.includes('antares') || pNameLower.includes('iot') || pNameLower.includes('camera') || pNameLower.includes('cctv') || pNameLower.includes('recording')) shortProductName = 'Antares'
-      
-      // Channel Logic
-      let channel = row.channel || ''
-
-      return {
-        order_id: row.orderNumber,
-        product_name: shortProductName,
-        witel: row.witel,
-        customer_name: row.customerName,
-        milestone: row.milestone,
-        order_created_date: row.orderDate,
-        segment: row.segment,
-        branch: row.witel, // Using witel as proxy for branch
-        batch_id: row.batchId,
-        order_subtype: row.subType,
-        order_status: row.status,
-        net_price: parseFloat(row.netPrice || 0),
-        week: getWeekNumber(row.orderDate),
-        channel: channel, 
-        layanan: row.category
-      }
-    })
-
-    successResponse(res, formattedData, 'Report details retrieved successfully')
+      orderBy: { orderDate: "desc" },
+    });
+    const formatted = data.map((row) => ({
+      order_id: row.orderNumber,
+      product_name: row.productName,
+      witel: row.witel,
+      customer_name: row.customerName,
+      milestone: row.milestone,
+      order_created_date: row.orderDate,
+      segment: row.segment,
+      order_status: row.status,
+      net_price: parseFloat(row.revenue || 0),
+    }));
+    successResponse(res, formatted, "Report details retrieved successfully");
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-// Get KPI PO Data
-// Get KPI PO Data
 export const getKPIPOData = async (req, res, next) => {
-  console.log('[getKPIPOData] Start', req.query);
   try {
     const { start_date, end_date, witel } = req.query;
     const aos = await prisma.accountOfficer.findMany({
       orderBy: { name: "asc" },
     });
-    console.log('[getKPIPOData] AOs found:', aos.length);
     let where = {};
     if (start_date && end_date)
       where.orderDate = { gte: new Date(start_date), lte: new Date(end_date) };
-    
-    console.log('[getKPIPOData] Querying digital products with:', JSON.stringify(where));
     const digital = await prisma.digitalProduct.findMany({
       where: {
         AND: [
@@ -1088,7 +1018,6 @@ export const getKPIPOData = async (req, res, next) => {
         ],
       },
     });
-    console.log('[getKPIPOData] Digital products found:', digital.length);
     const result = aos.map((ao) => {
       const relevant = digital.filter((row) => {
         const filters = (ao.filterWitelLama || "")
@@ -1097,85 +1026,54 @@ export const getKPIPOData = async (req, res, next) => {
           .map((s) => s.trim());
         const rowW = (row.witel || "").toLowerCase();
         const wMatch = filters.some((f) => rowW.includes(f));
-        
         let sMatch = true;
-        let specialMatch = true;
-
         if (ao.specialFilterColumn && ao.specialFilterValue) {
-           const col = ao.specialFilterColumn // e.g. 'segment'
-           const val = ao.specialFilterValue.toUpperCase() // e.g. 'SME' or 'LEGS'
-           
-           const rowCol = col === 'segment' ? 'segment' : col
-           if (row[rowCol] === undefined) {
-             specialMatch = false
-           } else {
-             const rowVal = (row[rowCol] || '').toUpperCase()
-             
-             // --- LOGIC GROUPING SEGMENT ---
-             if (col === 'segment') {
-                if (val === 'SME') {
-                   // SME Group
-                   const smeKeywords = ['SME', 'RBS', 'DSS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE', 'ERM']
-                   specialMatch = smeKeywords.some(k => rowVal.includes(k))
-                } else if (val === 'LEGS') {
-                   // LEGS Group
-                   const legsKeywords = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG', 'BUMN', 'SOE', 'GOVERNMENT']
-                   specialMatch = legsKeywords.some(k => rowVal.includes(k))
-                } else {
-                   // Default: exact/partial match
-                   specialMatch = rowVal.includes(val)
-                }
-             } else {
-                specialMatch = rowVal.includes(val)
-             }
-           }
-           sMatch = specialMatch
+          const rowVal = (
+            row[
+              ao.specialFilterColumn === "segment"
+                ? "segment"
+                : ao.specialFilterColumn
+            ] || ""
+          ).toLowerCase();
+          sMatch = rowVal.includes(ao.specialFilterValue.toLowerCase());
         }
-
-        return wMatch && sMatch
-      })
-
-      // Calculate Metrics
-      let done_ncx = 0
-      let done_scone = 0
-      let ogp_ncx = 0
-      let ogp_scone = 0
-
-      relevant.forEach(row => {
-        const channelRaw = (row.channel || '').toUpperCase().trim()
-        const isNcx = (channelRaw === 'NCX')
-        // Match SC-ONE, SC ONE, SCONE, SC-One, etc.
-        const isScOne = (channelRaw === 'SC-ONE' || channelRaw === 'SC ONE' || channelRaw === 'SCONE')
-        
-        const statusLower = (row.status || '').toLowerCase()
-        const isDone = ['completed', 'activated', 'live', 'closed', 'done', 'complete'].some(s => statusLower.includes(s))
-
+        return wMatch && sMatch;
+      });
+      let d_ncx = 0;
+      let d_scone = 0;
+      let o_ncx = 0;
+      let o_scone = 0;
+      relevant.forEach((row) => {
+        const isNcx = row.witel && row.witel.toUpperCase().includes("NCX");
+        const isDone = [
+          "completed",
+          "activated",
+          "live",
+          "closed",
+          "done",
+        ].some((s) => (row.status || "").toLowerCase().includes(s));
         if (isDone) {
-          if (isNcx) done_ncx++
-          else if (isScOne) done_scone++
+          if (isNcx) d_ncx++;
+          else d_scone++;
         } else {
-          if (isNcx) ogp_ncx++
-          else if (isScOne) ogp_scone++
+          if (isNcx) o_ncx++;
+          else o_scone++;
         }
       });
-      
-      const total = done_ncx + done_scone + ogp_ncx + ogp_scone;
-      
+      const total = d_ncx + d_scone + o_ncx + o_scone;
       return {
         nama_po: ao.name,
         witel: ao.displayWitel,
-        done_ncx: done_ncx,
-        done_scone: done_scone,
-        ogp_ncx: ogp_ncx,
-        ogp_scone: ogp_scone,
+        done_ncx: d_ncx,
+        done_scone: d_scone,
+        ogp_ncx: o_ncx,
+        ogp_scone: o_scone,
         total,
-        ach_ytd: total > 0 ? (((done_ncx + done_scone) / total) * 100).toFixed(1) : 0,
-        ach_q3: 0 // Placeholder
+        ach_ytd: total > 0 ? (((d_ncx + d_scone) / total) * 100).toFixed(1) : 0,
       };
     });
     successResponse(res, result, "KPI PO data retrieved successfully");
   } catch (error) {
-    console.error('[getKPIPOData] Error:', error);
     next(error);
   }
 };
