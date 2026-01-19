@@ -225,3 +225,88 @@ export const autoMapping = async (req, res) => {
     errorResponse(res, 'Failed to perform auto mapping: ' + error.message, 500)
   }
 }
+
+export const getTargets = async (req, res) => {
+  try {
+    const data = await prisma.target.findMany({
+      orderBy: { periodDate: 'desc' }
+    })
+    const formatted = data.map(item => ({
+      ...item,
+      id: item.id.toString(),
+      value: parseFloat(item.value)
+    }))
+    return successResponse(res, formatted, 'Targets retrieved successfully')
+  } catch (error) {
+    console.error(error)
+    return errorResponse(res, 'Failed to fetch targets', 500)
+  }
+}
+
+export const getTargetById = async (req, res) => {
+  try {
+    const { id } = req.params
+    const item = await prisma.target.findUnique({
+      where: { id: BigInt(id) }
+    })
+    if (!item) return errorResponse(res, 'Target not found', 404)
+    
+    return successResponse(res, {
+      ...item,
+      id: item.id.toString(),
+      value: parseFloat(item.value)
+    }, 'Target retrieved')
+  } catch (error) {
+    return errorResponse(res, 'Failed to fetch target', 500)
+  }
+}
+
+export const createTarget = async (req, res) => {
+  try {
+    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const newItem = await prisma.target.create({
+      data: {
+        periodType,
+        targetType,
+        witel,
+        product,
+        value: parseFloat(value),
+        periodDate: new Date(periodDate)
+      }
+    })
+    return successResponse(res, { ...newItem, id: newItem.id.toString() }, 'Target created')
+  } catch (error) {
+    return errorResponse(res, 'Failed to create target: ' + error.message, 500)
+  }
+}
+
+export const updateTarget = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { periodType, targetType, witel, product, value, periodDate } = req.body
+    const updated = await prisma.target.update({
+      where: { id: BigInt(id) },
+      data: {
+        periodType,
+        targetType,
+        witel,
+        product,
+        value: parseFloat(value),
+        periodDate: new Date(periodDate)
+      }
+    })
+    return successResponse(res, { ...updated, id: updated.id.toString() }, 'Target updated')
+  } catch (error) {
+    return errorResponse(res, 'Failed to update target: ' + error.message, 500)
+  }
+}
+
+export const deleteTarget = async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.target.delete({ where: { id: BigInt(id) } })
+    return successResponse(res, null, 'Target deleted')
+  } catch (error) {
+    return errorResponse(res, 'Failed to delete target', 500)
+  }
+}
