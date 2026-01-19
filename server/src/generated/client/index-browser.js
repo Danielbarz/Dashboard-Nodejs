@@ -466,6 +466,7 @@ exports.Prisma.TargetScalarFieldEnum = {
   id: 'id',
   periodType: 'periodType',
   targetType: 'targetType',
+  dashboardType: 'dashboardType',
   witel: 'witel',
   product: 'product',
   value: 'value',

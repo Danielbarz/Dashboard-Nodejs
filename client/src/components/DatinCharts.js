@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell, LineChart, Line, ComposedChart
 } from 'recharts'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1']
@@ -39,7 +39,7 @@ const getAllKeys = (data, ignoreKey = 'name') => {
   const keys = new Set()
   data.forEach(item => {
     Object.keys(item).forEach(k => {
-      if (k !== ignoreKey) keys.add(k)
+      if (k !== ignoreKey && k !== 'target') keys.add(k)
     })
   })
   return Array.from(keys)
@@ -151,6 +151,7 @@ export const RevenueTrendChart = ({ data }) => {
               dot={{ r: 3 }}
             />
           ))}
+          <Line type="monotone" dataKey="target" stroke="#ff0000" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Target" />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -164,7 +165,7 @@ export const RevenuePerWitelChart = ({ data }) => {
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue per Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart 
+        <ComposedChart 
           data={data} 
           layout="vertical" 
           margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
@@ -184,7 +185,8 @@ export const RevenuePerWitelChart = ({ data }) => {
           {keys.map((key) => (
             <Bar key={key} dataKey={key} stackId="a" fill={STATUS_COLORS[key] || '#9ca3af'} />
           ))}
-        </BarChart>
+          <Line type="monotone" dataKey="target" stroke="#ff0000" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Target" />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
@@ -195,13 +197,14 @@ export const OrderPerWitelChart = ({ data }) => {
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Order per Witel</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barCategoryGap="30%">
+        <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barCategoryGap="30%">
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={60} />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="value" fill="#3b82f6" name="Total Order" radius={[4, 4, 0, 0]} />
-        </BarChart>
+          <Line type="monotone" dataKey="target" stroke="#ff0000" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Target" />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
@@ -212,7 +215,7 @@ export const RevenuePerProductChart = ({ data }) => {
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Revenue per Product</h3>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart 
+        <ComposedChart 
           data={data} 
           layout="vertical" 
           margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
@@ -223,7 +226,8 @@ export const RevenuePerProductChart = ({ data }) => {
           <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 9 }} interval={0} />
           <Tooltip content={<CustomTooltip formatter={formatRupiah} />} />
           <Bar dataKey="value" fill="#8b5cf6" name="Revenue" radius={[0, 4, 4, 0]} />
-        </BarChart>
+          <Line type="monotone" dataKey="target" stroke="#ff0000" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Target" />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )

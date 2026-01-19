@@ -97,6 +97,7 @@ const findParent = (w) => {
 };
 
 // --- CONTROLLERS ---
+import ExcelJS from 'exceljs'
 
 export const getReportTambahan = async (req, res, next) => {
   try {
@@ -414,40 +415,104 @@ export const getReportTambahan = async (req, res, next) => {
     next(error);
   }
 };
+// ====== DATIN REPORT FUNCTIONS (SOS DATA SOURCE) ======
+// Data Source: sos_data table
+// Purpose: Revenue reporting grouped by regional areas (5 RSO2 regions: BALI, JATIM BARAT, JATIM TIMUR, NUSA TENGGARA, SURAMADU)
+// Status: Aggregated by revenue, order count, and completion status (Ready to Bill vs Pipeline)
+// Related Views: getReportDatinDetails, getReportDatinSummary
 
 export const getReportDatin = async (req, res, next) => {
   try {
-    const { start_date, end_date } = req.query;
-    let whereClause = { statusProyek: { contains: "DATIN" } };
+    const { start_date, end_date, witel } = req.query
+
+    // DATIN: Build WHERE conditions - using sos_data table
+    let conditions = ["order_created_date >= '2000-01-01'"]
+    const params = []
+    let pIdx = 1
+
     if (start_date && end_date) {
-      whereClause.createdAt = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
-      };
+      conditions.push(`order_created_date BETWEEN $${pIdx} AND $${pIdx + 1}`)
+      params.push(new Date(start_date), new Date(end_date))
+      pIdx += 2
     }
-    const tableData = await prisma.spmkMom.groupBy({
-      by: ["witelBaru", "region"],
-      where: whereClause,
-      _count: { id: true },
-      _sum: { revenuePlan: true, rab: true },
-    });
-    const formattedTableData = tableData.map((row) => ({
-      witel: row.witelBaru || "Unknown",
-      branch: row.region || "Unknown",
-      totalAmount: parseFloat(row._sum.revenuePlan || 0),
-      jumlahProject: row._count.id,
-      selesai: 0,
-      progress: row._count.id,
-    }));
+
+    if (witel) {
+      const wArr = witel.split(',').filter(Boolean).map(w => w.trim().toUpperCase())
+      if (wArr.length > 0) {
+        conditions.push(`UPPER(COALESCE(witel_baru, bill_witel)) IN (${wArr.map(() => `$${pIdx++}`).join(',')})`)
+        params.push(...wArr)
+      }
+    }
+
+    const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // DATIN: Define region mapping for normalization
+    const REGION_MAPPING = {
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['JATIM BARAT', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEDIRI', 'KEPANJEN', 'MADIUN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JEMBER', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PASURUAN', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTB', 'NTT', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+    }
+
+    const generateRegionCase = (column) => {
+      let sql = '(CASE '
+      Object.entries(REGION_MAPPING).forEach(([region, cities]) => {
+        const list = cities.map(c => `'${c}'`).join(',')
+        sql += `WHEN COALESCE(TRIM(UPPER(${column})), '') IN (${list}) THEN '${region}' `
+      })
+      sql += "ELSE 'OTHER' END)"
+      return sql
+    }
+
+    const WITEL_EXPR = generateRegionCase("COALESCE(TRIM(UPPER(witel_baru)), TRIM(UPPER(bill_witel)))")
+
+    // DATIN: Query from sos_data - Group by witel and aggregate revenue
+    const tableDataRaw = await prisma.$queryRawUnsafe(`
+      SELECT
+        ${WITEL_EXPR} as witel,
+        COUNT(*)::int as jumlah_order,
+        SUM(COALESCE(revenue, 0))::bigint as total_revenue,
+        SUM(CASE WHEN UPPER(kategori) = 'READY TO BILL' THEN COALESCE(revenue, 0) ELSE 0 END)::bigint as realized_revenue,
+        SUM(CASE WHEN UPPER(kategori) != 'READY TO BILL' THEN COALESCE(revenue, 0) ELSE 0 END)::bigint as pipeline_revenue
+      FROM sos_data
+      ${whereSql}
+      GROUP BY witel
+      ORDER BY total_revenue DESC
+    `, ...params)
+
+    // DATIN: Format table data
+    const formattedTableData = tableDataRaw
+      .filter(row => row.witel !== 'OTHER')
+      .map(row => ({
+        witel: row.witel || 'Unknown',
+        branch: row.witel || 'Unknown',
+        totalAmount: Number(row.total_revenue || 0),
+        jumlahProject: row.jumlah_order,
+        selesai: Math.round(Number(row.realized_revenue || 0)),
+        progress: Math.round(Number(row.pipeline_revenue || 0))
+      }))
+
     successResponse(
       res,
-      { tableData: formattedTableData, posisiGalaksi: [] },
-      "Report Datin data retrieved successfully"
-    );
+      {
+        tableData: formattedTableData,
+        posisiGalaksi: []
+      },
+      'Report Datin data retrieved successfully'
+    )
   } catch (error) {
-    next(error);
+    next(error)
   }
 };
+
+// ====== DIGITAL PRODUCT REPORT FUNCTIONS ======
+// Data Source: digitalProduct table
+// Purpose: Analysis of Digital Product segments (LEGS/Enterprise vs SME/Retail) by product type (NETMONK, OCA, ANTARES/IOT, PIJAR)
+// Products: N (NETMONK), O (OCA), AE (ANTARES/EDGE/IOT), PS (PIJAR SEKOLAH)
+// Segments: LEGS (LEGS, DGS, DPS, GOV, ENTERPRISE, REG), SME (SME, DSS, RBS, RETAIL, UMKM, FINANCIAL, LOGISTIC, TOURISM, MANUFACTURE)
+// Status: Tracks in-progress orders and completed/realized revenue
+// NOTE: This is different from the SOS DATIN report - focuses on digital product sales analysis
 
 export const getReportAnalysis = async (req, res, next) => {
   try {
@@ -607,39 +672,40 @@ export const getReportAnalysis = async (req, res, next) => {
               break;
             }
           }
+          
+          // Fallback for special cases or if not found in mapping but contains region name
+          if (!mappedName) {
+             if (rawW.includes('BALI')) mappedName = 'BALI'
+             else if (rawW.includes('JATIM BARAT')) mappedName = 'JATIM BARAT'
+             else if (rawW.includes('JATIM TIMUR')) mappedName = 'JATIM TIMUR'
+             else if (rawW.includes('NUSA') || rawW.includes('NTB') || rawW.includes('NTT')) mappedName = 'NUSA TENGGARA'
+             else if (rawW.includes('SURAMADU')) mappedName = 'SURAMADU'
+          }
         }
-        if (!mappedName && !selectedRegion) {
-          if (rawW.includes("BALI")) mappedName = "BALI";
-          else if (rawW.includes("BARAT")) mappedName = "JATIM BARAT";
-          else if (rawW.includes("TIMUR")) mappedName = "JATIM TIMUR";
-          else if (rawW.includes("NUSA")) mappedName = "NUSA TENGGARA";
-          else if (rawW.includes("SURAMADU")) mappedName = "SURAMADU";
+        
+        if (!mappedName || !witelMap[mappedName]) return 
+
+        let productCode = ''
+        const pName = (row.productName || '').toLowerCase()
+        if (pName.includes('netmonk')) productCode = 'n'
+        else if (pName.includes('oca')) productCode = 'o'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
+        else if (pName.includes('pijar')) productCode = 'ps'
+        
+        if (!productCode) return
+
+        const status = (row.status || '').toLowerCase()
+        const isCompleted = ['complete', 'completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isInProgress = !isCompleted
+
+        // DEBUG PS SME
+        if (productCode === 'ps' && segmentKeywords.includes('SME') && isCompleted) {
+             // console.log(`[DEBUG PS] Found PS. Status: ${status} (Completed: ${isCompleted}). Witel: ${row.witel} -> Mapped: ${mappedName}. NetPrice: ${row.netPrice}`)
         }
-        if (!mappedName || !witelMap[mappedName]) return;
-        let pCode = "";
-        const pN = (row.productName || "").toLowerCase();
-        if (pN.includes("netmonk")) pCode = "n";
-        else if (pN.includes("oca")) pCode = "o";
-        else if (
-          pN.includes("antares") ||
-          pN.includes("camera") ||
-          pN.includes("cctv") ||
-          pN.includes("iot")
-        )
-          pCode = "ae";
-        else if (pN.includes("pijar")) pCode = "ps";
-        if (!pCode) return;
-        const stat = (row.status || "").toLowerCase();
-        const isDone = [
-          "completed",
-          "activated",
-          "live",
-          "done",
-          "closed",
-        ].some((s) => stat.includes(s));
-        if (!isDone) {
-          witelMap[mappedName][`in_progress_${pCode}`]++;
-          totalOgp++;
+
+        if (isInProgress) {
+          witelMap[mappedName][`in_progress_${productCode}`]++
+          totalOgp++
         } else {
           witelMap[mappedName][`prov_comp_${pCode}_realisasi`]++;
           witelMap[mappedName][`revenue_${pCode}_ach`] +=
@@ -690,20 +756,22 @@ export const getReportAnalysis = async (req, res, next) => {
   }
 };
 
-export const getReportHSI = async (req, res, next) => {
-  try {
-    const { start_date, end_date } = req.query;
-    const allowedWitels = [
-      "JATIM TIMUR",
-      "JATIM BARAT",
-      "SURAMADU",
-      "BALI",
-      "NUSA TENGGARA",
-    ];
-    const witelIncludeFilter = `UPPER(witel) IN (${allowedWitels
-      .map((w) => `'${w}'`)
-      .join(",")})`;
-    let dateFilter = "";
+// ====== HSI REPORT FUNCTIONS (HSI DATA SOURCE) ======
+// Data Source: hsi_data table
+// Purpose: Infrastructure & Installation Service (HSI) project tracking report
+// Tracks: Project status flow from PRE PI through completion/cancellation
+// Status Categories: PRE_PI, REGISTERED, INPROGRESS_SC, QC1, FCC, REJECT_FCC, SURVEY_NEW_MANJA, UNSC, PI (with aging), FALLOUT, COMPLETION, CANCEL, REVOKE
+// Related Views: getReportHSI, getHSIDateRange, exportReportHSI
+// NOTE: This is NOT related to DATIN or Digital Product - separate HSI project tracking system
+
+// Helper: Fetch HSI Data (Shared by View and Export)
+const fetchHSIReportData = async (start_date, end_date) => {
+    const RSO2_WITELS = ['JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'BALI', 'NUSA TENGGARA']
+
+    // Base conditions
+    const conditions = [`UPPER(witel) IN (${RSO2_WITELS.map(w => `'${w.toUpperCase()}'`).join(',')})`]
+    
+    // Filter by Date
     if (start_date && end_date) {
       const start = new Date(start_date);
       const end = new Date(end_date);
@@ -814,9 +882,8 @@ export const getReportHSI = async (req, res, next) => {
     );
   } catch (error) {
     next(error);
-  }
-};
-
+  };
+``
 export const getHSIDateRange = async (req, res, next) => {
   try {
     const allowedWitels = [
@@ -1011,37 +1078,107 @@ export const getKPIPOData = async (req, res, next) => {
   }
 };
 
+// ====== DATIN DETAIL & SUMMARY VIEWS ======
+// Related to getReportDatin but provide additional filtering/drill-down capabilities
+// Data Source: sos_data table (same as getReportDatin)
+// Purpose: Detailed breakdown and summary aggregations for DATIN revenue reports
+
 export const getReportDatinDetails = async (req, res, next) => {
   try {
-    const {
-      start_date,
-      end_date,
-      witel,
-      segment,
-      kategori,
-      search,
-      page = 1,
-      limit = 10,
-    } = req.query;
-    let where = {};
-    if (start_date && end_date)
-      where.orderCreatedDate = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
-      };
-    if (witel && !witel.includes("Pilih"))
-      where.custWitel = { contains: witel, mode: "insensitive" };
-    if (segment && !segment.includes("Pilih"))
-      where.segmen = { contains: segment, mode: "insensitive" };
-    if (kategori && !kategori.includes("Pilih"))
-      where.kategori = { contains: kategori, mode: "insensitive" };
-    if (search)
-      where.OR = [
-        { orderId: { contains: search, mode: "insensitive" } },
-        { standardName: { contains: search, mode: "insensitive" } },
-      ];
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const { start_date, end_date, witel, segment, kategori, search, page = 1, limit = 10 } = req.query
+
+    const andConditions = []
+
+    // Date Filter (using orderCreatedDate)
+    if (start_date && end_date) {
+      const parseDate = (dateStr) => {
+        if (!dateStr) return null
+        const parts = dateStr.split('/')
+        if (parts.length === 3) {
+           return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+        }
+        return new Date(dateStr)
+      }
+      
+      const startDateObj = parseDate(start_date)
+      const endDateObj = parseDate(end_date)
+
+      if (startDateObj && !isNaN(startDateObj) && endDateObj && !isNaN(endDateObj)) {
+        endDateObj.setHours(23, 59, 59, 999)
+        andConditions.push({
+          orderCreatedDate: {
+            gte: startDateObj,
+            lte: endDateObj
+          }
+        })
+      }
+    }
+
+    // Witel Mapping
+    const witelMappings = {
+      'BALI': ['BALI', 'DENPASAR', 'SINGARAJA', 'GIANYAR', 'JEMBRANA', 'JIMBARAN', 'KLUNGKUNG', 'SANUR', 'TABANAN', 'UBUNG', 'BADUNG', 'BULELENG'],
+      'JATIM BARAT': ['JATIM BARAT', 'KEDIRI', 'MADIUN', 'MALANG', 'BATU', 'BLITAR', 'BOJONEGORO', 'KEPANJEN', 'NGANJUK', 'NGAWI', 'PONOROGO', 'TRENGGALEK', 'TUBAN', 'TULUNGAGUNG'],
+      'JATIM TIMUR': ['JATIM TIMUR', 'JEMBER', 'PASURUAN', 'SIDOARJO', 'BANYUWANGI', 'BONDOWOSO', 'JOMBANG', 'LUMAJANG', 'MOJOKERTO', 'PROBOLINGGO', 'SITUBONDO'],
+      'NUSA TENGGARA': ['NUSA TENGGARA', 'NTT', 'NTB', 'ATAMBUA', 'BIMA', 'ENDE', 'KUPANG', 'LABOAN BAJO', 'LOMBOK BARAT TENGAH', 'LOMBOK TIMUR UTARA', 'MAUMERE', 'SUMBAWA', 'WAIKABUBAK', 'WAINGAPU', 'MATARAM', 'SUMBA'],
+      'SURAMADU': ['SURAMADU', 'SURABAYA', 'MADURA', 'BANGKALAN', 'GRESIK', 'KENJERAN', 'KETINTANG', 'LAMONGAN', 'MANYAR', 'PAMEKASAN', 'TANDES']
+    }
+
+    // Witel Filter (Multi-select)
+    if (witel && !witel.includes('Pilih Witel')) {
+       const rawList = witel.split(',').filter(w => w)
+       let expandedList = []
+       
+       rawList.forEach(w => {
+           const normalized = w.trim().toUpperCase()
+           if (witelMappings[normalized]) {
+               expandedList = [...expandedList, ...witelMappings[normalized]]
+           } else {
+               expandedList.push(normalized)
+           }
+       })
+       
+       if (expandedList.length > 0) {
+         andConditions.push({
+             OR: [
+                 { witelBaru: { in: expandedList } },
+                 { billWitel: { in: expandedList } }
+             ]
+         })
+       }
+    }
+
+    // Segment Filter (Multi-select)
+    if (segment && !segment.includes('Pilih Segmen')) {
+       const segmentList = segment.split(',').filter(s => s)
+       if (segmentList.length > 0) {
+         andConditions.push({ segmen: { in: segmentList } })
+       }
+    }
+
+    // Kategori Filter (Multi-select)
+    if (kategori && !kategori.includes('Pilih Kategori')) {
+       const kategoriList = kategori.split(',').filter(k => k)
+       if (kategoriList.length > 0) {
+         andConditions.push({ kategori: { in: kategoriList } })
+       }
+    }
+
+    // Search Filter
+    if (search) {
+      andConditions.push({
+        OR: [
+          { orderId: { contains: search, mode: 'insensitive' } },
+          { standardName: { contains: search, mode: 'insensitive' } },
+          { liProductName: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    }
+
+    const where = andConditions.length > 0 ? { AND: andConditions } : {}
+
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+    const take = parseInt(limit)
+
     const [data, total] = await Promise.all([
       prisma.sosData.findMany({
         where,
@@ -1051,10 +1188,22 @@ export const getReportDatinDetails = async (req, res, next) => {
       }),
       prisma.sosData.count({ where }),
     ]);
+
+    const mappedData = data.map(row => ({
+      ...row,
+      orderDate: row.orderCreatedDate,
+      name: row.standardName || row.poName,
+      produk: row.liProductName,
+      status: row.liStatus,
+      milestone: row.liMilestone,
+      hargaBulanan: row.hrgBulanan,
+      lamaKontrak: row.lamaKontrakHari
+    }))
+
     successResponse(
       res,
       {
-        data,
+        data: mappedData,
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -1526,3 +1675,294 @@ export const getReportDatinSummary = async (req, res, next) => {
     next(error)
   }
 }
+
+export const exportReportAnalysis = async (req, res, next) => {
+  try {
+    const { start_date, end_date, witel } = req.query;
+    let whereClause = {};
+    if (start_date && end_date) {
+      whereClause.orderDate = {
+        gte: new Date(start_date),
+        lte: new Date(end_date),
+      };
+    }
+    const regionMapping = {
+      BALI: [
+        "BALI",
+        "DENPASAR",
+        "GIANYAR",
+        "JEMBRANA",
+        "JIMBARAN",
+        "KLUNGKUNG",
+        "Non-Telda (NCX)",
+        "SANUR",
+        "SINGARAJA",
+        "TABANAN",
+        "UBUNG",
+      ],
+      "JATIM BARAT": [
+        "JATIM BARAT",
+        "MALANG",
+        "BATU",
+        "BLITAR",
+        "BOJONEGORO",
+        "KEDIRI",
+        "KEPANJEN",
+        "MADIUN",
+        "NGANJUK",
+        "NGAWI",
+        "PONOROGO",
+        "TRENGGALEK",
+        "TUBAN",
+        "TULUNGAGUNG",
+      ],
+      "JATIM TIMUR": [
+        "JATIM TIMUR",
+        "SIDOARJO",
+        "BANYUWANGI",
+        "BONDOWOSO",
+        "INNER - JATIM TIMUR",
+        "JEMBER",
+        "JOMBANG",
+        "LUMAJANG",
+        "MOJOKERTO",
+        "Non-Telda (NCX)",
+        "PASURUAN",
+        "PROBOLINGGO",
+        "SITUBONDO",
+      ],
+      "NUSA TENGGARA": [
+        "NUSA TENGGARA",
+        "NTB",
+        "NTT",
+        "ATAMBUA",
+        "BIMA",
+        "ENDE",
+        "INNER - NUSA TENGGARA",
+        "KUPANG",
+        "LABOAN BAJO",
+        "LOMBOK BARAT TENGAH",
+        "LOMBOK TIMUR UTARA",
+        "MAUMERE",
+        "Non-Telda (NCX)",
+        "SUMBAWA",
+        "WAIKABUBAK",
+        "WAINGAPU",
+      ],
+      SURAMADU: [
+        "SURAMADU",
+        "BANGKALAN",
+        "GRESIK",
+        "KENJERAN",
+        "KETINTANG",
+        "LAMONGAN",
+        "MANYAR",
+        "Non-Telda (NCX)",
+        "PAMEKASAN",
+        "TANDES",
+      ],
+    };
+    let selectedRegion = null;
+    let targetRows = [
+      "BALI",
+      "JATIM BARAT",
+      "JATIM TIMUR",
+      "NUSA TENGGARA",
+      "SURAMADU",
+    ];
+    if (witel) {
+      const wArr = witel
+        .split(",")
+        .map((w) => w.trim())
+        .filter((w) => w);
+      if (wArr.length === 1 && regionMapping[wArr[0]]) {
+        selectedRegion = wArr[0];
+        targetRows = regionMapping[selectedRegion];
+      } else if (wArr.length > 0) {
+        targetRows = targetRows.filter((r) => wArr.includes(r));
+      }
+    }
+    const getSegmentData = async (segmentKeywords) => {
+      const keywords = Array.isArray(segmentKeywords)
+        ? segmentKeywords
+        : [segmentKeywords];
+      const data = await prisma.digitalProduct.findMany({
+        where: {
+          ...whereClause,
+          OR: keywords.map((k) => ({
+            segment: { contains: k, mode: "insensitive" },
+          })),
+        },
+        select: {
+          witel: true,
+          productName: true,
+          status: true,
+          netPrice: true
+        }
+      })
+
+      // Process data
+      const witelMap = {}
+      
+      targetRows.forEach(w => {
+        witelMap[w] = {
+          nama_witel: w,
+          in_progress_n: 0,
+          in_progress_o: 0,
+          in_progress_ae: 0,
+          in_progress_ps: 0,
+          prov_comp_n_realisasi: 0,
+          prov_comp_o_realisasi: 0,
+          prov_comp_ae_realisasi: 0,
+          prov_comp_ps_realisasi: 0,
+          revenue_n_ach: 0,
+          revenue_n_target: 0,
+          revenue_o_ach: 0,
+          revenue_o_target: 0,
+          revenue_ae_ach: 0,
+          revenue_ae_target: 0,
+          revenue_ps_ach: 0,
+          revenue_ps_target: 0,
+        };
+      });
+      let totalOgp = 0;
+      let totalClosed = 0;
+      data.forEach((row) => {
+        let rawW = (row.witel || "").toUpperCase();
+        let mappedName = null;
+        if (selectedRegion) {
+          const found = regionMapping[selectedRegion].find((b) =>
+            rawW.includes(b)
+          );
+          if (found) mappedName = found;
+        } else {
+          for (const [reg, branches] of Object.entries(regionMapping)) {
+            if (branches.some((b) => rawW.includes(b))) {
+              mappedName = reg;
+              break;
+            }
+          }
+          
+          if (!mappedName) {
+             if (rawW.includes('BALI')) mappedName = 'BALI'
+             else if (rawW.includes('JATIM BARAT')) mappedName = 'JATIM BARAT'
+             else if (rawW.includes('JATIM TIMUR')) mappedName = 'JATIM TIMUR'
+             else if (rawW.includes('NUSA') || rawW.includes('NTB') || rawW.includes('NTT')) return mappedName = 'NUSA TENGGARA'
+             else if (rawW.includes('SURAMADU')) mappedName = 'SURAMADU'
+          }
+        }
+        
+        if (!mappedName || !witelMap[mappedName]) return 
+
+        let productCode = ''
+        const pName = (row.productName || '').toLowerCase()
+        if (pName.includes('netmonk')) productCode = 'n'
+        else if (pName.includes('oca')) productCode = 'o'
+        else if (pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording')) productCode = 'ae'
+        else if (pName.includes('pijar')) productCode = 'ps'
+        
+        if (!productCode) return
+
+        const status = (row.status || '').toLowerCase()
+        const isCompleted = ['complete', 'completed', 'activated', 'live', 'done', 'closed'].some(s => status.includes(s))
+        const isInProgress = !isCompleted
+
+        if (isInProgress) {
+          witelMap[mappedName][`in_progress_${productCode}`]++
+          totalOgp++
+        } else {
+          witelMap[mappedName][`prov_comp_${productCode}_realisasi`]++
+          
+          let amount = 0
+          const np = row.netPrice
+          const MAX_REASONABLE_PRICE = 10000000000 // 10 Billion
+
+          if (np !== null && np !== undefined && Number(np) > 0) {
+             const val = Number(np)
+             if (val < MAX_REASONABLE_PRICE) {
+                amount = val
+             }
+          } else if (row.productName) {
+             const match = row.productName.match(/Total \(Sebelum PPN\)\s*:\s*([0-9]+)/i)
+             if (match) {
+                const extracted = parseInt(match[1])
+                if (extracted < MAX_REASONABLE_PRICE) {
+                   amount = extracted
+                }
+             }
+          }
+
+          witelMap[mappedName][`revenue_${productCode}_ach`] += amount / 1000000 // Convert to Juta
+          totalClosed++
+        }
+      });
+      return Object.values(witelMap);
+    };
+
+    const legsData = await getSegmentData([
+      "LEGS",
+      "DGS",
+      "DPS",
+      "GOV",
+      "ENTERPRISE",
+      "REG",
+    ]);
+    const smeData = await getSegmentData([
+      "SME",
+      "DSS",
+      "RBS",
+      "RETAIL",
+      "UMKM",
+      "FINANCIAL",
+      "LOGISTIC",
+      "TOURISM",
+      "MANUFACTURE",
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+
+    const createSheet = (sheetName, data) => {
+      const sheet = workbook.addWorksheet(sheetName);
+      
+      // Headers
+      sheet.columns = [
+        { header: 'Witel', key: 'nama_witel', width: 20 },
+        
+        { header: 'Netmonk (In Progress)', key: 'in_progress_n', width: 15 },
+        { header: 'Netmonk (Realisasi)', key: 'prov_comp_n_realisasi', width: 15 },
+        { header: 'Netmonk (Rev Ach)', key: 'revenue_n_ach', width: 15 },
+
+        { header: 'OCA (In Progress)', key: 'in_progress_o', width: 15 },
+        { header: 'OCA (Realisasi)', key: 'prov_comp_o_realisasi', width: 15 },
+        { header: 'OCA (Rev Ach)', key: 'revenue_o_ach', width: 15 },
+
+        { header: 'Antares (In Progress)', key: 'in_progress_ae', width: 15 },
+        { header: 'Antares (Realisasi)', key: 'prov_comp_ae_realisasi', width: 15 },
+        { header: 'Antares (Rev Ach)', key: 'revenue_ae_ach', width: 15 },
+
+        { header: 'Pijar (In Progress)', key: 'in_progress_ps', width: 15 },
+        { header: 'Pijar (Realisasi)', key: 'prov_comp_ps_realisasi', width: 15 },
+        { header: 'Pijar (Rev Ach)', key: 'revenue_ps_ach', width: 15 },
+      ];
+
+      // Add Data
+      data.forEach(row => {
+        sheet.addRow(row);
+      });
+
+      // Style Header
+      sheet.getRow(1).font = { bold: true };
+    }
+
+    createSheet('LEGS', legsData);
+    createSheet('SME', smeData);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=report-analysis-${Date.now()}.xlsx`);
+    res.send(buffer);
+
+  } catch (error) {
+    next(error);
+  }
+};

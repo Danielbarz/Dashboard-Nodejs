@@ -16423,6 +16423,7 @@ export namespace Prisma {
     id: bigint | null
     periodType: string | null
     targetType: string | null
+    dashboardType: string | null
     witel: string | null
     product: string | null
     value: Decimal | null
@@ -16435,6 +16436,7 @@ export namespace Prisma {
     id: bigint | null
     periodType: string | null
     targetType: string | null
+    dashboardType: string | null
     witel: string | null
     product: string | null
     value: Decimal | null
@@ -16447,6 +16449,7 @@ export namespace Prisma {
     id: number
     periodType: number
     targetType: number
+    dashboardType: number
     witel: number
     product: number
     value: number
@@ -16471,6 +16474,7 @@ export namespace Prisma {
     id?: true
     periodType?: true
     targetType?: true
+    dashboardType?: true
     witel?: true
     product?: true
     value?: true
@@ -16483,6 +16487,7 @@ export namespace Prisma {
     id?: true
     periodType?: true
     targetType?: true
+    dashboardType?: true
     witel?: true
     product?: true
     value?: true
@@ -16495,6 +16500,7 @@ export namespace Prisma {
     id?: true
     periodType?: true
     targetType?: true
+    dashboardType?: true
     witel?: true
     product?: true
     value?: true
@@ -16594,6 +16600,7 @@ export namespace Prisma {
     id: bigint
     periodType: string
     targetType: string
+    dashboardType: string
     witel: string
     product: string
     value: Decimal
@@ -16625,6 +16632,7 @@ export namespace Prisma {
     id?: boolean
     periodType?: boolean
     targetType?: boolean
+    dashboardType?: boolean
     witel?: boolean
     product?: boolean
     value?: boolean
@@ -16637,6 +16645,7 @@ export namespace Prisma {
     id?: boolean
     periodType?: boolean
     targetType?: boolean
+    dashboardType?: boolean
     witel?: boolean
     product?: boolean
     value?: boolean
@@ -16649,6 +16658,7 @@ export namespace Prisma {
     id?: boolean
     periodType?: boolean
     targetType?: boolean
+    dashboardType?: boolean
     witel?: boolean
     product?: boolean
     value?: boolean
@@ -16661,6 +16671,7 @@ export namespace Prisma {
     id?: boolean
     periodType?: boolean
     targetType?: boolean
+    dashboardType?: boolean
     witel?: boolean
     product?: boolean
     value?: boolean
@@ -16669,7 +16680,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "periodType" | "targetType" | "witel" | "product" | "value" | "periodDate" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
+  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "periodType" | "targetType" | "dashboardType" | "witel" | "product" | "value" | "periodDate" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
 
   export type $TargetPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Target"
@@ -16678,6 +16689,7 @@ export namespace Prisma {
       id: bigint
       periodType: string
       targetType: string
+      dashboardType: string
       witel: string
       product: string
       value: Prisma.Decimal
@@ -17110,6 +17122,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Target", 'BigInt'>
     readonly periodType: FieldRef<"Target", 'String'>
     readonly targetType: FieldRef<"Target", 'String'>
+    readonly dashboardType: FieldRef<"Target", 'String'>
     readonly witel: FieldRef<"Target", 'String'>
     readonly product: FieldRef<"Target", 'String'>
     readonly value: FieldRef<"Target", 'Decimal'>
@@ -39024,6 +39037,7 @@ export namespace Prisma {
     id: 'id',
     periodType: 'periodType',
     targetType: 'targetType',
+    dashboardType: 'dashboardType',
     witel: 'witel',
     product: 'product',
     value: 'value',
@@ -41353,6 +41367,7 @@ export namespace Prisma {
     id?: BigIntFilter<"Target"> | bigint | number
     periodType?: StringFilter<"Target"> | string
     targetType?: StringFilter<"Target"> | string
+    dashboardType?: StringFilter<"Target"> | string
     witel?: StringFilter<"Target"> | string
     product?: StringFilter<"Target"> | string
     value?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
@@ -41365,6 +41380,7 @@ export namespace Prisma {
     id?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
+    dashboardType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
     value?: SortOrder
@@ -41380,6 +41396,7 @@ export namespace Prisma {
     NOT?: TargetWhereInput | TargetWhereInput[]
     periodType?: StringFilter<"Target"> | string
     targetType?: StringFilter<"Target"> | string
+    dashboardType?: StringFilter<"Target"> | string
     witel?: StringFilter<"Target"> | string
     product?: StringFilter<"Target"> | string
     value?: DecimalFilter<"Target"> | Decimal | DecimalJsLike | number | string
@@ -41392,6 +41409,7 @@ export namespace Prisma {
     id?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
+    dashboardType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
     value?: SortOrder
@@ -41412,6 +41430,7 @@ export namespace Prisma {
     id?: BigIntWithAggregatesFilter<"Target"> | bigint | number
     periodType?: StringWithAggregatesFilter<"Target"> | string
     targetType?: StringWithAggregatesFilter<"Target"> | string
+    dashboardType?: StringWithAggregatesFilter<"Target"> | string
     witel?: StringWithAggregatesFilter<"Target"> | string
     product?: StringWithAggregatesFilter<"Target"> | string
     value?: DecimalWithAggregatesFilter<"Target"> | Decimal | DecimalJsLike | number | string
@@ -45407,6 +45426,7 @@ export namespace Prisma {
     id?: bigint | number
     periodType: string
     targetType: string
+    dashboardType?: string
     witel: string
     product: string
     value: Decimal | DecimalJsLike | number | string
@@ -45419,6 +45439,7 @@ export namespace Prisma {
     id?: bigint | number
     periodType: string
     targetType: string
+    dashboardType?: string
     witel: string
     product: string
     value: Decimal | DecimalJsLike | number | string
@@ -45431,6 +45452,7 @@ export namespace Prisma {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     periodType?: StringFieldUpdateOperationsInput | string
     targetType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
     value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -45443,6 +45465,7 @@ export namespace Prisma {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     periodType?: StringFieldUpdateOperationsInput | string
     targetType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
     value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -45455,6 +45478,7 @@ export namespace Prisma {
     id?: bigint | number
     periodType: string
     targetType: string
+    dashboardType?: string
     witel: string
     product: string
     value: Decimal | DecimalJsLike | number | string
@@ -45467,6 +45491,7 @@ export namespace Prisma {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     periodType?: StringFieldUpdateOperationsInput | string
     targetType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
     value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -45479,6 +45504,7 @@ export namespace Prisma {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     periodType?: StringFieldUpdateOperationsInput | string
     targetType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
     value?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -48789,6 +48815,7 @@ export namespace Prisma {
     id?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
+    dashboardType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
     value?: SortOrder
@@ -48806,6 +48833,7 @@ export namespace Prisma {
     id?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
+    dashboardType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
     value?: SortOrder
@@ -48818,6 +48846,7 @@ export namespace Prisma {
     id?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
+    dashboardType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
     value?: SortOrder
