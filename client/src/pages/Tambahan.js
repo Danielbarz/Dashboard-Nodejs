@@ -127,7 +127,8 @@ const Tambahan = () => {
     const totalLop = parentRows.reduce((a, c) => a + (c.jumlahLop || 0), 0)
     const totalGoLive = parentRows.reduce((a, c) => a + (c.golive_jml || 0), 0)
     const totalDrop = parentRows.reduce((a, c) => a + (c.drop || 0), 0)
-    const pending = Math.max(totalLop - totalGoLive - totalDrop, 0)
+    // Fix: totalLop is Non-Drop population, so we only subtract GoLive
+    const pending = Math.max(totalLop - totalGoLive, 0)
     return { totalLop, totalGoLive, totalDrop, pending }
   }, [parentRows])
 
@@ -144,7 +145,8 @@ const Tambahan = () => {
 
   const statusPerWitel = useMemo(() => {
     return parentRows.map((row) => {
-      const pending = Math.max((row.jumlahLop || 0) - (row.golive_jml || 0) - (row.drop || 0), 0)
+      // Fix: jumlahLop already excludes drops
+      const pending = Math.max((row.jumlahLop || 0) - (row.golive_jml || 0), 0)
       return {
         witel: row.witel,
         golive: row.golive_jml || 0,
