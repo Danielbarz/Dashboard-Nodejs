@@ -1,21 +1,38 @@
 import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
-import PO_MAPPING from '../utils/poMapping.js'
 
-// --- ACCOUNT OFFICERS ---
+// --- ACCOUNT OFFICERS (Filter for JT) ---
 export const getAccountOfficers = async (req, res) => {
   try {
     const data = await prisma.accountOfficer.findMany({
-        orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' }
     })
     const formatted = data.map(item => ({
       ...item,
       id: item.id.toString()
     }))
-    return successResponse(res, formatted, 'Account Officers retrieved successfully')
+    successResponse(res, formatted, 'Account Officers retrieved successfully')
   } catch (error) {
     console.error(error)
-    return errorResponse(res, 'Failed to fetch Account Officers', 500)
+    errorResponse(res, 'Failed to fetch Account Officers', 500)
+  }
+}
+
+export const createAccountOfficer = async (req, res) => {
+  try {
+    const { name, filterWitelLama, specialFilterColumn, specialFilterValue } = req.body
+    await prisma.accountOfficer.create({
+      data: {
+        name,
+        filterWitelLama,
+        specialFilterColumn,
+        specialFilterValue
+      }
+    })
+    successResponse(res, null, 'Account Officer created')
+  } catch (error) {
+    console.error(error)
+    errorResponse(res, 'Failed to create AO', 500)
   }
 }
 
@@ -23,15 +40,17 @@ export const deleteAccountOfficer = async (req, res) => {
   try {
     const { id } = req.params
     await prisma.accountOfficer.delete({ where: { id: BigInt(id) } })
-    return successResponse(res, null, 'Account Officer deleted')
+    successResponse(res, null, 'Account Officer deleted')
   } catch (error) {
-    return errorResponse(res, 'Failed to delete AO', 500)
+    console.error(error)
+    errorResponse(res, 'Failed to delete AO', 500)
   }
 }
 
-// --- MASTER PO (list_po) ---
+// --- MASTER PO (list_po table) ---
 export const getPOMaster = async (req, res) => {
   try {
+    // Fallback to raw query if model issue persists, otherwise try prisma.list_po
     const data = await prisma.$queryRawUnsafe('SELECT * FROM list_po ORDER BY po ASC')
     const formatted = data.map(item => ({
       id: item.id.toString(),
@@ -41,10 +60,10 @@ export const getPOMaster = async (req, res) => {
       billCity: item.bill_city,
       witel: item.witel
     }))
-    successResponse(res, formatted, 'Master PO retrieved successfully')
+    successResponse(res, formatted, 'PO Master retrieved successfully')
   } catch (error) {
     console.error(error)
-    errorResponse(res, 'Failed to fetch Master PO', 500)
+    errorResponse(res, 'Failed to fetch PO Master', 500)
   }
 }
 
@@ -55,9 +74,10 @@ export const createPOMaster = async (req, res) => {
       'INSERT INTO list_po (nipnas, po, segment, witel, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())',
       nipnas, namaPo, segment, witel
     )
-    return successResponse(res, null, 'PO created')
+    successResponse(res, null, 'PO Master created')
   } catch (error) {
-    return errorResponse(res, 'Failed to create PO: ' + error.message, 500)
+    console.error(error)
+    errorResponse(res, 'Failed to create PO: ' + error.message, 500)
   }
 }
 
@@ -65,24 +85,20 @@ export const deletePOMaster = async (req, res) => {
   try {
     const { id } = req.params
     await prisma.$executeRawUnsafe('DELETE FROM list_po WHERE id = $1', BigInt(id))
-    return successResponse(res, null, 'PO deleted')
+    successResponse(res, null, 'PO Master deleted')
   } catch (error) {
-    return errorResponse(res, 'Failed to delete PO: ' + error.message, 500)
+    console.error(error)
+    errorResponse(res, 'Failed to delete PO: ' + error.message, 500)
   }
 }
 
-// --- UNMAPPED ORDERS & MAPPING ---
+// --- UNMAPPED ORDERS & MAPPING (SOS DATA) ---
 export const getUnmappedOrders = async (req, res) => {
   try {
     const region3Witels = [
-      'BALI',
-      'JATIM BARAT',
-      'JATIM TIMUR',
-      'NUSA TENGGARA',
-      'SURAMADU',
-      'MALANG',
-      'SIDOARJO'
-    ];
+      'BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU',
+      'MALANG', 'SIDOARJO'
+    ]
 
     const data = await prisma.sosData.findMany({
       where: {
@@ -100,7 +116,7 @@ export const getUnmappedOrders = async (req, res) => {
       take: 50
     })
 
-    const formattedData = data.map(item => ({
+    const formatted = data.map(item => ({
         id: item.id.toString(),
         orderId: item.orderId,
         customerName: item.standardName || item.customerName,
@@ -110,17 +126,17 @@ export const getUnmappedOrders = async (req, res) => {
         billWitel: item.billWitel,
         segment: item.segmen
     }))
-    return successResponse(res, formattedData, 'Unmapped orders retrieved')
+    successResponse(res, formatted, 'Unmapped orders retrieved')
   } catch (error) {
     console.error('Get Unmapped Error:', error)
-    return errorResponse(res, 'Failed to fetch unmapped orders', 500)
+    errorResponse(res, 'Failed to fetch unmapped orders', 500)
   }
 }
 
 export const updateMapping = async (req, res) => {
   try {
     const { id } = req.params
-    const { poName } = req.body 
+    const { poName } = req.body
 
     await prisma.sosData.update({
         where: { id: BigInt(id) },
@@ -135,7 +151,6 @@ export const updateMapping = async (req, res) => {
 }
 
 export const autoMapping = async (req, res) => {
-  console.log('API: autoMapping started with improved priority logic')
   try {
     const region3Witels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU', 'MALANG', 'SIDOARJO']
 
@@ -155,10 +170,7 @@ export const autoMapping = async (req, res) => {
       select: { id: true, nipnas: true, poName: true }
     })
 
-    console.log(`AutoMapping: Processing ${targetOrders.length} potential orders`)
-
     let updateCount = 0
-    let utilityCount = 0
     let tableCount = 0
 
     for (const order of targetOrders) {
@@ -166,20 +178,13 @@ export const autoMapping = async (req, res) => {
 
       let newPoName = null
 
-      if (PO_MAPPING[order.nipnas]) {
-        newPoName = PO_MAPPING[order.nipnas].toUpperCase()
-        utilityCount++
-      }
-
-      if (!newPoName) {
-        const match = await prisma.$queryRawUnsafe(
-          "SELECT po FROM list_po WHERE nipnas = $1 AND po != 'PO_TIDAK_TERDEFINISI' LIMIT 1",
-          order.nipnas
-        )
-        if (match && match.length > 0) {
-          newPoName = match[0].po.toUpperCase()
-          tableCount++
-        }
+      const match = await prisma.$queryRawUnsafe(
+        'SELECT po FROM list_po WHERE nipnas = $1 AND po != \'PO_TIDAK_TERDEFINISI\' LIMIT 1',
+        order.nipnas
+      )
+      if (match && match.length > 0) {
+        newPoName = match[0].po.toUpperCase()
+        tableCount++
       }
 
       if (newPoName && newPoName !== order.poName) {
@@ -191,6 +196,7 @@ export const autoMapping = async (req, res) => {
       }
     }
 
+    // Cleanup remaining
     const resultCleanup = await prisma.sosData.updateMany({
       where: {
         OR: [
@@ -208,22 +214,17 @@ export const autoMapping = async (req, res) => {
       }
     })
 
-    console.log(`AutoMapping Complete: Updated ${updateCount} to real names (${utilityCount} from utility, ${tableCount} from table). Marked ${resultCleanup.count} as undefined.`)
-
-    return successResponse(res, {
+    successResponse(res, {
       totalProcessed: targetOrders.length,
       updatedToRealNames: updateCount,
-      fromUtility: utilityCount,
       fromTable: tableCount,
       markedUndefined: resultCleanup.count
     }, 'Auto mapping completed successfully')
   } catch (error) {
     console.error('AutoMapping Error:', error)
-    return errorResponse(res, 'Failed to perform auto mapping: ' + error.message, 500)
+    errorResponse(res, 'Failed to perform auto mapping: ' + error.message, 500)
   }
 }
-
-// --- TARGET MANAGEMENT ---
 
 export const getTargets = async (req, res) => {
   try {

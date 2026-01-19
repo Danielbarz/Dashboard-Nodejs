@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma.js'
+﻿import prisma from '../lib/prisma.js'
 import { successResponse, errorResponse } from '../utils/response.js'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc.js'
@@ -6,29 +6,6 @@ import timezone from 'dayjs/plugin/timezone.js'
 import ExcelJS from 'exceljs';
 dayjs.extend(utc)
 dayjs.extend(timezone)
-
-// ============================================================
-// DASHBOARD CONTROLLER - MAIN FILE
-// ============================================================
-// This file contains controllers for multiple dashboards:
-//
-// 1. DIGITAL PRODUCT DASHBOARD:
-//    - getDigitalProductFilters: Filter options for digital product dashboard
-//    - getDigitalProductDashboard: Main digital product charts and data
-//    Endpoint: /api/dashboard/digital-product/*
-//
-// 2. SOS DATIN DASHBOARD:
-//    - getSOSDatinFilters: Filter options for SOS DATIN dashboard
-//    - getSOSDatinDashboard: Main SOS DATIN charts and KPIs
-//    Endpoint: /api/dashboard/sos-datin/*
-//
-// 3. OTHER DASHBOARDS:
-//    - SOS Dashboard (getDashboardData, getRevenueByWitel, etc.)
-//    - HSI Dashboard (getReportHSI, exportReportHSI, getHSIDashboard, etc.)
-//    - JT Dashboard (getJTDashboard, getJTFilters, getJTReport)
-//
-// NOTE: DATIN Report is moved to reportController.js
-// ============================================================
 
 // --- HELPER: Coordinate Fixer (Migrasi dari PHP) ---
 const fixCoordinate = (val, isLat) => {
@@ -335,8 +312,54 @@ export const getFilterOptions = async (req, res, next) => {
   }
 }
 
-// --- CONTROLLERS ---
+// Get filter options (unique values for dropdowns)
+export const getFilterOptions = async (req, res, next) => {
+  try {
+    // Hardcoded regions as per requirement
+    // const regions = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
 
+    const products = await prisma.sosData.findMany({
+      distinct: ['liProductName'],
+      select: { liProductName: true }
+    })
+
+    const segments = await prisma.sosData.findMany({
+      distinct: ['segmen'],
+      select: { segmen: true }
+    })
+
+    const statuses = await prisma.sosData.findMany({
+      distinct: ['liStatus'],
+      select: { liStatus: true }
+    })
+
+    const witels = await prisma.sosData.findMany({
+      distinct: ['billWitel'],
+      select: { billWitel: true }
+    })
+
+    successResponse(
+      res,
+      {
+        filters: {
+          witels: witels.filter(w => w.billWitel).map(w => w.billWitel),
+          products: products.filter(p => p.liProductName).map(p => p.liProductName),
+          segments: segments.filter(s => s.segmen).map(s => s.segmen)
+        },
+        stats: {
+          totalWitels: witels.filter(w => w.billWitel).length,
+          totalProducts: products.filter(p => p.liProductName).length,
+          totalSegments: segments.filter(s => s.segmen).length
+        }
+      },
+      'Filter options retrieved successfully'
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Get Report Tambahan (JT/Jaringan Tambahan) - from SPMK MOM data
 export const getReportTambahan = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query
@@ -380,14 +403,32 @@ export const getReportTambahan = async (req, res, next) => {
         TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
         SUM(CASE WHEN populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS jumlah_lop,
         SUM(COALESCE(revenue_plan,0)) AS rev_all,
-        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
-        SUM(CASE WHEN (status_i_hld ILIKE '%GO LIVE%' OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
+        SUM(CASE WHEN ((status_i_hld ILIKE '%GO LIVE%' AND (go_live IS NULL OR go_live != 'N')) OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS golive_jml,
+        SUM(CASE WHEN ((status_i_hld ILIKE '%GO LIVE%' AND (go_live IS NULL OR go_live != 'N')) OR go_live = 'Y') AND populasi_non_drop = 'Y' THEN COALESCE(revenue_plan,0) ELSE 0 END) AS golive_rev,
         SUM(CASE WHEN populasi_non_drop = 'N' THEN 1 ELSE 0 END)::int AS drop_cnt,
-        SUM(CASE WHEN status_i_hld ILIKE '%Initial%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_initial,
-        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
-        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
-        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
-        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
+        
+        -- Fix: cnt_initial acts as catch-all for any non-GoLive that isn't Survey/Perizinan/Instalasi/FI
+        SUM(CASE 
+          WHEN (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') 
+          AND populasi_non_drop = 'Y'
+          AND (
+            status_i_hld ILIKE '%Initial%' 
+            OR status_i_hld IS NULL 
+            OR status_i_hld = ''
+            OR (
+              status_i_hld NOT ILIKE '%Survey%' 
+              AND status_i_hld NOT ILIKE '%Perizinan%' 
+              AND status_i_hld NOT ILIKE '%Instalasi%' 
+              AND status_i_hld NOT ILIKE '%FI%'
+            )
+          )
+          THEN 1 ELSE 0 
+        END)::int AS cnt_initial,
+
+        SUM(CASE WHEN status_i_hld ILIKE '%Survey%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_survey,
+        SUM(CASE WHEN status_i_hld ILIKE '%Perizinan%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_perizinan,
+        SUM(CASE WHEN status_i_hld ILIKE '%Instalasi%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_instalasi,
+        SUM(CASE WHEN status_i_hld ILIKE '%FI%' AND (go_live = 'N' OR go_live IS NULL OR go_live != 'Y') AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS cnt_fi
       FROM spmk_mom
       ${dateFilter}
       GROUP BY witel_baru, witel_lama
@@ -428,8 +469,8 @@ export const getReportTambahan = async (req, res, next) => {
           `SELECT TRIM(UPPER(REPLACE(COALESCE(witel_lama, witel_baru), 'WITEL ', ''))) AS witel, TRIM(UPPER(REPLACE(witel_baru, 'WITEL ', ''))) AS parent_witel,
             SUM(CASE WHEN status_tomps_last_activity ILIKE '%DALAM%' THEN 1 ELSE 0 END)::int AS dalam_toc,
             SUM(CASE WHEN status_tomps_last_activity ILIKE '%LEWAT%' THEN 1 ELSE 0 END)::int AS lewat_toc,
-            SUM(CASE WHEN go_live = 'N' AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
-          FROM spmk_mom ${dateFilter ? `${dateFilter} AND go_live = 'N' AND populasi_non_drop = 'Y'` : "WHERE go_live = 'N' AND populasi_non_drop = 'Y'"}      GROUP BY witel_baru, witel_lama`, ...queryParams
+            SUM(CASE WHEN (go_live = 'N' OR go_live IS NULL) AND populasi_non_drop = 'Y' THEN 1 ELSE 0 END)::int AS lop_progress
+          FROM spmk_mom ${dateFilter ? `${dateFilter} AND (go_live = 'N' OR go_live IS NULL) AND populasi_non_drop = 'Y'` : "WHERE (go_live = 'N' OR go_live IS NULL) AND populasi_non_drop = 'Y'"}      GROUP BY witel_baru, witel_lama`, ...queryParams
     )
 
     const parentProjects = new Map()
@@ -850,15 +891,12 @@ export const getJTDashboard = async (req, res, next) => {
   try {
     const { witel, po, search, limit } = req.query
 
-    const defaultStart = dayjs().startOf('year').toDate()
-    const maxDate = await prisma.spmkMom.aggregate({ _max: { tanggalMom: true } })
-    const defaultEnd = maxDate._max.tanggalMom || new Date()
+    const whereClause = {}
+    const startDate = req.query.start_date ? new Date(req.query.start_date) : null
+    const endDate = req.query.end_date ? new Date(req.query.end_date) : null
 
-    const startDate = req.query.start_date ? new Date(req.query.start_date) : defaultStart
-    const endDate = req.query.end_date ? new Date(req.query.end_date) : defaultEnd
-
-    const whereClause = {
-      tanggalMom: {
+    if (startDate && endDate) {
+      whereClause.tanggalMom = {
         gte: startDate,
         lte: endDate
       }
@@ -890,25 +928,47 @@ export const getJTDashboard = async (req, res, next) => {
         tanggalMom: true,
         idIHld: true,
         noNdeSpmk: true,
-        uraianKegiatan: true
+        uraianKegiatan: true,
+        populasiNonDrop: true
       }
     })
 
+    console.log('[DEBUG JT] Total Rows:', rows.length)
+    console.log('[DEBUG JT] GoLive N count:', rows.filter(r => r.goLive === 'N').length)
+    console.log('[DEBUG JT] GoLive NULL count:', rows.filter(r => r.goLive === null).length)
+    console.log('[DEBUG JT] Populasi Non Drop Y count:', rows.filter(r => r.populasiNonDrop === 'Y').length)
+
+
     const isDrop = (row) => {
-      const st = (row.statusTompsNew || '').toUpperCase()
-      const sp = (row.statusProyek || '').toUpperCase()
-      return st.includes('DROP') || sp.includes('BATAL') || sp.includes('CANCEL')
+      const pnd = (row.populasiNonDrop || '').toUpperCase()
+      return pnd === 'N'
     }
 
     // Status pie/stack per witel
     const statusByWitel = {}
     rows.forEach((row) => {
-      const key = row.witelBaru || 'Unknown'
+      const key = cleanWitelName(row.witelBaru) || 'Unknown'
       if (!statusByWitel[key]) statusByWitel[key] = { golive: 0, belum_golive: 0, drop: 0 }
-      if (isDrop(row)) statusByWitel[key].drop += 1
-      else if (row.goLive === 'Y') statusByWitel[key].golive += 1
-      else statusByWitel[key].belum_golive += 1
+      
+      const isGoLive = (row.goLive || '').trim().toUpperCase() === 'Y'
+      
+      if (isDrop(row)) {
+        statusByWitel[key].drop += 1
+      } else if (isGoLive) {
+        statusByWitel[key].golive += 1
+      } else {
+        statusByWitel[key].belum_golive += 1
+      }
     })
+
+    // Aggregated Global Stats for Cards
+    const globalStats = { golive: 0, belum_golive: 0, drop: 0, total_lop: 0 }
+    Object.values(statusByWitel).forEach(s => {
+      globalStats.golive += s.golive
+      globalStats.belum_golive += s.belum_golive
+      globalStats.drop += s.drop
+    })
+    globalStats.total_lop = globalStats.golive + globalStats.belum_golive
 
     // Radar/pipeline counts by statusIHld
     const pipeline = {}
@@ -958,6 +1018,7 @@ export const getJTDashboard = async (req, res, next) => {
         witel,
         po
       },
+      globalStats,
       statusByWitel,
       pipeline,
       topAging,
@@ -2321,8 +2382,7 @@ export const getDigitalProductDashboard = async (req, res, next) => {
       orderByWitel,
       revenueByProductTrend,
       productShare,
-      orderTrend,
-      targetData
+      orderTrend
     ] = await Promise.all([
       // DIGITAL PRODUCT: 1. KPIs
       prisma.$queryRawUnsafe(`
@@ -2432,20 +2492,12 @@ export const getDigitalProductDashboard = async (req, res, next) => {
     // DIGITAL PRODUCT: Extract and calculate KPI values
     const totalOrder = Number(kpiData[0]?.total_order || 0)
     const completedCount = Number(kpiData[0]?.completed_count || 0)
-    const totalRevenue = Number(kpiData[0]?.total_revenue || 0)
 
     // DIGITAL PRODUCT: Build KPI object with targets and achievements
     const kpi = {
-      totalRevenue: totalRevenue,
-      revTarget: totalRevTarget,
-      revAchievement: totalRevTarget > 0 ? ((totalRevenue / totalRevTarget) * 100).toFixed(1) : 0,
-      
+      totalRevenue: Number(kpiData[0]?.total_revenue || 0),
       pipelineRevenue: Number(kpiData[0]?.pipeline_revenue || 0),
-      
       totalOrder: totalOrder,
-      orderTarget: totalOrderTarget,
-      orderAchievement: totalOrderTarget > 0 ? ((totalOrder / totalOrderTarget) * 100).toFixed(1) : 0,
-      
       completionRate: totalOrder > 0 ? ((completedCount / totalOrder) * 100).toFixed(1) : 0
     }
 
@@ -2503,11 +2555,13 @@ export const getDigitalProductDashboard = async (req, res, next) => {
     // DIGITAL PRODUCT: Build final charts response object
     const charts = {
       orderByStatus: orderByStatus.map(r => ({ name: r.name, value: Number(r.value) })),
-      revenueByWitel: revenueByWitelTransformed,
-      orderByWitel: orderByWitelTransformed,
-      revenueTrend: revenueTrendTransformed,
+      revenueByWitel: transformToStacked(revenueByWitel, 'witel', 'product', 'revenue', isSingleWitel ? [] : WITEL_ORDER),
+      orderByWitel: isSingleWitel 
+        ? orderByWitel.map(r => ({ name: r.witel, value: Number(r.count) }))
+        : transformToStacked(orderByWitel, 'witel', 'status', 'count', WITEL_ORDER),
+      revenueTrend: transformToStacked(revenueByProductTrend, 'month', 'product', 'revenue'),
       productShare: productShare.map(r => ({ name: r.name, value: Number(r.value) })),
-      orderTrend: orderTrendTransformed
+      orderTrend: transformToStacked(orderTrend, 'month', 'product', 'count')
     }
 
     // DIGITAL PRODUCT: Send success response
