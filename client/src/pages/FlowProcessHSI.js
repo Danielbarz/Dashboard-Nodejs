@@ -201,9 +201,9 @@ export default function FlowProcessHSI() {
 
         // Scroll ke section yang relevan
         setTimeout(() => {
-            const elementId = 'detail-section-main'; // Defaulting to main since section is unknown
+            const elementId = 'detail-section';
             document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth' });
-        }, 300);
+        }, 100);
     };
 
     const handlePageChange = (newPage) => {

@@ -7266,7 +7266,6 @@ export namespace Prisma {
     standardName: string | null
     orderId: string | null
     orderSubtype: string | null
-    order_description: string | null
     segmen: string | null
     subSegmen: string | null
     custCity: string | null
@@ -7351,7 +7350,6 @@ export namespace Prisma {
     standardName: string | null
     orderId: string | null
     orderSubtype: string | null
-    order_description: string | null
     segmen: string | null
     subSegmen: string | null
     custCity: string | null
@@ -7436,7 +7434,6 @@ export namespace Prisma {
     standardName: number
     orderId: number
     orderSubtype: number
-    order_description: number
     segmen: number
     subSegmen: number
     custCity: number
@@ -7541,7 +7538,6 @@ export namespace Prisma {
     standardName?: true
     orderId?: true
     orderSubtype?: true
-    order_description?: true
     segmen?: true
     subSegmen?: true
     custCity?: true
@@ -7626,7 +7622,6 @@ export namespace Prisma {
     standardName?: true
     orderId?: true
     orderSubtype?: true
-    order_description?: true
     segmen?: true
     subSegmen?: true
     custCity?: true
@@ -7711,7 +7706,6 @@ export namespace Prisma {
     standardName?: true
     orderId?: true
     orderSubtype?: true
-    order_description?: true
     segmen?: true
     subSegmen?: true
     custCity?: true
@@ -7883,7 +7877,6 @@ export namespace Prisma {
     standardName: string | null
     orderId: string
     orderSubtype: string | null
-    order_description: string | null
     segmen: string | null
     subSegmen: string | null
     custCity: string | null
@@ -7987,7 +7980,6 @@ export namespace Prisma {
     standardName?: boolean
     orderId?: boolean
     orderSubtype?: boolean
-    order_description?: boolean
     segmen?: boolean
     subSegmen?: boolean
     custCity?: boolean
@@ -8072,7 +8064,6 @@ export namespace Prisma {
     standardName?: boolean
     orderId?: boolean
     orderSubtype?: boolean
-    order_description?: boolean
     segmen?: boolean
     subSegmen?: boolean
     custCity?: boolean
@@ -8157,7 +8148,6 @@ export namespace Prisma {
     standardName?: boolean
     orderId?: boolean
     orderSubtype?: boolean
-    order_description?: boolean
     segmen?: boolean
     subSegmen?: boolean
     custCity?: boolean
@@ -8242,7 +8232,6 @@ export namespace Prisma {
     standardName?: boolean
     orderId?: boolean
     orderSubtype?: boolean
-    order_description?: boolean
     segmen?: boolean
     subSegmen?: boolean
     custCity?: boolean
@@ -8321,7 +8310,7 @@ export namespace Prisma {
     xBillcompDt?: boolean
   }
 
-  export type SosDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "standardName" | "orderId" | "orderSubtype" | "order_description" | "segmen" | "subSegmen" | "custCity" | "custWitel" | "servCity" | "serviceWitel" | "billWitel" | "liProductName" | "liBilldate" | "liMilestone" | "kategori" | "liStatus" | "liStatusDate" | "isTermin" | "biayaPasang" | "hrgBulanan" | "revenue" | "orderCreatedDate" | "agreeType" | "agreeStartDate" | "agreeEndDate" | "lamaKontrakHari" | "amortisasi" | "actionCd" | "kategoriUmur" | "umurOrder" | "billCity" | "poName" | "tipeOrder" | "segmenBaru" | "scalling1" | "scalling2" | "tipeGrup" | "witelBaru" | "kategoriBaru" | "createdAt" | "updatedAt" | "batchId" | "prevOrder" | "liSid" | "sid" | "custAccntNum" | "custAccntName" | "custAddr" | "custRegion" | "servAccntNum" | "servAccntName" | "servAddr" | "serviceRegion" | "billAccntNum" | "accountNas" | "billAccntName" | "billAddr" | "billRegion" | "liId" | "liProductId" | "productDigital" | "liBandwidth" | "billcomDate" | "liFulfillmentStatus" | "scaling" | "liPaymentTerm" | "liBillingStartDate" | "agreeItemNum" | "agreeName" | "orderCreatedBy" | "liCreatedDate" | "orderCreatedByName" | "currentBandwidth" | "beforeBandwidth" | "productActivationDate" | "quoteRowId" | "lineItemDescription" | "assetIntegId" | "am" | "xBillcompDt", ExtArgs["result"]["sosData"]>
+  export type SosDataOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nipnas" | "standardName" | "orderId" | "orderSubtype" | "segmen" | "subSegmen" | "custCity" | "custWitel" | "servCity" | "serviceWitel" | "billWitel" | "liProductName" | "liBilldate" | "liMilestone" | "kategori" | "liStatus" | "liStatusDate" | "isTermin" | "biayaPasang" | "hrgBulanan" | "revenue" | "orderCreatedDate" | "agreeType" | "agreeStartDate" | "agreeEndDate" | "lamaKontrakHari" | "amortisasi" | "actionCd" | "kategoriUmur" | "umurOrder" | "billCity" | "poName" | "tipeOrder" | "segmenBaru" | "scalling1" | "scalling2" | "tipeGrup" | "witelBaru" | "kategoriBaru" | "createdAt" | "updatedAt" | "batchId" | "prevOrder" | "liSid" | "sid" | "custAccntNum" | "custAccntName" | "custAddr" | "custRegion" | "servAccntNum" | "servAccntName" | "servAddr" | "serviceRegion" | "billAccntNum" | "accountNas" | "billAccntName" | "billAddr" | "billRegion" | "liId" | "liProductId" | "productDigital" | "liBandwidth" | "billcomDate" | "liFulfillmentStatus" | "scaling" | "liPaymentTerm" | "liBillingStartDate" | "agreeItemNum" | "agreeName" | "orderCreatedBy" | "liCreatedDate" | "orderCreatedByName" | "currentBandwidth" | "beforeBandwidth" | "productActivationDate" | "quoteRowId" | "lineItemDescription" | "assetIntegId" | "am" | "xBillcompDt", ExtArgs["result"]["sosData"]>
 
   export type $SosDataPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SosData"
@@ -8332,7 +8321,6 @@ export namespace Prisma {
       standardName: string | null
       orderId: string
       orderSubtype: string | null
-      order_description: string | null
       segmen: string | null
       subSegmen: string | null
       custCity: string | null
@@ -8837,7 +8825,6 @@ export namespace Prisma {
     readonly standardName: FieldRef<"SosData", 'String'>
     readonly orderId: FieldRef<"SosData", 'String'>
     readonly orderSubtype: FieldRef<"SosData", 'String'>
-    readonly order_description: FieldRef<"SosData", 'String'>
     readonly segmen: FieldRef<"SosData", 'String'>
     readonly subSegmen: FieldRef<"SosData", 'String'>
     readonly custCity: FieldRef<"SosData", 'String'>
@@ -9294,16 +9281,10 @@ export namespace Prisma {
 
   export type HsiDataAvgAggregateOutputType = {
     id: number | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
   }
 
   export type HsiDataSumAggregateOutputType = {
     id: bigint | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
   }
 
   export type HsiDataMinAggregateOutputType = {
@@ -9364,9 +9345,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -9437,9 +9418,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -9529,16 +9510,10 @@ export namespace Prisma {
 
   export type HsiDataAvgAggregateInputType = {
     id?: true
-    tahun?: true
-    bulan?: true
-    tanggal?: true
   }
 
   export type HsiDataSumAggregateInputType = {
     id?: true
-    tahun?: true
-    bulan?: true
-    tanggal?: true
   }
 
   export type HsiDataMinAggregateInputType = {
@@ -9905,9 +9880,9 @@ export namespace Prisma {
     detailManja: string | null
     suberrorcode: string | null
     engineermemo: string | null
-    tahun: number | null
-    bulan: number | null
-    tanggal: number | null
+    tahun: string | null
+    bulan: string | null
+    tanggal: string | null
     ps1: string | null
     cek: string | null
     hasil: string | null
@@ -10294,9 +10269,9 @@ export namespace Prisma {
       detailManja: string | null
       suberrorcode: string | null
       engineermemo: string | null
-      tahun: number | null
-      bulan: number | null
-      tanggal: number | null
+      tahun: string | null
+      bulan: string | null
+      tanggal: string | null
       ps1: string | null
       cek: string | null
       hasil: string | null
@@ -10787,9 +10762,9 @@ export namespace Prisma {
     readonly detailManja: FieldRef<"HsiData", 'String'>
     readonly suberrorcode: FieldRef<"HsiData", 'String'>
     readonly engineermemo: FieldRef<"HsiData", 'String'>
-    readonly tahun: FieldRef<"HsiData", 'Int'>
-    readonly bulan: FieldRef<"HsiData", 'Int'>
-    readonly tanggal: FieldRef<"HsiData", 'Int'>
+    readonly tahun: FieldRef<"HsiData", 'String'>
+    readonly bulan: FieldRef<"HsiData", 'String'>
+    readonly tanggal: FieldRef<"HsiData", 'String'>
     readonly ps1: FieldRef<"HsiData", 'String'>
     readonly cek: FieldRef<"HsiData", 'String'>
     readonly hasil: FieldRef<"HsiData", 'String'>
@@ -16421,6 +16396,7 @@ export namespace Prisma {
 
   export type TargetMinAggregateOutputType = {
     id: bigint | null
+    dashboardType: string | null
     periodType: string | null
     targetType: string | null
     witel: string | null
@@ -16433,6 +16409,7 @@ export namespace Prisma {
 
   export type TargetMaxAggregateOutputType = {
     id: bigint | null
+    dashboardType: string | null
     periodType: string | null
     targetType: string | null
     witel: string | null
@@ -16445,6 +16422,7 @@ export namespace Prisma {
 
   export type TargetCountAggregateOutputType = {
     id: number
+    dashboardType: number
     periodType: number
     targetType: number
     witel: number
@@ -16469,6 +16447,7 @@ export namespace Prisma {
 
   export type TargetMinAggregateInputType = {
     id?: true
+    dashboardType?: true
     periodType?: true
     targetType?: true
     witel?: true
@@ -16481,6 +16460,7 @@ export namespace Prisma {
 
   export type TargetMaxAggregateInputType = {
     id?: true
+    dashboardType?: true
     periodType?: true
     targetType?: true
     witel?: true
@@ -16493,6 +16473,7 @@ export namespace Prisma {
 
   export type TargetCountAggregateInputType = {
     id?: true
+    dashboardType?: true
     periodType?: true
     targetType?: true
     witel?: true
@@ -16592,7 +16573,8 @@ export namespace Prisma {
 
   export type TargetGroupByOutputType = {
     id: bigint
-    periodType: string
+    dashboardType: string
+    periodType: string | null
     targetType: string
     witel: string
     product: string
@@ -16623,6 +16605,7 @@ export namespace Prisma {
 
   export type TargetSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    dashboardType?: boolean
     periodType?: boolean
     targetType?: boolean
     witel?: boolean
@@ -16635,6 +16618,7 @@ export namespace Prisma {
 
   export type TargetSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    dashboardType?: boolean
     periodType?: boolean
     targetType?: boolean
     witel?: boolean
@@ -16647,6 +16631,7 @@ export namespace Prisma {
 
   export type TargetSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    dashboardType?: boolean
     periodType?: boolean
     targetType?: boolean
     witel?: boolean
@@ -16659,6 +16644,7 @@ export namespace Prisma {
 
   export type TargetSelectScalar = {
     id?: boolean
+    dashboardType?: boolean
     periodType?: boolean
     targetType?: boolean
     witel?: boolean
@@ -16669,14 +16655,15 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "periodType" | "targetType" | "witel" | "product" | "value" | "periodDate" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
+  export type TargetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "dashboardType" | "periodType" | "targetType" | "witel" | "product" | "value" | "periodDate" | "createdAt" | "updatedAt", ExtArgs["result"]["target"]>
 
   export type $TargetPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Target"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
-      periodType: string
+      dashboardType: string
+      periodType: string | null
       targetType: string
       witel: string
       product: string
@@ -17108,6 +17095,7 @@ export namespace Prisma {
    */
   interface TargetFieldRefs {
     readonly id: FieldRef<"Target", 'BigInt'>
+    readonly dashboardType: FieldRef<"Target", 'String'>
     readonly periodType: FieldRef<"Target", 'String'>
     readonly targetType: FieldRef<"Target", 'String'>
     readonly witel: FieldRef<"Target", 'String'>
@@ -38735,7 +38723,6 @@ export namespace Prisma {
     standardName: 'standardName',
     orderId: 'orderId',
     orderSubtype: 'orderSubtype',
-    order_description: 'order_description',
     segmen: 'segmen',
     subSegmen: 'subSegmen',
     custCity: 'custCity',
@@ -39022,6 +39009,7 @@ export namespace Prisma {
 
   export const TargetScalarFieldEnum: {
     id: 'id',
+    dashboardType: 'dashboardType',
     periodType: 'periodType',
     targetType: 'targetType',
     witel: 'witel',
@@ -39906,7 +39894,6 @@ export namespace Prisma {
     standardName?: StringNullableFilter<"SosData"> | string | null
     orderId?: StringFilter<"SosData"> | string
     orderSubtype?: StringNullableFilter<"SosData"> | string | null
-    order_description?: StringNullableFilter<"SosData"> | string | null
     segmen?: StringNullableFilter<"SosData"> | string | null
     subSegmen?: StringNullableFilter<"SosData"> | string | null
     custCity?: StringNullableFilter<"SosData"> | string | null
@@ -39991,7 +39978,6 @@ export namespace Prisma {
     standardName?: SortOrderInput | SortOrder
     orderId?: SortOrder
     orderSubtype?: SortOrderInput | SortOrder
-    order_description?: SortOrderInput | SortOrder
     segmen?: SortOrderInput | SortOrder
     subSegmen?: SortOrderInput | SortOrder
     custCity?: SortOrderInput | SortOrder
@@ -40079,7 +40065,6 @@ export namespace Prisma {
     nipnas?: StringNullableFilter<"SosData"> | string | null
     standardName?: StringNullableFilter<"SosData"> | string | null
     orderSubtype?: StringNullableFilter<"SosData"> | string | null
-    order_description?: StringNullableFilter<"SosData"> | string | null
     segmen?: StringNullableFilter<"SosData"> | string | null
     subSegmen?: StringNullableFilter<"SosData"> | string | null
     custCity?: StringNullableFilter<"SosData"> | string | null
@@ -40164,7 +40149,6 @@ export namespace Prisma {
     standardName?: SortOrderInput | SortOrder
     orderId?: SortOrder
     orderSubtype?: SortOrderInput | SortOrder
-    order_description?: SortOrderInput | SortOrder
     segmen?: SortOrderInput | SortOrder
     subSegmen?: SortOrderInput | SortOrder
     custCity?: SortOrderInput | SortOrder
@@ -40257,7 +40241,6 @@ export namespace Prisma {
     standardName?: StringNullableWithAggregatesFilter<"SosData"> | string | null
     orderId?: StringWithAggregatesFilter<"SosData"> | string
     orderSubtype?: StringNullableWithAggregatesFilter<"SosData"> | string | null
-    order_description?: StringNullableWithAggregatesFilter<"SosData"> | string | null
     segmen?: StringNullableWithAggregatesFilter<"SosData"> | string | null
     subSegmen?: StringNullableWithAggregatesFilter<"SosData"> | string | null
     custCity?: StringNullableWithAggregatesFilter<"SosData"> | string | null
@@ -40397,9 +40380,9 @@ export namespace Prisma {
     detailManja?: StringNullableFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableFilter<"HsiData"> | string | null
     engineermemo?: StringNullableFilter<"HsiData"> | string | null
-    tahun?: IntNullableFilter<"HsiData"> | number | null
-    bulan?: IntNullableFilter<"HsiData"> | number | null
-    tanggal?: IntNullableFilter<"HsiData"> | number | null
+    tahun?: StringNullableFilter<"HsiData"> | string | null
+    bulan?: StringNullableFilter<"HsiData"> | string | null
+    tanggal?: StringNullableFilter<"HsiData"> | string | null
     ps1?: StringNullableFilter<"HsiData"> | string | null
     cek?: StringNullableFilter<"HsiData"> | string | null
     hasil?: StringNullableFilter<"HsiData"> | string | null
@@ -40546,9 +40529,9 @@ export namespace Prisma {
     detailManja?: StringNullableFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableFilter<"HsiData"> | string | null
     engineermemo?: StringNullableFilter<"HsiData"> | string | null
-    tahun?: IntNullableFilter<"HsiData"> | number | null
-    bulan?: IntNullableFilter<"HsiData"> | number | null
-    tanggal?: IntNullableFilter<"HsiData"> | number | null
+    tahun?: StringNullableFilter<"HsiData"> | string | null
+    bulan?: StringNullableFilter<"HsiData"> | string | null
+    tanggal?: StringNullableFilter<"HsiData"> | string | null
     ps1?: StringNullableFilter<"HsiData"> | string | null
     cek?: StringNullableFilter<"HsiData"> | string | null
     hasil?: StringNullableFilter<"HsiData"> | string | null
@@ -40700,9 +40683,9 @@ export namespace Prisma {
     detailManja?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     suberrorcode?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     engineermemo?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
-    tahun?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
-    bulan?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
-    tanggal?: IntNullableWithAggregatesFilter<"HsiData"> | number | null
+    tahun?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
+    bulan?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
+    tanggal?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     ps1?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     cek?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
     hasil?: StringNullableWithAggregatesFilter<"HsiData"> | string | null
@@ -41351,7 +41334,8 @@ export namespace Prisma {
     OR?: TargetWhereInput[]
     NOT?: TargetWhereInput | TargetWhereInput[]
     id?: BigIntFilter<"Target"> | bigint | number
-    periodType?: StringFilter<"Target"> | string
+    dashboardType?: StringFilter<"Target"> | string
+    periodType?: StringNullableFilter<"Target"> | string | null
     targetType?: StringFilter<"Target"> | string
     witel?: StringFilter<"Target"> | string
     product?: StringFilter<"Target"> | string
@@ -41363,7 +41347,8 @@ export namespace Prisma {
 
   export type TargetOrderByWithRelationInput = {
     id?: SortOrder
-    periodType?: SortOrder
+    dashboardType?: SortOrder
+    periodType?: SortOrderInput | SortOrder
     targetType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
@@ -41378,7 +41363,8 @@ export namespace Prisma {
     AND?: TargetWhereInput | TargetWhereInput[]
     OR?: TargetWhereInput[]
     NOT?: TargetWhereInput | TargetWhereInput[]
-    periodType?: StringFilter<"Target"> | string
+    dashboardType?: StringFilter<"Target"> | string
+    periodType?: StringNullableFilter<"Target"> | string | null
     targetType?: StringFilter<"Target"> | string
     witel?: StringFilter<"Target"> | string
     product?: StringFilter<"Target"> | string
@@ -41390,7 +41376,8 @@ export namespace Prisma {
 
   export type TargetOrderByWithAggregationInput = {
     id?: SortOrder
-    periodType?: SortOrder
+    dashboardType?: SortOrder
+    periodType?: SortOrderInput | SortOrder
     targetType?: SortOrder
     witel?: SortOrder
     product?: SortOrder
@@ -41410,7 +41397,8 @@ export namespace Prisma {
     OR?: TargetScalarWhereWithAggregatesInput[]
     NOT?: TargetScalarWhereWithAggregatesInput | TargetScalarWhereWithAggregatesInput[]
     id?: BigIntWithAggregatesFilter<"Target"> | bigint | number
-    periodType?: StringWithAggregatesFilter<"Target"> | string
+    dashboardType?: StringWithAggregatesFilter<"Target"> | string
+    periodType?: StringNullableWithAggregatesFilter<"Target"> | string | null
     targetType?: StringWithAggregatesFilter<"Target"> | string
     witel?: StringWithAggregatesFilter<"Target"> | string
     product?: StringWithAggregatesFilter<"Target"> | string
@@ -43498,7 +43486,6 @@ export namespace Prisma {
     standardName?: string | null
     orderId: string
     orderSubtype?: string | null
-    order_description?: string | null
     segmen?: string | null
     subSegmen?: string | null
     custCity?: string | null
@@ -43583,7 +43570,6 @@ export namespace Prisma {
     standardName?: string | null
     orderId: string
     orderSubtype?: string | null
-    order_description?: string | null
     segmen?: string | null
     subSegmen?: string | null
     custCity?: string | null
@@ -43668,7 +43654,6 @@ export namespace Prisma {
     standardName?: NullableStringFieldUpdateOperationsInput | string | null
     orderId?: StringFieldUpdateOperationsInput | string
     orderSubtype?: NullableStringFieldUpdateOperationsInput | string | null
-    order_description?: NullableStringFieldUpdateOperationsInput | string | null
     segmen?: NullableStringFieldUpdateOperationsInput | string | null
     subSegmen?: NullableStringFieldUpdateOperationsInput | string | null
     custCity?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43753,7 +43738,6 @@ export namespace Prisma {
     standardName?: NullableStringFieldUpdateOperationsInput | string | null
     orderId?: StringFieldUpdateOperationsInput | string
     orderSubtype?: NullableStringFieldUpdateOperationsInput | string | null
-    order_description?: NullableStringFieldUpdateOperationsInput | string | null
     segmen?: NullableStringFieldUpdateOperationsInput | string | null
     subSegmen?: NullableStringFieldUpdateOperationsInput | string | null
     custCity?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43838,7 +43822,6 @@ export namespace Prisma {
     standardName?: string | null
     orderId: string
     orderSubtype?: string | null
-    order_description?: string | null
     segmen?: string | null
     subSegmen?: string | null
     custCity?: string | null
@@ -43923,7 +43906,6 @@ export namespace Prisma {
     standardName?: NullableStringFieldUpdateOperationsInput | string | null
     orderId?: StringFieldUpdateOperationsInput | string
     orderSubtype?: NullableStringFieldUpdateOperationsInput | string | null
-    order_description?: NullableStringFieldUpdateOperationsInput | string | null
     segmen?: NullableStringFieldUpdateOperationsInput | string | null
     subSegmen?: NullableStringFieldUpdateOperationsInput | string | null
     custCity?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44008,7 +43990,6 @@ export namespace Prisma {
     standardName?: NullableStringFieldUpdateOperationsInput | string | null
     orderId?: StringFieldUpdateOperationsInput | string
     orderSubtype?: NullableStringFieldUpdateOperationsInput | string | null
-    order_description?: NullableStringFieldUpdateOperationsInput | string | null
     segmen?: NullableStringFieldUpdateOperationsInput | string | null
     subSegmen?: NullableStringFieldUpdateOperationsInput | string | null
     custCity?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44145,9 +44126,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -44218,9 +44199,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -44291,9 +44272,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44364,9 +44345,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44437,9 +44418,9 @@ export namespace Prisma {
     detailManja?: string | null
     suberrorcode?: string | null
     engineermemo?: string | null
-    tahun?: number | null
-    bulan?: number | null
-    tanggal?: number | null
+    tahun?: string | null
+    bulan?: string | null
+    tanggal?: string | null
     ps1?: string | null
     cek?: string | null
     hasil?: string | null
@@ -44510,9 +44491,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44583,9 +44564,9 @@ export namespace Prisma {
     detailManja?: NullableStringFieldUpdateOperationsInput | string | null
     suberrorcode?: NullableStringFieldUpdateOperationsInput | string | null
     engineermemo?: NullableStringFieldUpdateOperationsInput | string | null
-    tahun?: NullableIntFieldUpdateOperationsInput | number | null
-    bulan?: NullableIntFieldUpdateOperationsInput | number | null
-    tanggal?: NullableIntFieldUpdateOperationsInput | number | null
+    tahun?: NullableStringFieldUpdateOperationsInput | string | null
+    bulan?: NullableStringFieldUpdateOperationsInput | string | null
+    tanggal?: NullableStringFieldUpdateOperationsInput | string | null
     ps1?: NullableStringFieldUpdateOperationsInput | string | null
     cek?: NullableStringFieldUpdateOperationsInput | string | null
     hasil?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45405,7 +45386,8 @@ export namespace Prisma {
 
   export type TargetCreateInput = {
     id?: bigint | number
-    periodType: string
+    dashboardType?: string
+    periodType?: string | null
     targetType: string
     witel: string
     product: string
@@ -45417,7 +45399,8 @@ export namespace Prisma {
 
   export type TargetUncheckedCreateInput = {
     id?: bigint | number
-    periodType: string
+    dashboardType?: string
+    periodType?: string | null
     targetType: string
     witel: string
     product: string
@@ -45429,7 +45412,8 @@ export namespace Prisma {
 
   export type TargetUpdateInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    periodType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
+    periodType?: NullableStringFieldUpdateOperationsInput | string | null
     targetType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
@@ -45441,7 +45425,8 @@ export namespace Prisma {
 
   export type TargetUncheckedUpdateInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    periodType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
+    periodType?: NullableStringFieldUpdateOperationsInput | string | null
     targetType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
@@ -45453,7 +45438,8 @@ export namespace Prisma {
 
   export type TargetCreateManyInput = {
     id?: bigint | number
-    periodType: string
+    dashboardType?: string
+    periodType?: string | null
     targetType: string
     witel: string
     product: string
@@ -45465,7 +45451,8 @@ export namespace Prisma {
 
   export type TargetUpdateManyMutationInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    periodType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
+    periodType?: NullableStringFieldUpdateOperationsInput | string | null
     targetType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
@@ -45477,7 +45464,8 @@ export namespace Prisma {
 
   export type TargetUncheckedUpdateManyInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
-    periodType?: StringFieldUpdateOperationsInput | string
+    dashboardType?: StringFieldUpdateOperationsInput | string
+    periodType?: NullableStringFieldUpdateOperationsInput | string | null
     targetType?: StringFieldUpdateOperationsInput | string
     witel?: StringFieldUpdateOperationsInput | string
     product?: StringFieldUpdateOperationsInput | string
@@ -47807,7 +47795,6 @@ export namespace Prisma {
     standardName?: SortOrder
     orderId?: SortOrder
     orderSubtype?: SortOrder
-    order_description?: SortOrder
     segmen?: SortOrder
     subSegmen?: SortOrder
     custCity?: SortOrder
@@ -47901,7 +47888,6 @@ export namespace Prisma {
     standardName?: SortOrder
     orderId?: SortOrder
     orderSubtype?: SortOrder
-    order_description?: SortOrder
     segmen?: SortOrder
     subSegmen?: SortOrder
     custCity?: SortOrder
@@ -47986,7 +47972,6 @@ export namespace Prisma {
     standardName?: SortOrder
     orderId?: SortOrder
     orderSubtype?: SortOrder
-    order_description?: SortOrder
     segmen?: SortOrder
     subSegmen?: SortOrder
     custCity?: SortOrder
@@ -48165,9 +48150,6 @@ export namespace Prisma {
 
   export type HsiDataAvgOrderByAggregateInput = {
     id?: SortOrder
-    tahun?: SortOrder
-    bulan?: SortOrder
-    tanggal?: SortOrder
   }
 
   export type HsiDataMaxOrderByAggregateInput = {
@@ -48318,9 +48300,6 @@ export namespace Prisma {
 
   export type HsiDataSumOrderByAggregateInput = {
     id?: SortOrder
-    tahun?: SortOrder
-    bulan?: SortOrder
-    tanggal?: SortOrder
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -48787,6 +48766,7 @@ export namespace Prisma {
 
   export type TargetCountOrderByAggregateInput = {
     id?: SortOrder
+    dashboardType?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
     witel?: SortOrder
@@ -48804,6 +48784,7 @@ export namespace Prisma {
 
   export type TargetMaxOrderByAggregateInput = {
     id?: SortOrder
+    dashboardType?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
     witel?: SortOrder
@@ -48816,6 +48797,7 @@ export namespace Prisma {
 
   export type TargetMinOrderByAggregateInput = {
     id?: SortOrder
+    dashboardType?: SortOrder
     periodType?: SortOrder
     targetType?: SortOrder
     witel?: SortOrder

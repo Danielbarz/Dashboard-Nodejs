@@ -320,7 +320,7 @@ const AppLayout = ({ children, pageTitle }) => {
 
   const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
-  const isAdminMode = ['admin'].includes(activeRole)
+  const isAdminMode = ['admin', 'superadmin'].includes(activeRole)
   const showSwitchButton = user?.role === 'admin'
   const isSuperAdmin = ['superadmin'].includes(activeRole)
 
@@ -610,7 +610,7 @@ const AppLayout = ({ children, pageTitle }) => {
       {/* Main Content */}
       <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
         {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-20">
+        <header className="bg-white shadow-sm sticky top-0 z-30">
           <div className="max-w-full mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <div className="flex items-center">
               <button

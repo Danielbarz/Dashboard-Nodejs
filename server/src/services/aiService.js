@@ -1,148 +1,125 @@
 import { PrismaClient } from '../generated/client/index.js'
 
-// Initialize Prisma Client for AI Reader
-// We need to construct the connection string dynamically for the ai_reader user
-// Assuming the default connection string is in process.env.DATABASE_URL
-// Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+// Use the existing global prisma instance if possible, or create a new one
+// Ideally we should reuse the one from ../lib/prisma.js but importing it here might cause circular deps depending on structure
+// For safety, we use a new client but pointing to the same DB URL.
+const prisma = new PrismaClient();
 
-const getAiDbUrl = () => {
-    const originalUrl = process.env.DATABASE_URL;
-    if (!originalUrl) return null;
-    
-    try {
-        const url = new URL(originalUrl);
-        url.username = 'ai_reader';
-        url.password = 'secure_ai_password';
-        return url.toString();
-    } catch (e) {
-        console.error('Error parsing DATABASE_URL:', e);
-        return null;
-    }
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(val) || 0);
 };
 
-const aiPrisma = new PrismaClient({
-    datasources: {
-        db: {
-            url: getAiDbUrl() || process.env.DATABASE_URL // Fallback to default if parsing fails (warn user!)
-        }
-    },
-    log: ['query', 'error']
-});
+const formatNumber = (val) => {
+    return new Intl.NumberFormat('id-ID').format(Number(val) || 0);
+};
 
-const OLLAMA_URL = 'http://localhost:11434/api/generate';
-const MODEL_NAME = process.env.OLLAMA_MODEL || 'deepseek-r1:1.5b';
-
-const DB_SCHEMA = `
-Table: digital_products
-Columns: product_name (String), revenue (Decimal), witel (String), regional (String), order_date (DateTime), status (String), segment (String)
-
-Table: hsi_data
-Columns: order_id (String), witel (String), datel (String), status_resume (String), order_date (DateTime), customer_name (String), package_name (String)
-
-Table: sos_data
-Columns: order_id (String), revenue (Decimal), witel (String), bill_witel (String), order_date (DateTime), segment (String), product_name (String)
-
-Table: users
-Columns: name (String), email (String), role (String)
-`;
-
-const SYSTEM_PROMPT = `
-You are an expert SQL Data Analyst for Telkom Indonesia.
-Your task is to answer user questions by generating SQL queries against the provided database schema.
-
-RULES:
-1. Use ONLY the provided tables: digital_products, hsi_data, sos_data, users.
-2. Return ONLY the raw SQL query. Do not use Markdown formatting (no triple backticks).
-3. Do not include explanations in the SQL response.
-4. Ensure the SQL is valid PostgreSQL.
-5. If the user asks about something not in the schema, answer "I cannot answer that based on the available data."
-6. Current date context: ${new Date().toISOString()}
-7. For aggregation, use standard SQL functions (SUM, COUNT, AVG).
-8. Text matching should be case-insensitive (ILIKE).
-
-SCHEMA:
-${DB_SCHEMA}
-`;
-
-export const askAi = async (question) => {
+export const askAi = async (message, context) => {
     try {
-        // Step 1: Generate SQL
-        console.log(`[AI] Generating SQL for: "${question}"`);
-        const sqlResponse = await fetch(OLLAMA_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: MODEL_NAME,
-                prompt: `${SYSTEM_PROMPT}\n\nUser Question: ${question}\nSQL Query:`,
-                stream: false,
-                options: {
-                    temperature: 0.1 // Deterministic
-                }
-            })
-        });
+        const lowerMsg = message.toLowerCase();
+        let sql = '';
+        let resultText = '';
+        let data = [];
 
-        if (!sqlResponse.ok) throw new Error('Ollama connection failed');
-        const sqlJson = await sqlResponse.json();
-        let sql = sqlJson.response.trim();
+        // --- INTENT RECOGNITION ---
+
+        // 1. HSI REVENUE / ORDER
+        if (lowerMsg.includes('hsi') && (lowerMsg.includes('order') || lowerMsg.includes('total'))) {
+            sql = `SELECT COUNT(*) as total FROM hsi_data`;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Total Order HSI saat ini adalah **${formatNumber(res[0].total)}** order.`;
+        }
         
-        // Clean up SQL (remove think tags if any, remove markdown)
-        sql = sql.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
-
-        console.log(`[AI] Generated SQL: ${sql}`);
-
-        // Step 2: Execute SQL (Safe Read-Only)
-        // Basic safety check
-        if (!sql.toLowerCase().startsWith('select')) {
-             // If it's not a SELECT, it might be an apology or refusal
-             return { answer: sql, sql: null, data: null };
+        // 2. HSI COMPLETED / PS
+        else if (lowerMsg.includes('hsi') && (lowerMsg.includes('ps') || lowerMsg.includes('complete'))) {
+            sql = `SELECT COUNT(*) as total FROM hsi_data WHERE status_resume = 'PS'`;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Jumlah order HSI yang sudah Completed (PS) adalah **${formatNumber(res[0].total)}** order.`;
         }
 
-        const results = await aiPrisma.$queryRawUnsafe(sql);
-        
-        // Handle BigInt serialization
-        const serializedResults = JSON.parse(JSON.stringify(results, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
+        // 3. TOP WITEL HSI
+        else if (lowerMsg.includes('hsi') && lowerMsg.includes('top') && lowerMsg.includes('witel')) {
+            sql = `
+                SELECT witel, COUNT(*) as total 
+                FROM hsi_data 
+                GROUP BY witel 
+                ORDER BY total DESC 
+                LIMIT 5
+            `;
+            const res = await prisma.$queryRawUnsafe(sql);
+            const list = res.map((r, i) => `${i+1}. ${r.witel}: **${formatNumber(r.total)}**`).join('\n');
+            resultText = `**Top 5 Witel HSI (Order Terbanyak):**\n\n${list}`;
+        }
 
-        console.log(`[AI] SQL Results: ${JSON.stringify(serializedResults).slice(0, 100)}...`);
+        // 4. DATIN REVENUE
+        else if (lowerMsg.includes('datin') && lowerMsg.includes('revenue')) {
+            sql = `SELECT SUM(revenue) as total FROM sos_data`;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Total Revenue Datin tercatat sebesar **${formatCurrency(res[0].total)}**.`
+        }
 
-        // Step 3: Interpret Results
-        const interpretationResponse = await fetch(OLLAMA_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: MODEL_NAME,
-                prompt: `
-                User Question: ${question}
-                SQL Query Used: ${sql}
-                Data Results: ${JSON.stringify(serializedResults)}
-                
-Please provide a concise, natural language answer summarizing these results. 
-Do not mention "SQL" or "query" in the final answer. 
-If the result is empty, say "No data found."
-                `,
-                stream: false
-            })
-        });
+        // 5. DATIN TOP PRODUK
+        else if (lowerMsg.includes('datin') && lowerMsg.includes('produk')) {
+            sql = `
+                SELECT product_name, COUNT(*) as total 
+                FROM sos_data 
+                GROUP BY product_name 
+                ORDER BY total DESC 
+                LIMIT 5
+            `;
+            const res = await prisma.$queryRawUnsafe(sql);
+            const list = res.map((r, i) => `${i+1}. ${r.product_name}: **${formatNumber(r.total)}**`).join('\n');
+            resultText = `**Top 5 Produk Datin:**\n\n${list}`;
+        }
 
-        const interpretationJson = await interpretationResponse.json();
-        let finalAnswer = interpretationJson.response;
-        
-        // Remove think tags
-        finalAnswer = finalAnswer.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        // 6. JT / TAMBAHAN LOP
+        else if ((lowerMsg.includes('jt') || lowerMsg.includes('tambahan')) && lowerMsg.includes('lop')) {
+            sql = `SELECT COUNT(*) as total FROM spmk_mom WHERE populasi_non_drop = 'Y'`;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Total LOP (Non-Drop) pada Jaringan Tambahan adalah **${formatNumber(res[0].total)}** proyek.`;
+        }
+
+        // 7. JT BELUM GO LIVE
+        else if ((lowerMsg.includes('jt') || lowerMsg.includes('tambahan')) && (lowerMsg.includes('belum') || lowerMsg.includes('not'))) {
+            sql = `SELECT COUNT(*) as total FROM spmk_mom WHERE (go_live = 'N' OR go_live IS NULL) AND populasi_non_drop = 'Y'`;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Terdapat **${formatNumber(res[0].total)}** proyek Jaringan Tambahan yang saat ini **Belum Go-Live** (On Progress).`;
+        }
+
+        // 8. DIGPRO REVENUE
+        else if ((lowerMsg.includes('digital') || lowerMsg.includes('digpro')) && lowerMsg.includes('revenue')) {
+            // Default to current year completed revenue to match dashboard "Total Revenue"
+            const currentYear = new Date().getFullYear();
+            sql = `
+                SELECT SUM(net_price) as total 
+                FROM digital_products 
+                WHERE EXTRACT(YEAR FROM order_date) = ${currentYear}
+                AND (status ILIKE '%complete%' OR status ILIKE '%ps%')
+            `;
+            const res = await prisma.$queryRawUnsafe(sql);
+            resultText = `Total Revenue Digital Product (Completed) tahun ${currentYear} adalah **${formatCurrency(res[0].total)}**.`;
+        }
+
+        // DEFAULT FALLBACK
+        else {
+            return {
+                answer: "Maaf, saya belum mengerti pertanyaan spesifik tersebut. \n\nCoba tanyakan tentang:\n- **HSI**: Total order, Top Witel, Jumlah PS\n- **Datin**: Total Revenue, Top Produk\n- **JT**: Jumlah LOP, Proyek Belum Go-Live\n- **Digital**: Total Revenue",
+                sql: null
+            };
+        }
 
         return {
-            answer: finalAnswer,
-            sql: sql,
-            data: serializedResults
+            answer: resultText,
+            sql: sql, // Optional: return SQL for debug if needed
+            data: data
         };
 
     } catch (error) {
         console.error('[AI Service Error]', error);
         return {
-            answer: "Sorry, I encountered an error processing your request. Please ensure Ollama is running.",
+            answer: "Maaf, terjadi kesalahan saat mengambil data dari database.",
             error: error.message
         };
+    } finally {
+        await prisma.$disconnect();
     }
 };

@@ -8,7 +8,13 @@ import {
     getTargetById,
     createTarget,
     updateTarget,
-    deleteTarget
+    deleteTarget,
+    updateMapping,
+    autoMapping,
+    createAccountOfficer,
+    deleteAccountOfficer,
+    createPOMaster,
+    deletePOMaster
 } from '../controllers/masterController.js'
 
 const router = express.Router()
@@ -16,8 +22,16 @@ const router = express.Router()
 router.use(authenticate) // Pastikan user login
 
 router.get('/po', getPOMaster)
+router.post('/po', createPOMaster)
+router.delete('/po/:id', deletePOMaster)
+
 router.get('/account-officers', getAccountOfficers)
+router.post('/account-officers', createAccountOfficer)
+router.delete('/account-officers/:id', deleteAccountOfficer)
+
 router.get('/unmapped-orders', getUnmappedOrders)
+router.put('/update-mapping/:id', updateMapping)
+router.post('/auto-mapping', autoMapping)
 
 // Target Routes
 router.get('/targets', getTargets)

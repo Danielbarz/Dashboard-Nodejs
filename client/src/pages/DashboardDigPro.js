@@ -4,6 +4,7 @@ import { FiChevronDown, FiRefreshCw, FiDollarSign, FiActivity, FiShoppingCart, F
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import api from '../services/api'
 import KPICard from '../components/KPICard'
+import SkeletonLoader from '../components/SkeletonLoader'
 import {
   OrderByStatusChart,
   RevenueByWitelChart,
@@ -19,7 +20,8 @@ const DashboardPage = () => {
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   // --- 1. STATE INITIALIZATION ---
   const now = new Date()
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Default to 1 year back to ensure data visibility
+  const firstDay = new Date(now.getFullYear() - 1, now.getMonth(), 1)
   
   const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0])
   const [endDate, setEndDate] = useState(now.toISOString().split('T')[0])
@@ -273,7 +275,7 @@ const DashboardPage = () => {
             {/* Atur Target Button - Only for Admin */}
             {isAdminMode && (
               <button
-                onClick={() => navigate('/admin/master-targets')}
+                onClick={() => navigate('/admin/master-targets?type=DIGITAL')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-blue-700 h-10 flex items-center gap-2"
               >
                 <FiTarget />
@@ -284,35 +286,41 @@ const DashboardPage = () => {
         </div>
 
         {/* --- SECTION 1: KPI CARDS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard
-            title="TOTAL REVENUE (Completed)"
-            value={`Rp ${(data?.kpi?.totalRevenue || 0).toLocaleString('id-ID')}`}
-            target={`Rp ${(data?.kpi?.revTarget || 0).toLocaleString('id-ID')}`}
-            achievement={data?.kpi?.revAchievement}
-            icon={<FiDollarSign />}
-            color="green"
-          />
-          <KPICard
-            title="PIPELINE REVENUE (In Progress)"
-            value={`Rp ${(data?.kpi?.pipelineRevenue || 0).toLocaleString('id-ID')}`}
-            icon={<FiActivity />}
-            color="orange"
-          />
-          <KPICard
-            title="TOTAL ORDER"
-            value={data?.kpi?.totalOrder || 0}
-            target={data?.kpi?.orderTarget || 0}
-            achievement={data?.kpi?.orderAchievement}
-            icon={<FiShoppingCart />}
-            color="blue"
-          />
-          <KPICard
-            title="COMPLETION RATE"
-            value={`${data?.kpi?.completionRate || 0}%`}
-            icon={<FiCheckCircle />}
-            color="blue"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {loading ? (
+            <SkeletonLoader count={4} />
+          ) : (
+            <>
+              <KPICard
+                title="TOTAL REVENUE (Completed)"
+                value={`Rp ${(data?.kpi?.totalRevenue || 0).toLocaleString('id-ID')}`}
+                target={`Rp ${(data?.kpi?.revTarget || 0).toLocaleString('id-ID')}`}
+                achievement={data?.kpi?.revAchievement}
+                icon={<FiDollarSign />}
+                color="green"
+              />
+              <KPICard
+                title="PIPELINE REVENUE (In Progress)"
+                value={`Rp ${(data?.kpi?.pipelineRevenue || 0).toLocaleString('id-ID')}`}
+                icon={<FiActivity />}
+                color="orange"
+              />
+              <KPICard
+                title="TOTAL ORDER"
+                value={data?.kpi?.totalOrder || 0}
+                target={data?.kpi?.orderTarget || 0}
+                achievement={data?.kpi?.orderAchievement}
+                icon={<FiShoppingCart />}
+                color="blue"
+              />
+              <KPICard
+                title="COMPLETION RATE"
+                value={`${data?.kpi?.completionRate || 0}%`}
+                icon={<FiCheckCircle />}
+                color="blue"
+              />
+            </>
+          )}
         </div>
 
         {/* SECTION 2: PERFORMANCE MONITORING */}
@@ -321,26 +329,47 @@ const DashboardPage = () => {
           
           {/* Row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 1: Order by Status (Donut) */}
-            <OrderByStatusChart data={data?.charts?.orderByStatus || []} />
-            {/* Chart 2: Revenue by Witel (Horizontal Stacked Product) */}
-            <RevenueByWitelChart data={data?.charts?.revenueByWitel || []} />
+            {loading ? (
+              <>
+                <SkeletonLoader type="chart" />
+                <SkeletonLoader type="chart" />
+              </>
+            ) : (
+              <>
+                <OrderByStatusChart data={data?.charts?.orderByStatus || []} />
+                <RevenueByWitelChart data={data?.charts?.revenueByWitel || []} />
+              </>
+            )}
           </div>
 
           {/* Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 3: Order by Witel (Vertical Stacked Status) */}
-            <OrderByWitelChart data={data?.charts?.orderByWitel || []} />
-            {/* Chart 4: Revenue Trend (Multi-Line Product) */}
-            <RevenueTrendChart data={data?.charts?.revenueTrend || []} />
+            {loading ? (
+              <>
+                <SkeletonLoader type="chart" />
+                <SkeletonLoader type="chart" />
+              </>
+            ) : (
+              <>
+                <OrderByWitelChart data={data?.charts?.orderByWitel || []} />
+                <RevenueTrendChart data={data?.charts?.revenueTrend || []} />
+              </>
+            )}
           </div>
 
           {/* Row 3 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 5: Order Trend (Multi-Line Product) */}
-            <OrderTrendChart data={data?.charts?.orderTrend || []} />
-            {/* Chart 6: Product Share (Donut) */}
-            <ProductShareChart data={data?.charts?.productShare || []} />
+            {loading ? (
+              <>
+                <SkeletonLoader type="chart" />
+                <SkeletonLoader type="chart" />
+              </>
+            ) : (
+              <>
+                <OrderTrendChart data={data?.charts?.orderTrend || []} />
+                <ProductShareChart data={data?.charts?.productShare || []} />
+              </>
+            )}
           </div>
         </div>
 

@@ -96,7 +96,6 @@ model SosData {
   standardName          String?   @map("standard_name") @db.VarChar(255)
   orderId               String    @unique @map("order_id") @db.VarChar(255)
   orderSubtype          String?   @map("order_subtype") @db.VarChar(255)
-  order_description     String?
   segmen                String?   @db.VarChar(255)
   subSegmen             String?   @map("sub_segmen") @db.VarChar(255)
   custCity              String?   @map("cust_city") @db.VarChar(255)
@@ -239,9 +238,9 @@ model HsiData {
   detailManja      String?   @map("detail_manja") @db.VarChar(255)
   suberrorcode     String?   @db.VarChar(255)
   engineermemo     String?   @db.VarChar(255)
-  tahun            Int?
-  bulan            Int?
-  tanggal          Int?
+  tahun            String?   @db.VarChar(50)
+  bulan            String?   @db.VarChar(50)
+  tanggal          String?   @db.VarChar(50)
   ps1              String?   @map("ps_1") @db.VarChar(255)
   cek              String?   @db.VarChar(255)
   hasil            String?   @db.VarChar(255)
@@ -387,15 +386,16 @@ model OrderProduct {
 }
 
 model Target {
-  id         BigInt   @id @default(autoincrement())
-  periodType String   @map("period_type") @db.VarChar(50) // BULANAN, KUARTAL, TAHUNAN
-  targetType String   @map("target_type") @db.VarChar(50) // REVENUE, ORDER
-  witel      String   @db.VarChar(100) // ALL, BALI, etc.
-  product    String   @db.VarChar(100) // ALL, OCA, etc.
-  value      Decimal  @map("target_value") @db.Decimal(18, 2)
-  periodDate DateTime @map("period_date") @db.Date // Representasi tanggal mulai periode
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  id            BigInt   @id @default(autoincrement())
+  dashboardType String   @default("DIGITAL") @map("dashboard_type") @db.VarChar(50)
+  periodType    String?  @map("segment") @db.VarChar(50)
+  targetType    String   @map("metric_type") @db.VarChar(50)
+  witel         String   @map("nama_witel") @db.VarChar(100)
+  product       String   @map("product_name") @db.VarChar(100)
+  value         Decimal  @map("target_value") @db.Decimal(18, 2)
+  periodDate    DateTime @map("period") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("targets")
 }

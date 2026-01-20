@@ -50,7 +50,6 @@ export const deleteAccountOfficer = async (req, res) => {
 // --- MASTER PO (list_po table) ---
 export const getPOMaster = async (req, res) => {
   try {
-    // Fallback to raw query if model issue persists, otherwise try prisma.list_po
     const data = await prisma.$queryRawUnsafe('SELECT * FROM list_po ORDER BY po ASC')
     const formatted = data.map(item => ({
       id: item.id.toString(),
@@ -99,37 +98,31 @@ export const getUnmappedOrders = async (req, res) => {
       'BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU',
       'MALANG', 'SIDOARJO'
     ]
+    const witelList = region3Witels.map(w => `'${w}'`).join(',')
 
-    const data = await prisma.sosData.findMany({
-      where: {
-        OR: [
-          { poName: null },
-          { poName: '' },
-          { poName: '-' }
-        ],
-        billWitel: {
-          in: region3Witels,
-          mode: 'insensitive'
-        }
-      },
-      orderBy: { orderCreatedDate: 'desc' },
-      take: 50
-    })
+    const data = await prisma.$queryRawUnsafe(`
+      SELECT id, order_id, standard_name, nipnas, cust_city, bill_city, bill_witel, segmen 
+      FROM sos_data 
+      WHERE (po_name IS NULL OR po_name = '' OR po_name = '-')
+      AND UPPER(bill_witel) IN (${witelList})
+      ORDER BY order_created_date DESC
+      LIMIT 50
+    `)
 
     const formatted = data.map(item => ({
         id: item.id.toString(),
-        orderId: item.orderId,
-        customerName: item.standardName || item.customerName,
+        orderId: item.order_id,
+        customerName: item.standard_name || 'Unknown Customer',
         nipnas: item.nipnas,
-        custCity: item.custCity,
-        billCity: item.billCity,
-        billWitel: item.billWitel,
+        custCity: item.cust_city,
+        billCity: item.bill_city,
+        billWitel: item.bill_witel,
         segment: item.segmen
     }))
     successResponse(res, formatted, 'Unmapped orders retrieved')
   } catch (error) {
     console.error('Get Unmapped Error:', error)
-    errorResponse(res, 'Failed to fetch unmapped orders', 500)
+    errorResponse(res, 'Failed to fetch unmapped orders: ' + error.message, 500)
   }
 }
 
@@ -138,87 +131,87 @@ export const updateMapping = async (req, res) => {
     const { id } = req.params
     const { poName } = req.body
 
-    await prisma.sosData.update({
-        where: { id: BigInt(id) },
-        data: { poName: poName }
-    })
+    // Use Raw Query because Prisma Client might be out of sync
+    await prisma.$executeRawUnsafe(`
+      UPDATE sos_data 
+      SET po_name = $1, updated_at = NOW() 
+      WHERE id = $2
+    `, poName, BigInt(id))
 
-    successResponse(res, null, 'Order mapped successfully')
+    successResponse(res, null, 'Order mapped successfully (Raw)')
   } catch (error) {
-    console.error(error)
-    errorResponse(res, 'Failed to update mapping', 500)
+    console.error('Update Mapping Error:', error)
+    errorResponse(res, 'Failed to update mapping: ' + error.message, 500)
   }
 }
 
 export const autoMapping = async (req, res) => {
   try {
     const region3Witels = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU', 'MALANG', 'SIDOARJO']
+    const witelList = region3Witels.map(w => `'${w}'`).join(',')
 
-    const targetOrders = await prisma.sosData.findMany({
-      where: {
-        OR: [
-          { poName: null },
-          { poName: '' },
-          { poName: '-' },
-          { poName: 'PO_TIDAK_TERDEFINISI' }
-        ],
-        billWitel: {
-          in: region3Witels,
-          mode: 'insensitive'
-        }
-      },
-      select: { id: true, nipnas: true, poName: true }
-    })
+    // 1. UPDATE MATCHING POs by NIPNAS (Priority 1)
+    const updateNipnas = await prisma.$executeRawUnsafe(`
+      UPDATE sos_data
+      SET po_name = list_po.po, updated_at = NOW()
+      FROM list_po
+      WHERE sos_data.nipnas = list_po.nipnas
+      AND (sos_data.po_name IS NULL OR sos_data.po_name = '' OR sos_data.po_name = '-' OR sos_data.po_name = 'PO_TIDAK_TERDEFINISI')
+      AND UPPER(sos_data.bill_witel) IN (${witelList})
+      AND list_po.po IS NOT NULL
+    `);
 
-    let updateCount = 0
-    let tableCount = 0
+    // 2. UPDATE BY AO WITEL MAPPING (Priority 2 - Fallback)
+    // Fetch AOs with filters
+    const accountOfficers = await prisma.accountOfficer.findMany();
+    let updateAoCount = 0;
 
-    for (const order of targetOrders) {
-      if (!order.nipnas) continue
+    for (const ao of accountOfficers) {
+      if (!ao.filterWitelLama) continue;
+      
+      const filters = ao.filterWitelLama.split(',').map(f => f.trim().toUpperCase()).filter(f => f);
+      if (filters.length === 0) continue;
 
-      let newPoName = null
-
-      const match = await prisma.$queryRawUnsafe(
-        'SELECT po FROM list_po WHERE nipnas = $1 AND po != \'PO_TIDAK_TERDEFINISI\' LIMIT 1',
-        order.nipnas
-      )
-      if (match && match.length > 0) {
-        newPoName = match[0].po.toUpperCase()
-        tableCount++
+      // Construct SQL condition for this AO (e.g. bill_witel LIKE '%MADIUN%' OR bill_witel LIKE '%KEDIRI%')
+      const likeConditions = filters.map(f => `UPPER(bill_witel) LIKE '%${f}%'`).join(' OR ');
+      
+      // Optional: Special Filter (e.g. Segment)
+      let specialCondition = "";
+      if (ao.specialFilterColumn && ao.specialFilterValue) {
+          // Map column names if needed, assume 'segment' maps to 'segmen' column
+          const colName = ao.specialFilterColumn.toString().toLowerCase() === 'segment' ? 'segmen' : ao.specialFilterColumn;
+          // Validasi nama kolom agar tidak SQL Injection (whitelist sederhana)
+          if(['segmen', 'kategori', 'bill_city'].includes(colName.toLowerCase())) {
+             specialCondition = `AND UPPER(${colName}) = '${ao.specialFilterValue.toUpperCase()}'`;
+          }
       }
 
-      if (newPoName && newPoName !== order.poName) {
-        await prisma.sosData.update({
-          where: { id: order.id },
-          data: { poName: newPoName, updatedAt: new Date() }
-        })
-        updateCount++
-      }
+      const sql = `
+        UPDATE sos_data
+        SET po_name = '${ao.name}', updated_at = NOW()
+        WHERE (po_name IS NULL OR po_name = '' OR po_name = '-' OR po_name = 'PO_TIDAK_TERDEFINISI')
+        AND UPPER(bill_witel) IN (${witelList})
+        AND (${likeConditions})
+        ${specialCondition}
+      `;
+      
+      const result = await prisma.$executeRawUnsafe(sql);
+      
+      updateAoCount += Number(result);
     }
 
-    // Cleanup remaining
-    const resultCleanup = await prisma.sosData.updateMany({
-      where: {
-        OR: [
-          { poName: null },
-          { poName: '' },
-          { poName: '-' }
-        ],
-        billWitel: {
-          in: region3Witels,
-          mode: 'insensitive'
-        }
-      },
-      data: {
-        poName: 'PO_TIDAK_TERDEFINISI'
-      }
-    })
+    // 3. MARK REMAINING AS UNDEFINED
+    const cleanupResult = await prisma.$executeRawUnsafe(`
+      UPDATE sos_data
+      SET po_name = 'PO_TIDAK_TERDEFINISI', updated_at = NOW()
+      WHERE (po_name IS NULL OR po_name = '' OR po_name = '-')
+      AND UPPER(bill_witel) IN (${witelList})
+    `);
 
     successResponse(res, {
-      totalProcessed: targetOrders.length,
-      updatedToRealNames: updateCount,
-      fromTable: tableCount,
-      markedUndefined: resultCleanup.count
+      byNipnas: Number(updateNipnas),
+      byRegion: updateAoCount,
+      markedUndefined: Number(cleanupResult)
     }, 'Auto mapping completed successfully')
   } catch (error) {
     console.error('AutoMapping Error:', error)
@@ -261,42 +254,46 @@ export const getTargetById = async (req, res) => {
   }
 }
 
+// === UPDATED: Create Target using RAW SQL (Fixed Syntax) ===
 export const createTarget = async (req, res) => {
   try {
-    const { periodType, targetType, witel, product, value, periodDate } = req.body
-    const newItem = await prisma.target.create({
-      data: {
-        periodType,
-        targetType,
-        witel,
-        product,
-        value: parseFloat(value),
-        periodDate: new Date(periodDate)
-      }
-    })
-    return successResponse(res, { ...newItem, id: newItem.id.toString() }, 'Target created')
+    const { periodType, targetType, witel, product, value, periodDate, dashboardType } = req.body
+    
+    // Basic Validation
+    if (!value || isNaN(parseFloat(value))) return errorResponse(res, 'Nilai target harus angka', 400);
+    if (!periodDate) return errorResponse(res, 'Tanggal periode harus diisi', 400);
+
+    const sql = `
+      INSERT INTO targets (segment, metric_type, nama_witel, product_name, target_value, period, dashboard_type, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+    `
+    
+    await prisma.$executeRawUnsafe(sql, periodType, targetType, witel, product, parseFloat(value), new Date(periodDate), dashboardType || 'DIGITAL');
+
+    return successResponse(res, { ...req.body, id: 'new' }, 'Target created')
   } catch (error) {
+    console.error('Create Target Raw Error:', error)
     return errorResponse(res, 'Failed to create target: ' + error.message, 500)
   }
 }
 
+// === UPDATED: Update Target using RAW SQL (Fixed Syntax) ===
 export const updateTarget = async (req, res) => {
   try {
     const { id } = req.params
-    const { periodType, targetType, witel, product, value, periodDate } = req.body
-    const updated = await prisma.target.update({
-      where: { id: BigInt(id) },
-      data: {
-        periodType,
-        targetType,
-        witel,
-        product,
-        value: parseFloat(value),
-        periodDate: new Date(periodDate)
-      }
-    })
-    return successResponse(res, { ...updated, id: updated.id.toString() }, 'Target updated')
+    const { periodType, targetType, witel, product, value, periodDate, dashboardType } = req.body
+    
+    const sql = `
+      UPDATE targets 
+      SET segment = $1, metric_type = $2, nama_witel = $3, product_name = $4, target_value = $5, period = $6, dashboard_type = $7, updated_at = NOW()
+      WHERE id = $8
+    `
+
+    await prisma.$executeRawUnsafe(sql, periodType, targetType, witel, product, parseFloat(value), new Date(periodDate), dashboardType, BigInt(id));
+
+    return successResponse(res, { ...req.body, id }, 'Target updated')
   } catch (error) {
+    console.error('Update Target Raw Error:', error)
     return errorResponse(res, 'Failed to update target: ' + error.message, 500)
   }
 }

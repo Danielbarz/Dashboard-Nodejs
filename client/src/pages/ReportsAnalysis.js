@@ -32,7 +32,7 @@ const ReportsAnalysis = () => {
     try {
       const token = localStorage.getItem('accessToken')
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-analysis`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/analysis`,
         {
           params: { start_date: startDate, end_date: endDate },
           headers: { Authorization: `Bearer ${token}` }

@@ -52,16 +52,38 @@ export class ProcessSOSImport {
       // Update progress: Parsing file
       await this.updateProgress(5, 'Parsing file...')
 
-      const records = await this.parseFile(filePath, fileName)
+      const rawRecords = await this.parseFile(filePath, fileName)
 
-      if (!records || records.length === 0) {
+      if (!rawRecords || rawRecords.length === 0) {
         throw new Error('File is empty or invalid')
       }
 
-      await this.updateProgress(15, `Found ${records.length} rows, processing...`)
+      await this.updateProgress(10, `Found ${rawRecords.length} rows, deduplicating...`)
+
+      // --- DEDUPLICATION LOGIC ---
+      const uniqueMap = new Map()
+      rawRecords.forEach(record => {
+        const keyMap = buildKeyMap(record)
+        const orderId = getValue(
+          record,
+          keyMap,
+          'order_id', 'orderid', 'order id', 'product + order id', 'productorderid'
+        )
+        if (orderId) {
+          // Key by Order ID, last one wins (Overlay logic for within-file duplicates)
+          uniqueMap.set(orderId.toString(), record)
+        }
+      })
+      
+      const records = Array.from(uniqueMap.values())
+      const duplicatesRemoved = rawRecords.length - records.length
+      
+      console.log(`[SOS Import] Deduplicated: ${rawRecords.length} -> ${records.length} (Removed ${duplicatesRemoved})`)
+
+      await this.updateProgress(15, `Processing ${records.length} unique rows...`)
 
       // Process records in chunks
-      const chunkSize = 500
+      const chunkSize = 100 // Smaller chunk for upsert safety
       let successCount = 0
       let failedCount = 0
       const errors = []
@@ -83,15 +105,19 @@ export class ProcessSOSImport {
       }
 
       // Cleanup temp file
-      unlinkSync(filePath)
+      try {
+        if (filePath) unlinkSync(filePath)
+      } catch (e) { console.warn('Failed to delete temp file', e) }
 
       await this.updateProgress(100, 'Import completed')
 
       return {
         success: true,
-        totalRows: records.length,
+        totalRows: rawRecords.length,
+        uniqueRows: records.length,
         successRows: successCount,
         failedRows: failedCount,
+        duplicatesRemoved,
         batchId,
         errors: errors.slice(0, 10) // Return first 10 errors
       }
@@ -127,155 +153,107 @@ export class ProcessSOSImport {
     let failed = 0
     const errors = []
 
-    for (const record of records) {
+    // Use Promise.all for parallelism within chunk, but limit concurrency if needed.
+    // Since we used upsert one by one before, let's keep it sequential or Promise.all(map)
+    // Promise.all is faster.
+    
+    const promises = records.map(async (record) => {
       const keyMap = buildKeyMap(record)
-
       try {
         const orderId = getValue(
           record,
           keyMap,
-          'order_id',
-          'orderid',
-          'order id',
-          'product + order id',
-          'productorderid'
+          'order_id', 'orderid', 'order id', 'product + order id', 'productorderid'
         )
 
         if (!orderId) {
-          failed++
-          errors.push({ row: record, error: 'Missing order_id' })
-          continue
+          throw new Error('Missing order_id')
         }
 
+        // Mapping Data
+        const data = {
+            poName: getValue(record, keyMap, 'po_name', 'poname', 'po'),
+            nipnas: getValue(record, keyMap, 'nipnas'),
+            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
+            orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
+            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'produk details'),
+            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
+            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
+            custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
+            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'nama witel'),
+            billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel'),
+            liProductName: getValue(record, keyMap, 'li_product_name', 'nama produk', 'product name', 'product'),
+            liMilestone: getValue(record, keyMap, 'li_milestone', 'milestone', 'order status'),
+            liStatus: getValue(record, keyMap, 'li_status', 'order_status_n', 'order status'),
+            kategori: getValue(record, keyMap, 'kategori'),
+            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'net price', 'netprice')),
+            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
+            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
+            batchId,
+            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
+            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
+            sid: getValue(record, keyMap, 'sid'),
+            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
+            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
+            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
+            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
+            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
+            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
+            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
+            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
+            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
+            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
+            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
+            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
+            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
+            liId: getValue(record, keyMap, 'li_id', 'liid'),
+            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
+            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
+            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
+            billcomDate: getValue(record, keyMap, 'billcom_date', 'billcomdate') ? new Date(getValue(record, keyMap, 'billcom_date', 'billcomdate')) : null,
+            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
+            scaling: getValue(record, keyMap, 'scaling'),
+            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
+            liBillingStartDate: getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate') ? new Date(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')) : null,
+            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
+            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
+            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
+            liCreatedDate: getValue(record, keyMap, 'li_created_date', 'licreateddate') ? new Date(getValue(record, keyMap, 'li_created_date', 'licreateddate')) : null,
+            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
+            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
+            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
+            productActivationDate: getValue(record, keyMap, 'product_activation_date', 'productactivationdate') ? new Date(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')) : null,
+            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
+            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
+            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
+            am: getValue(record, keyMap, 'am'),
+            xBillcompDt: getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt') ? new Date(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt')) : null
+        }
+
+        // Overlay Logic (Upsert)
         await prisma.sosData.upsert({
           where: { orderId: orderId.toString() },
-          update: {
-            poName: getValue(record, keyMap, 'po_name', 'poname', 'po'),
-            nipnas: getValue(record, keyMap, 'nipnas'),
-            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
-            orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
-            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'produk details'),
-            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
-            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
-            custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
-            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'nama witel'),
-            billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel'),
-            liProductName: getValue(record, keyMap, 'li_product_name', 'nama produk', 'product name', 'product'),
-            liMilestone: getValue(record, keyMap, 'li_milestone', 'milestone', 'order status'),
-            liStatus: getValue(record, keyMap, 'li_status', 'order_status_n', 'order status'),
-            kategori: getValue(record, keyMap, 'kategori'),
-            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'net price', 'netprice')),
-            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
-            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
-            batchId,
-            // New Fields
-            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
-            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
-            sid: getValue(record, keyMap, 'sid'),
-            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
-            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
-            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
-            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
-            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
-            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
-            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
-            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
-            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
-            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
-            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
-            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
-            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
-            liId: getValue(record, keyMap, 'li_id', 'liid'),
-            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
-            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
-            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
-            billcomDate: getValue(record, keyMap, 'billcom_date', 'billcomdate') ? new Date(getValue(record, keyMap, 'billcom_date', 'billcomdate')) : null,
-            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
-            scaling: getValue(record, keyMap, 'scaling'),
-            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
-            liBillingStartDate: getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate') ? new Date(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')) : null,
-            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
-            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
-            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
-            liCreatedDate: getValue(record, keyMap, 'li_created_date', 'licreateddate') ? new Date(getValue(record, keyMap, 'li_created_date', 'licreateddate')) : null,
-            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
-            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
-            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
-            productActivationDate: getValue(record, keyMap, 'product_activation_date', 'productactivationdate') ? new Date(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')) : null,
-            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
-            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
-            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
-            am: getValue(record, keyMap, 'am'),
-            xBillcompDt: getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt') ? new Date(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt')) : null
-          },
+          update: data,
           create: {
             orderId: orderId.toString(),
-            poName: getValue(record, keyMap, 'po_name', 'poname', 'po'),
-            nipnas: getValue(record, keyMap, 'nipnas'),
-            standardName: getValue(record, keyMap, 'standard_name', 'standardname'),
-            orderSubtype: getValue(record, keyMap, 'order_subtype', 'ordersubtype', 'order subtype'),
-            orderDescription: getValue(record, keyMap, 'order_description', 'orderdescription', 'produk details'),
-            segmen: getValue(record, keyMap, 'segmen', 'segmen_n'),
-            subSegmen: getValue(record, keyMap, 'sub_segmen', 'subsegmen'),
-            custCity: getValue(record, keyMap, 'cust_city', 'custcity', 'sto'),
-            custWitel: getValue(record, keyMap, 'cust_witel', 'custwitel', 'nama witel'),
-            billWitel: getValue(record, keyMap, 'bill_witel', 'billwitel', 'witel'),
-            liProductName: getValue(record, keyMap, 'li_product_name', 'nama produk', 'product name', 'product'),
-            liMilestone: getValue(record, keyMap, 'li_milestone', 'milestone', 'order status'),
-            liStatus: getValue(record, keyMap, 'li_status', 'order_status_n', 'order status'),
-            kategori: getValue(record, keyMap, 'kategori'),
-            revenue: cleanNumber(getValue(record, keyMap, 'revenue', 'net price', 'netprice')),
-            biayaPasang: cleanNumber(getValue(record, keyMap, 'biaya_pasang', 'biayapasang')),
-            hrgBulanan: cleanNumber(getValue(record, keyMap, 'hrg_bulanan', 'hrgbulanan')),
-            batchId,
-            // New Fields
-            prevOrder: getValue(record, keyMap, 'prevorder', 'prev_order'),
-            liSid: getValue(record, keyMap, 'li_sid', 'lisid'),
-            sid: getValue(record, keyMap, 'sid'),
-            custAccntNum: getValue(record, keyMap, 'custaccntnum', 'cust_accnt_num'),
-            custAccntName: getValue(record, keyMap, 'custaccntname', 'cust_accnt_name'),
-            custAddr: getValue(record, keyMap, 'custaddr', 'cust_addr'),
-            custRegion: getValue(record, keyMap, 'cust_region', 'custregion'),
-            servAccntNum: getValue(record, keyMap, 'servaccntnum', 'serv_accnt_num'),
-            servAccntName: getValue(record, keyMap, 'servaccntname', 'serv_accnt_name'),
-            servAddr: getValue(record, keyMap, 'servaddr', 'serv_addr'),
-            serviceRegion: getValue(record, keyMap, 'service_region', 'serviceregion'),
-            billAccntNum: getValue(record, keyMap, 'billaccntnum', 'bill_accnt_num'),
-            accountNas: getValue(record, keyMap, 'accountnas', 'account_nas'),
-            billAccntName: getValue(record, keyMap, 'billaccntname', 'bill_accnt_name'),
-            billAddr: getValue(record, keyMap, 'billaddr', 'bill_addr'),
-            billRegion: getValue(record, keyMap, 'bill_region', 'billregion'),
-            liId: getValue(record, keyMap, 'li_id', 'liid'),
-            liProductId: getValue(record, keyMap, 'li_productid', 'li_product_id'),
-            productDigital: getValue(record, keyMap, 'product_digital', 'productdigital'),
-            liBandwidth: getValue(record, keyMap, 'li_bandwidth', 'libandwidth'),
-            billcomDate: getValue(record, keyMap, 'billcom_date', 'billcomdate') ? new Date(getValue(record, keyMap, 'billcom_date', 'billcomdate')) : null,
-            liFulfillmentStatus: getValue(record, keyMap, 'li_fulfillment_status', 'lifulfillmentstatus'),
-            scaling: getValue(record, keyMap, 'scaling'),
-            liPaymentTerm: getValue(record, keyMap, 'li_payment_term', 'lipaymentterm'),
-            liBillingStartDate: getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate') ? new Date(getValue(record, keyMap, 'li_billing_start_date', 'libillingstartdate')) : null,
-            agreeItemNum: getValue(record, keyMap, 'agree_itemnum', 'agreeitemnum'),
-            agreeName: getValue(record, keyMap, 'agree_name', 'agreename'),
-            orderCreatedBy: getValue(record, keyMap, 'order_createdby', 'ordercreatedby'),
-            liCreatedDate: getValue(record, keyMap, 'li_created_date', 'licreateddate') ? new Date(getValue(record, keyMap, 'li_created_date', 'licreateddate')) : null,
-            orderCreatedByName: getValue(record, keyMap, 'order_createdby_name', 'ordercreatedbyname'),
-            currentBandwidth: getValue(record, keyMap, 'current_bandwidth', 'currentbandwidth'),
-            beforeBandwidth: getValue(record, keyMap, 'before_bandwidth', 'beforebandwidth'),
-            productActivationDate: getValue(record, keyMap, 'product_activation_date', 'productactivationdate') ? new Date(getValue(record, keyMap, 'product_activation_date', 'productactivationdate')) : null,
-            quoteRowId: getValue(record, keyMap, 'quote_row_id', 'quoterowid'),
-            lineItemDescription: getValue(record, keyMap, 'line_item_description', 'lineitemdescription'),
-            assetIntegId: getValue(record, keyMap, 'asset_integ_id', 'assetintegid'),
-            am: getValue(record, keyMap, 'am'),
-            xBillcompDt: getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt') ? new Date(getValue(record, keyMap, 'x_billcomp_dt', 'xbillcompdt')) : null
+            ...data
           }
         })
-
-        success++
-      } catch (error) {
-        failed++
-        errors.push({ row: record, error: error.message })
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: e.message, row: record }
       }
-    }
+    })
+
+    const results = await Promise.all(promises)
+    
+    results.forEach(r => {
+        if(r.success) success++
+        else {
+            failed++
+            errors.push({ row: r.row, error: r.error })
+        }
+    })
 
     return { success, failed, errors }
   }

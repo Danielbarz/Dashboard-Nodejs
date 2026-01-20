@@ -195,7 +195,6 @@ exports.Prisma.SosDataScalarFieldEnum = {
   standardName: 'standardName',
   orderId: 'orderId',
   orderSubtype: 'orderSubtype',
-  order_description: 'order_description',
   segmen: 'segmen',
   subSegmen: 'subSegmen',
   custCity: 'custCity',
@@ -464,6 +463,7 @@ exports.Prisma.OrderProductScalarFieldEnum = {
 
 exports.Prisma.TargetScalarFieldEnum = {
   id: 'id',
+  dashboardType: 'dashboardType',
   periodType: 'periodType',
   targetType: 'targetType',
   witel: 'witel',

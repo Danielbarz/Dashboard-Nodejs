@@ -7,10 +7,10 @@ import {
   MdTimeline,
   MdNetworkCheck,
   MdDescription,
-  MdAdminPanelSettings,
   MdHistory,
   MdPeople,
-  MdMerge
+  MdMerge,
+  MdChevronRight
 } from 'react-icons/md'
 import { FiActivity, FiMonitor, FiDatabase, FiFileText } from 'react-icons/fi'
 
@@ -22,43 +22,43 @@ const Home = () => {
   const sections = useMemo(() => {
     const dashboardItems = [
       {
-        title: "Digital Product Dashboard",
+        title: "Digital Product",
+        desc: "Monitoring & Analytics",
         path: "/dashboard",
         icon: <FiMonitor />,
-        color: "from-blue-400 to-cyan-300",
-        shadow: "shadow-blue-200",
+        colorClass: "bg-blue-50 text-blue-600",
         category: "Main"
       },
       {
         title: "Jaringan Tambahan",
+        desc: "JT Progress Monitoring",
         path: "/tambahan",
         icon: <MdNetworkCheck />,
-        color: "from-emerald-400 to-teal-300",
-        shadow: "shadow-emerald-200",
+        colorClass: "bg-emerald-50 text-emerald-600",
         category: "Connectivity"
       },
       {
         title: "Datin Dashboard",
+        desc: "Data Internet Performance",
         path: "/datin",
         icon: <FiDatabase />,
-        color: "from-violet-400 to-purple-300",
-        shadow: "shadow-violet-200",
+        colorClass: "bg-purple-50 text-purple-600",
         category: "Connectivity"
       },
       {
         title: "HSI Dashboard",
+        desc: "High Speed Internet Stats",
         path: "/hsi",
         icon: <FiActivity />,
-        color: "from-amber-400 to-orange-300",
-        shadow: "shadow-amber-200",
+        colorClass: "bg-orange-50 text-orange-600",
         category: "Connectivity"
       },
       {
         title: "Flow Process HSI",
+        desc: "End-to-End Order Flow",
         path: "/flow-process-hsi",
         icon: <MdTimeline />,
-        color: "from-rose-400 to-pink-300",
-        shadow: "shadow-rose-200",
+        colorClass: "bg-rose-50 text-rose-600",
         category: "Connectivity"
       },
     ]
@@ -66,78 +66,78 @@ const Home = () => {
     const reportItems = [
       {
         title: "Report Digital Product",
+        desc: "Detailed Logs & Exports",
         path: "/report-digpro",
         icon: <MdDescription />,
-        color: "from-indigo-400 to-blue-300",
-        shadow: "shadow-indigo-200",
+        colorClass: "bg-indigo-50 text-indigo-600",
         category: "Main"
       },
       {
-        title: "Report Jaringan Tambahan",
+        title: "Report JT",
+        desc: "Jaringan Tambahan Details",
         path: "/reports-tambahan",
         icon: <FiFileText />,
-        color: "from-cyan-400 to-sky-300",
-        shadow: "shadow-cyan-200",
+        colorClass: "bg-cyan-50 text-cyan-600",
         category: "Connectivity"
       },
       {
         title: "Report Datin",
+        desc: "Datin Order Logs",
         path: "/reports-datin",
         icon: <MdBarChart />,
-        color: "from-fuchsia-400 to-magenta-300",
-        shadow: "shadow-fuchsia-200",
+        colorClass: "bg-fuchsia-50 text-fuchsia-600",
         category: "Connectivity"
       },
       {
         title: "Report HSI",
+        desc: "HSI Raw Data",
         path: "/reports-hsi",
         icon: <MdDashboard />,
-        color: "from-lime-400 to-green-300",
-        shadow: "shadow-lime-200",
+        colorClass: "bg-lime-50 text-lime-600",
         category: "Connectivity"
       },
     ]
 
     const groups = [
       {
-        title: "Dashboards",
-        description: "Monitoring & Analytics",
+        title: "Executive Dashboards",
+        description: "Visualisasi data dan performansi utama",
         items: dashboardItems
       },
       {
-        title: "Reports",
-        description: "Detailed Data Reporting",
+        title: "Data Reports",
+        description: "Laporan detail dan export data",
         items: reportItems
       }
     ]
 
     if (isSuperAdmin) {
       groups.push({
-        title: "Administration",
-        description: "System & User Management",
+        title: "System Administration",
+        description: "Pengaturan sistem dan manajemen user",
         items: [
           {
             title: "User Management",
+            desc: "Manage Access & Roles",
             path: "/admin/users",
             icon: <MdPeople />,
-            color: "from-red-500 to-rose-400",
-            shadow: "shadow-red-200",
+            colorClass: "bg-red-50 text-red-600",
             category: "Main"
           },
           {
             title: "Rollback Batch",
+            desc: "Undo Data Uploads",
             path: "/admin/rollback",
             icon: <MdHistory />,
-            color: "from-orange-500 to-amber-400",
-            shadow: "shadow-orange-200",
+            colorClass: "bg-orange-50 text-orange-600",
             category: "Main"
           },
           {
             title: "Merge Files",
+            desc: "Utility Tools",
             path: "/admin/merge-files",
             icon: <MdMerge />,
-            color: "from-gray-600 to-gray-400",
-            shadow: "shadow-gray-300",
+            colorClass: "bg-gray-100 text-gray-600",
             category: "Main"
           },
         ]
@@ -147,30 +147,46 @@ const Home = () => {
     return groups
   }, [isSuperAdmin])
 
-  const renderTiles = (items) => {
-    const mainItems = items.filter(i => i.category === "Main")
-    const connectivityItems = items.filter(i => i.category === "Connectivity")
+  const Tile = ({ item }) => (
+    <Link
+      to={item.path}
+      className="group relative flex flex-col p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 h-full"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${item.colorClass} transition-transform duration-300 group-hover:scale-110`}>
+          {item.icon}
+        </div>
+        <MdChevronRight className="text-gray-300 group-hover:text-gray-500 transition-colors" size={24} />
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+          {item.title}
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
+      </div>
+    </Link>
+  )
+
+  const RenderGroup = ({ group }) => {
+    const mainItems = group.items.filter(i => i.category === "Main")
+    const connectivityItems = group.items.filter(i => i.category === "Connectivity")
 
     return (
       <div className="space-y-6">
-        {/* Main Items */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {mainItems.map((item, idx) => (
-            <Tile key={idx} item={item} />
-          ))}
+        {/* Main Items Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {mainItems.map((item, idx) => <Tile key={idx} item={item} />)}
         </div>
 
-        {/* Connectivity Sub-Group */}
+        {/* Sub-Group: Connectivity */}
         {connectivityItems.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
+          <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100/50">
+            <div className="flex items-center gap-2 mb-4">
               <div className="h-4 w-1 bg-blue-500 rounded-full"></div>
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Connectivity Group</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {connectivityItems.map((item, idx) => (
-                <Tile key={idx} item={item} />
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {connectivityItems.map((item, idx) => <Tile key={idx} item={item} />)}
             </div>
           </div>
         )}
@@ -178,52 +194,30 @@ const Home = () => {
     )
   }
 
-  const Tile = ({ item }) => (
-    <Link
-      to={item.path}
-      className={`group relative flex items-center p-4 rounded-2xl transition-all duration-300
-        hover:-translate-y-1 hover:scale-[1.02]
-        bg-white/70 backdrop-blur-lg border border-white/80
-        shadow-sm hover:shadow-lg ${item.shadow}
-      `}
-    >
-      <div className={`
-        w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white text-2xl shadow-md
-        bg-gradient-to-br ${item.color} group-hover:scale-110 transition-transform duration-300
-      `}>
-        {item.icon}
-      </div>
-      <div className="ml-4 overflow-hidden">
-        <h3 className="text-base font-bold text-gray-800 group-hover:text-gray-900 transition-colors truncate">
-          {item.title}
-        </h3>
-        <div className="w-6 h-1 mt-1 rounded-full bg-gray-200 group-hover:bg-current group-hover:w-full transition-all duration-500 opacity-40"></div>
-      </div>
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-    </Link>
-  )
-
   return (
-      <div className="min-h-[80vh] flex flex-col justify-start pb-10">
-        <div className="mb-6">
-          <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">
-            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">{user?.name || 'User'}</span>
-          </h1>
-          <p className="text-gray-500 text-base font-medium">Select a module to get started.</p>
-        </div>
-
-        <div className="space-y-10">
-          {sections.map((group, groupIdx) => (
-            <div key={groupIdx} className="animate-fade-in-up" style={{ animationDelay: `${groupIdx * 150}ms` }}>
-              <div className="flex items-baseline mb-4 border-b border-gray-200 pb-2">
-                <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">{group.title}</h2>
-                <span className="ml-3 text-sm text-gray-400 font-medium italic">{group.description}</span>
-              </div>
-              {renderTiles(group.items)}
-            </div>
-          ))}
-        </div>
+    <div className="w-full max-w-[1600px] mx-auto px-4 pb-10 min-h-[80vh]">
+      
+      {/* Header */}
+      <div className="py-8 mb-4 border-b border-gray-100">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          Welcome back, <span className="text-blue-600">{user?.name || 'User'}</span>
+        </h1>
+        <p className="text-gray-500 mt-2 text-lg">Central Dashboard Hub & Analytics Center</p>
       </div>
+
+      <div className="space-y-12">
+        {sections.map((group, groupIdx) => (
+          <div key={groupIdx} className="animate-fade-in-up" style={{ animationDelay: `${groupIdx * 100}ms` }}>
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-xl font-bold text-gray-800">{group.title}</h2>
+              <span className="h-1 w-1 bg-gray-300 rounded-full"></span>
+              <span className="text-sm text-gray-500 font-medium">{group.description}</span>
+            </div>
+            <RenderGroup group={group} />
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

@@ -3,57 +3,36 @@ import { FiDownload, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
+import SkeletonLoader from '../components/SkeletonLoader'
 
 const ReportsTambahan = () => {
   const { user } = useAuth()
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   const now = new Date()
-  const startOfYear2025 = new Date(2025, 0, 1) // 1 Jan 2025
+  const startOfYear2025 = new Date(2025, 0, 1)
 
   const formatDateLocal = (date) => {
     const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    return d.toISOString().split('T')[0]
   }
 
   const [startDate, setStartDate] = useState(formatDateLocal(startOfYear2025))
   const [endDate, setEndDate] = useState(formatDateLocal(now))
   const [selectedWitel, setSelectedWitel] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // API Data States
   const [tableDataFromAPI, setTableDataFromAPI] = useState([])
   const [projectDataFromAPI, setProjectDataFromAPI] = useState([])
   const [top3WitelFromAPI, setTop3WitelFromAPI] = useState([])
   const [top3PoFromAPI, setTop3PoFromAPI] = useState([])
-  const [refreshKey, setRefreshKey] = useState(0)
   const [previewData, setPreviewData] = useState([])
+
   const [currentPage, setCurrentPage] = useState(1)
   const [pageInput, setPageInput] = useState(1)
   const itemsPerPage = 10
-
-  // Sorting & Filtering State
-  const [sortConfig, setSortConfig] = useState({ key: 'usia', direction: 'desc' })
-  const [filters, setFilters] = useState({
-    poName: [],
-    witelBaru: [],
-    witelLama: [],
-    statusProyek: [],
-    goLive: []
-  })
-  const [activeFilterDropdown, setActiveFilterDropdown] = useState(null)
-  const filterRef = useRef(null)
-
-  // Close filter dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setActiveFilterDropdown(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   const witelHierarchy = {
     'BALI': ['BALI', 'DENPASAR', 'SINGARAJA'],
@@ -65,347 +44,177 @@ const ReportsTambahan = () => {
 
   const witelList = Object.keys(witelHierarchy)
 
-  // Fetch data from API
   const fetchReportData = async () => {
+    setLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/tambahan`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-tambahan`,
         {
           params: { start_date: startDate, end_date: endDate },
           headers: { Authorization: `Bearer ${token}` }
         }
       )
 
-      if (response.data?.data) {
-        setTableDataFromAPI(response.data.data.tableData || [])
-        setProjectDataFromAPI(response.data.data.projectData || [])
+      const d = response.data?.data || {}
+      setTableDataFromAPI(d.tableData || [])
+      setProjectDataFromAPI(d.projectData || [])
+      setTop3WitelFromAPI(d.topUsiaByWitel || [])
+      setTop3PoFromAPI(d.topUsiaByPo || [])
+      setPreviewData(d.rawProjectRows || [])
 
-        // Backend sends 'topUsiaByWitel', Frontend uses 'top3Witel'
-        setTop3WitelFromAPI(response.data.data.topUsiaByWitel || [])
-        setTop3PoFromAPI(response.data.data.topUsiaByPo || [])
-
-        // Take preview data directly from the same response
-        const rawProjects = response.data.data.rawProjectRows || []
-        setPreviewData(rawProjects)
-      }
-
-      setCurrentPage(1)
-      setPageInput(1)
     } catch (error) {
       console.error('Failed to fetch report data:', error)
-      setPreviewData([])
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchReportData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, refreshKey])
 
-  // Table 1: Data Report JT
-  const tableData = useMemo(() => {
-    return tableDataFromAPI
-  }, [tableDataFromAPI])
+  const formatNumber = (n) => (n || 0).toLocaleString('id-ID')
+  const formatDate = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '-')
 
-  // Table 2: Project Belum GO LIVE
-  const projectBelumGoLive = useMemo(() => {
-    return projectDataFromAPI
-  }, [projectDataFromAPI])
-
-  // Process Top 3 Data
+  // Grouping Top 3
   const groupedTop3Witel = useMemo(() => {
     const groups = {}
     top3WitelFromAPI.forEach(row => {
-      if (!groups[row.region]) groups[row.region] = []
-      groups[row.region].push(row)
+      const key = row.region || 'Unknown'
+      if (!groups[key]) groups[key] = []
+      groups[key].push(row)
     })
     return groups
   }, [top3WitelFromAPI])
 
   const groupedTop3Po = useMemo(() => {
     const groups = {}
+    const excludedPOs = ['PT2', 'PT2UL', 'PT3', 'PT2S', 'PT3B', 'UNIDENTIFIED PO', 'UNMAPPED PO']
     top3PoFromAPI.forEach(row => {
-      if (!groups[row.po_name]) groups[row.po_name] = []
-      groups[row.po_name].push(row)
+      const key = (row.po_name || 'Unknown').trim()
+      if (excludedPOs.includes(key) || key.toUpperCase().includes('UNIDENTIFIED')) return
+      if (!groups[key]) groups[key] = []
+      groups[key].push(row)
     })
     return groups
   }, [top3PoFromAPI])
 
   const filteredTableData = useMemo(() => {
-    let result = tableData
+    let result = tableDataFromAPI
     if (selectedWitel) {
       const parentWitel = witelList.find(w => witelHierarchy[w].includes(selectedWitel))
       result = result.filter(row => row.parentWitel === parentWitel || row.witel === selectedWitel || row.isParent)
     }
     return result
-  }, [tableData, selectedWitel])
+  }, [tableDataFromAPI, selectedWitel])
 
   const filteredProjectData = useMemo(() => {
-    let result = projectBelumGoLive
+    let result = projectDataFromAPI
     if (selectedWitel) {
       const parentWitel = witelList.find(w => witelHierarchy[w].includes(selectedWitel))
       result = result.filter(row => row.parentWitel === parentWitel || row.witel === selectedWitel || row.isParent)
     }
     return result
-  }, [projectBelumGoLive, selectedWitel])
-
-  // --- Filtering & Sorting Logic for Preview Data ---
-
-  const uniqueValues = useMemo(() => {
-    const getUnique = (key) => [...new Set(previewData.map(item => item[key] || '-'))].sort()
-    return {
-      poName: getUnique('poName'),
-      witelBaru: getUnique('witelBaru'),
-      witelLama: getUnique('witelLama'),
-      statusProyek: getUnique('statusProyek'),
-      goLive: getUnique('goLive'),
-    }
-  }, [previewData])
-
-  const processedData = useMemo(() => {
-    let data = [...previewData]
-
-    // 1. Filter
-    Object.keys(filters).forEach(key => {
-      if (filters[key].length > 0) {
-        data = data.filter(item => filters[key].includes(item[key] || '-'))
-      }
-    })
-
-    // 2. Sort
-    if (sortConfig.key) {
-      data.sort((a, b) => {
-        let valA = a[sortConfig.key]
-        let valB = b[sortConfig.key]
-
-        // Handle numeric/currency strings or dates if necessary
-        if (sortConfig.key === 'revenuePlan' || sortConfig.key === 'usia') {
-           valA = Number(valA || 0)
-           valB = Number(valB || 0)
-        } else {
-           valA = (valA || '').toString().toLowerCase()
-           valB = (valB || '').toString().toLowerCase()
-        }
-
-        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
-        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
-        return 0
-      })
-    }
-
-    return data
-  }, [previewData, filters, sortConfig])
-
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(processedData.length / itemsPerPage)), [processedData.length])
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1)
-      setPageInput(1)
-    }
-  }, [processedData.length, totalPages, currentPage]) // reset to page 1 on filter change usually best UX
-
-  const paginatedPreviewData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return processedData.slice(start, start + itemsPerPage)
-  }, [processedData, currentPage])
-
-  const handlePageChange = (page) => {
-    if (!Number.isFinite(page)) return
-    const nextPage = Math.min(Math.max(1, page), totalPages)
-    setCurrentPage(nextPage)
-    setPageInput(nextPage)
-  }
-
-  const handleSort = (key) => {
-    let direction = 'asc'
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc'
-    }
-    setSortConfig({ key, direction })
-  }
-
-  const toggleFilter = (column) => {
-    if (activeFilterDropdown === column) {
-      setActiveFilterDropdown(null)
-    } else {
-      setActiveFilterDropdown(column)
-    }
-  }
-
-  const handleFilterChange = (column, value) => {
-    setFilters(prev => {
-      const current = prev[column]
-      const next = current.includes(value)
-        ? current.filter(v => v !== value)
-        : [...current, value]
-      return { ...prev, [column]: next }
-    })
-  }
-
-  const handleSelectAllFilters = (column) => {
-    setFilters(prev => {
-      const allSelected = prev[column].length === uniqueValues[column].length
-      return { ...prev, [column]: allSelected ? [] : uniqueValues[column] }
-    })
-  }
+  }, [projectDataFromAPI, selectedWitel])
 
   const handleExport = () => {
-    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-tambahan?${params.toString()}`
+    window.location.href = `/api/dashboard/export/report-tambahan?start_date=${startDate}&end_date=${endDate}`
   }
-
-  const formatNumber = (n) => (n || 0).toLocaleString('id-ID')
-  const formatDate = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '-')
-
-  // Component for Filter Dropdown
-  const FilterDropdown = ({ column, title }) => {
-    const options = uniqueValues[column] || []
-    const selected = filters[column] || []
-
-    if (activeFilterDropdown !== column) return null
-
-    return (
-      <div ref={filterRef} className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-50 text-gray-800 font-normal">
-        <div className="p-2 border-b">
-          <label className="flex items-center space-x-2 cursor-pointer text-xs">
-            <input
-              type="checkbox"
-              checked={selected.length === options.length && options.length > 0}
-              onChange={() => handleSelectAllFilters(column)}
-              className="rounded text-blue-600 focus:ring-blue-500"
-            />
-            <span className="font-semibold">Select All</span>
-          </label>
-        </div>
-        <div className="max-h-48 overflow-y-auto p-1">
-          {options.map(opt => (
-            <label key={opt} className="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 cursor-pointer text-xs">
-              <input
-                type="checkbox"
-                checked={selected.includes(opt)}
-                onChange={() => handleFilterChange(column, opt)}
-                className="rounded text-blue-600 focus:ring-blue-500"
-              />
-              <span className="truncate" title={opt}>{opt}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  const SortableHeader = ({ label, sortKey, align = "left" }) => (
-    <th
-      className={`px-2 py-2 text-${align} cursor-pointer hover:bg-gray-700 transition-colors`}
-      onClick={() => handleSort(sortKey)}
-    >
-      <div className={`flex items-center ${align === "right" ? "justify-end" : "justify-start"} gap-1`}>
-        {label}
-        <div className="flex flex-col">
-          <FiArrowUp size={10} className={sortConfig.key === sortKey && sortConfig.direction === 'asc' ? 'text-white' : 'text-gray-500'} />
-          <FiArrowDown size={10} className={sortConfig.key === sortKey && sortConfig.direction === 'desc' ? 'text-white' : 'text-gray-500'} />
-        </div>
-      </div>
-    </th>
-  )
-
-  const FilterableHeader = ({ label, filterKey }) => (
-    <th className="px-2 py-2 text-left relative">
-      <div className="flex items-center justify-between gap-1">
-        <span>{label}</span>
-        <button
-          onClick={(e) => { e.stopPropagation(); toggleFilter(filterKey); }}
-          className={`p-1 rounded ${filters[filterKey].length > 0 ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-        >
-          <FiFilter size={12} />
-        </button>
-      </div>
-      <FilterDropdown column={filterKey} title={label} />
-    </th>
-  )
 
   return (
-    <>
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border">
-            <option value="">Semua Witel</option>
-            {witelList.map(parentWitel => (
-              <optgroup key={parentWitel} label={`WITEL ${parentWitel}`}>
-                {witelHierarchy[parentWitel].map(witel => (
-                  <option key={witel} value={witel}>
-                    {witel === parentWitel ? `WITEL ${witel}` : witel}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center py-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Report Jaringan Tambahan</h1>
+          <p className="text-gray-500 text-sm mt-1">Laporan detail progress dan analisis TOC project JT</p>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+      {/* Filter Card - Standarized */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+        <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center justify-between">
+          
+          <div className="flex flex-col md:flex-row gap-4 w-full xl:w-auto">
+            {/* Date Picker */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 w-full md:w-auto">
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+              </div>
+              <span className="text-gray-400 font-light">|</span>
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+              </div>
             </div>
-            <span className="text-gray-400 font-light">|</span>
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
-            </div>
+
+            {/* Witel Filter */}
+            <select value={selectedWitel} onChange={(e) => setSelectedWitel(e.target.value)} className="border-gray-300 rounded-md shadow-sm text-sm h-10 px-3 py-2 border w-full md:w-64">
+              <option value="">Semua Witel</option>
+              {witelList.map(parentWitel => (
+                <optgroup key={parentWitel} label={`WITEL ${parentWitel}`}>
+                  {witelHierarchy[parentWitel].map(witel => (
+                    <option key={witel} value={witel}>{witel}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
-          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
-            <FiDownload className="mr-2" size={16} />
-            Ekspor Report
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleExport} className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-sm transition-colors h-10 min-w-[140px]">
+              <FiDownload className="mr-2" size={16} />
+              Export Excel
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Table 1: Data Report JT */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Data Report JT</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden">
+        <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">Data Report JT</h2>
+        <div className="overflow-x-auto rounded-xl border border-gray-100">
+          <table className="min-w-full divide-y divide-gray-200 text-[10px]">
             <thead>
-              <tr>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">WITEL</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">JUMLAH LOP (EXC DROP)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-800">REV ALL LOP</th>
-                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border border-gray-500 bg-blue-600">PROGRESS DEPLOY</th>
-                <th colSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-green-700">GOLIVE (EXC DROP)</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-red-600">DROP</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border border-gray-500 bg-gray-600">%CLOSE</th>
+              <tr className="bg-gray-800 text-white uppercase font-bold">
+                <th rowSpan="2" className="px-2 py-3 border border-gray-700 text-left">WITEL</th>
+                <th rowSpan="2" className="px-2 py-3 border border-gray-700">JUMLAH LOP</th>
+                <th rowSpan="2" className="px-2 py-3 border border-gray-700">REV ALL LOP</th>
+                <th colSpan="5" className="px-2 py-2 border border-gray-700 bg-blue-700">PROGRESS DEPLOY</th>
+                <th colSpan="2" className="px-2 py-2 border border-gray-700 bg-green-700">GOLIVE</th>
+                <th rowSpan="2" className="px-2 py-3 border border-gray-700 bg-red-700">DROP</th>
+                <th rowSpan="2" className="px-2 py-3 border border-gray-700 bg-gray-600">%CLOSE</th>
               </tr>
-              <tr>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">INITIAL</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">SURVEY & DRM</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">PERIZINAN & MOS</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">INSTALASI</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-blue-400">FI-OGP LIVE</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-green-500">JML LOP</th>
-                <th className="px-2 py-1 text-center font-bold text-white border border-gray-500 text-[7px] bg-green-500">REV LOP</th>
+              <tr className="bg-gray-700 text-white text-[9px]">
+                <th className="px-2 py-2 border border-gray-600 bg-blue-600">INIT</th>
+                <th className="px-2 py-2 border border-gray-600 bg-blue-600">SURVEY</th>
+                <th className="px-2 py-2 border border-gray-600 bg-blue-600">IZIN</th>
+                <th className="px-2 py-2 border border-gray-600 bg-blue-600">INST</th>
+                <th className="px-2 py-2 border border-gray-600 bg-blue-600">FI-OGP</th>
+                <th className="px-2 py-2 border border-gray-600 bg-green-600">JML</th>
+                <th className="px-2 py-2 border border-gray-600 bg-green-600">REV</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
-              {filteredTableData.map((row) => (
-                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
-                    {row.isParent ? `WITEL ${row.witel}` : row.witel}
-                  </td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlahLop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.revAll ? row.revAll.toLocaleString('id-ID') : 0}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.initial}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.survey}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.perizinan}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.instalasi}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.piOgp}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive_jml}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-green-600 text-white' : 'bg-green-100'}`}>{row.golive_rev ? row.golive_rev.toLocaleString('id-ID') : 0}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-bold ${row.isParent ? 'bg-red-600 text-white' : 'bg-red-100'}`}>{row.drop}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border border-gray-300 font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_close}</td>
+            <tbody className="bg-white divide-y divide-gray-100 text-center text-[10px]">
+              {loading ? (
+                <tr><td colSpan={12} className="p-10"><SkeletonLoader type="table" /></td></tr>
+              ) : filteredTableData.map((row, idx) => (
+                <tr key={idx} className={row.isParent ? 'bg-gray-50 font-bold text-gray-900' : 'hover:bg-blue-50/30'}>
+                  <td className="px-2 py-2 border text-left font-semibold">{row.isParent ? `WITEL ${row.witel}` : row.witel}</td>
+                  <td className="px-2 py-2 border">{row.jumlahLop}</td>
+                  <td className="px-2 py-2 border font-medium text-blue-600">{formatNumber(row.revAll)}</td>
+                  <td className="px-2 py-2 border">{row.initial}</td>
+                  <td className="px-2 py-2 border">{row.survey}</td>
+                  <td className="px-2 py-2 border">{row.perizinan}</td>
+                  <td className="px-2 py-2 border">{row.instalasi}</td>
+                  <td className="px-2 py-2 border">{row.piOgp}</td>
+                  <td className="px-2 py-2 border bg-green-50 font-bold text-green-700">{row.golive_jml}</td>
+                  <td className="px-2 py-2 border bg-green-50 font-bold text-green-700">{formatNumber(row.golive_rev)}</td>
+                  <td className="px-2 py-2 border bg-red-50 text-red-600">{row.drop}</td>
+                  <td className="px-2 py-2 border font-bold">{row.persen_close}%</td>
                 </tr>
               ))}
             </tbody>
@@ -414,32 +223,32 @@ const ReportsTambahan = () => {
       </div>
 
       {/* Table 2: Project Belum GO LIVE */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Project Belum GO LIVE</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
-            <thead className="bg-blue-600">
-              <tr>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">WITEL LAMA</th>
-                <th colSpan="2" className="px-2 py-1 text-center font-bold text-white border bg-red-600">TOC LOP BELUM GOLIVE</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">JUMLAH LOP ON PROGRESS</th>
-                <th rowSpan="2" className="px-2 py-2 text-center font-bold text-white border">% DALAM TOC</th>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden">
+        <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-orange-600 pl-3">Project Belum GO LIVE (TOC Analysis)</h2>
+        <div className="overflow-x-auto rounded-xl border border-gray-100">
+          <table className="min-w-full divide-y divide-gray-200 text-[10px] text-center">
+            <thead>
+              <tr className="bg-gray-800 text-white font-bold uppercase">
+                <th rowSpan="2" className="px-4 py-3 border border-gray-700 text-left">WITEL LAMA</th>
+                <th colSpan="2" className="px-4 py-2 border border-gray-700 bg-red-700">TOC LOP BELUM GOLIVE</th>
+                <th rowSpan="2" className="px-4 py-3 border border-gray-700">JUMLAH LOP ON PROGRESS</th>
+                <th rowSpan="2" className="px-4 py-3 border border-gray-700 bg-gray-600">% DALAM TOC</th>
               </tr>
-              <tr className="bg-blue-600">
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px] bg-blue-600">DALAM TOC</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px] bg-blue-600">LEWAT TOC</th>
+              <tr className="bg-gray-700 text-white">
+                <th className="px-4 py-2 border border-gray-600">DALAM TOC</th>
+                <th className="px-4 py-2 border border-gray-600">LEWAT TOC</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center text-[8px]">
-              {filteredProjectData.map((row) => (
-                <tr key={row.id} className={row.isParent ? 'bg-gray-700 font-bold text-white' : 'hover:bg-gray-50'}>
-                  <td className={`px-2 py-1 whitespace-nowrap border text-left font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>
-                    {row.isParent ? `WITEL ${row.witel}` : row.witel}
-                  </td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.dalam_toc}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.lewat_toc}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.jumlah_lop_progress}</td>
-                  <td className={`px-2 py-1 whitespace-nowrap border font-semibold ${row.isParent ? 'bg-gray-700 text-white' : ''}`}>{row.persen_dalam_toc}</td>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {loading ? (
+                <tr><td colSpan={5} className="p-10"><SkeletonLoader type="table" /></td></tr>
+              ) : filteredProjectData.filter(r => r.isParent).map((row, idx) => (
+                <tr key={idx} className="hover:bg-blue-50/30">
+                  <td className="px-4 py-3 border text-left font-bold text-gray-800 uppercase">WITEL {row.witel}</td>
+                  <td className="px-4 py-3 border text-green-600 font-bold">{row.dalam_toc}</td>
+                  <td className="px-4 py-3 border text-red-600 font-bold">{row.lewat_toc}</td>
+                  <td className="px-4 py-3 border font-black text-gray-900">{row.jumlah_lop_progress}</td>
+                  <td className="px-4 py-3 border font-bold text-blue-700">{row.persen_dalam_toc}%</td>
                 </tr>
               ))}
             </tbody>
@@ -447,228 +256,114 @@ const ReportsTambahan = () => {
         </div>
       </div>
 
-      {/* Table 3: Top 3 Usia Project - By Witel Induk */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Top 3 Usia Project Terbaru (On Progress) - By Witel Induk</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
-            <thead className="bg-blue-600">
-              <tr>
-                <th className="px-2 py-2 text-center font-bold text-white border">WITEL INDUK</th>
-                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border">TOP 3 USIA PROJECT ON PROGRESS</th>
-              </tr>
-              <tr className="bg-blue-600">
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">IHLD</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">TGL MOM</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">REVENUE</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">STATUS TOMPS</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">USIA (HARI)</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {Object.keys(groupedTop3Witel).length === 0 ? (
+      {/* Top 3 Usia Sections */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+        {/* Top 3 Witel */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden flex flex-col h-[600px]">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-purple-600 pl-3">Top 3 Usia Project Terbaru (On Progress) - By Witel Induk</h2>
+          <div className="overflow-auto rounded-xl border border-gray-100 custom-scrollbar relative flex-1">
+            <table className="min-w-full divide-y divide-gray-200 text-[9px] text-center border-collapse">
+              <thead className="bg-purple-600 text-white font-bold uppercase sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">Tidak ada data "On Progress" yang ditemukan.</td>
+                  <th className="px-2 py-3 border-r border-purple-500 text-left w-24">WITEL INDUK</th>
+                  <th className="px-2 py-3 border-r border-purple-500 w-24">IHLD</th>
+                  <th className="px-2 py-3 border-r border-purple-500 w-24">TGL MOM</th>
+                  <th className="px-2 py-3 border-r border-purple-500 text-right w-24">REVENUE</th>
+                  <th className="px-2 py-3 border-r border-purple-500 w-32">STATUS TOMPS</th>
+                  <th className="px-2 py-3 border-r border-purple-500 w-16">USIA (HARI)</th>
                 </tr>
-              ) : (
-                Object.entries(groupedTop3Witel).map(([region, rows]) => (
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {Object.keys(groupedTop3Witel).length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-10 text-gray-400 italic text-center">Tidak ada data ditemukan.</td></tr>
+                ) : Object.entries(groupedTop3Witel).map(([region, rows]) => (
                   rows.map((row, idx) => (
-                    <tr key={`${region}-${idx}`} className="hover:bg-gray-50">
-                      {idx === 0 && (
-                        <td rowSpan={rows.length} className="px-2 py-1 border align-middle font-bold bg-gray-50">{region}</td>
-                      )}
-                      <td className="px-2 py-1 border">{row.id_i_hld}</td>
-                      <td className="px-2 py-1 border">{formatDate(row.tanggal_mom)}</td>
-                      <td className="px-2 py-1 border">{formatNumber(row.revenue_plan)}</td>
-                      <td className="px-2 py-1 border">{row.status_tomps_new}</td>
-                      <td className="px-2 py-1 border font-bold text-red-600">{row.usia}</td>
+                    <tr key={`${region}-${idx}`} className="hover:bg-blue-50/30">
+                      {idx === 0 && <td rowSpan={rows.length} className="px-2 py-2 border font-bold bg-gray-50 text-left align-top text-purple-700 uppercase">{region}</td>}
+                      <td className="px-2 py-2 border font-mono">{row.id_i_hld}</td>
+                      <td className="px-2 py-2 border">{formatDate(row.tanggal_mom)}</td>
+                      <td className="px-2 py-2 border text-right font-medium">{formatNumber(row.revenue_plan)}</td>
+                      <td className="px-2 py-2 border truncate max-w-[100px]" title={row.status_tomps_new}>{row.status_tomps_new}</td>
+                      <td className="px-2 py-2 border font-black text-red-600">{row.usia}</td>
                     </tr>
                   ))
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Table 4: Top 3 Usia Project - By PO */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Top 3 Usia Project Terbaru (On Progress) - By PO</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-[8px]">
-            <thead className="bg-blue-600">
-              <tr>
-                <th className="px-2 py-2 text-center font-bold text-white border">NAMA PO</th>
-                <th className="px-2 py-2 text-center font-bold text-white border">NAMA PROJECT</th>
-                <th colSpan="5" className="px-2 py-1 text-center font-bold text-white border">TOP 3 USIA PROJECT ON PROGRESS</th>
-              </tr>
-              <tr className="bg-blue-600">
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]"></th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">IHLD</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">TGL MOM</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">REVENUE</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">STATUS TOMPS</th>
-                <th className="px-2 py-1 text-center font-bold text-white border text-[7px]">USIA (HARI)</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 text-center">
-              {Object.keys(groupedTop3Po).length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-gray-500">Tidak ada data "On Progress" yang ditemukan.</td>
-                </tr>
-              ) : (
-                Object.entries(groupedTop3Po).map(([poName, rows]) => (
-                  rows.map((row, idx) => (
-                    <tr key={`${poName}-${idx}`} className="hover:bg-gray-50">
-                      {idx === 0 && (
-                        <td rowSpan={rows.length} className="px-2 py-1 border align-middle font-bold bg-gray-50">{poName}</td>
-                      )}
-                      <td className="px-2 py-1 border text-left truncate max-w-[150px]" title={row.uraian_kegiatan}>{row.uraian_kegiatan}</td>
-                      <td className="px-2 py-1 border">{row.id_i_hld}</td>
-                      <td className="px-2 py-1 border">{formatDate(row.tanggal_mom)}</td>
-                      <td className="px-2 py-1 border">{formatNumber(row.revenue_plan)}</td>
-                      <td className="px-2 py-1 border">{row.status_tomps_new}</td>
-                      <td className="px-2 py-1 border font-bold text-red-600">{row.usia}</td>
-                    </tr>
-                  ))
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Data Preview Jaringan Tambahan */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Data Preview Jaringan Tambahan (Usia Tertinggi)</h2>
-          <div className="text-xs text-gray-500">
-            {processedData.length !== previewData.length && (
-              <span>Filtered: {processedData.length} of {previewData.length} rows</span>
-            )}
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="min-w-full border text-[10px]">
-            <thead className="bg-gray-800 text-white">
-              <tr>
-                <th className="px-2 py-2 text-left">ID i-HLD</th>
-                <FilterableHeader label="PO Name" filterKey="poName" />
-                <FilterableHeader label="Witel Baru" filterKey="witelBaru" />
-                <FilterableHeader label="Witel Lama" filterKey="witelLama" />
-                <FilterableHeader label="Status Proyek" filterKey="statusProyek" />
-                <FilterableHeader label="Go Live" filterKey="goLive" />
-                <SortableHeader label="Usia (Hari)" sortKey="usia" />
-                <SortableHeader label="Revenue Plan" sortKey="revenuePlan" />
-                <th className="px-2 py-2 text-left">Tomps Last Activity</th>
-                <th className="px-2 py-2 text-left">Tgl MOM</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedPreviewData.map((row, idx) => (
-                <tr key={`${row.id || row.idIHld || idx}`} className="odd:bg-white even:bg-gray-50 hover:bg-blue-50">
-                  <td className="px-2 py-2 border">{row.idIHld || '-'}</td>
-                  <td className="px-2 py-2 border">{row.poName || '-'}</td>
-                  <td className="px-2 py-2 border">{row.witelBaru || '-'}</td>
-                  <td className="px-2 py-2 border">{row.witelLama || '-'}</td>
-                  <td className="px-2 py-2 border">{row.statusProyek || '-'}</td>
-                  <td className="px-2 py-2 border text-center">{row.goLive || '-'}</td>
-                  <td className="px-2 py-2 border text-red-700 font-semibold">{row.usia ?? '-'}</td>
-                  <td className="px-2 py-2 border">{formatNumber(row.revenuePlan)}</td>
-                  <td className="px-2 py-2 border">{row.statusTompsLastActivity || '-'}</td>
-                  <td className="px-2 py-2 border">{formatDate(row.tanggalMom)}</td>
+        {/* Top 3 PO */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden flex flex-col h-[600px]">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-indigo-600 pl-3">Top 3 Usia Project Terbaru (On Progress) - By PO</h2>
+          <div className="overflow-auto rounded-xl border border-gray-100 custom-scrollbar relative flex-1">
+            <table className="min-w-full divide-y divide-gray-200 text-[9px] text-center border-collapse">
+              <thead className="bg-indigo-600 text-white font-bold uppercase sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-2 py-3 border-r border-indigo-500 text-left w-24">NAMA PO</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 text-left w-32">NAMA PROJECT</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 w-24">IHLD</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 w-24">TGL MOM</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 text-right w-24">REVENUE</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 w-32">STATUS TOMPS</th>
+                  <th className="px-2 py-3 border-r border-indigo-500 w-16">USIA (HARI)</th>
                 </tr>
-              ))}
-              {paginatedPreviewData.length === 0 && (
-                <tr><td className="px-3 py-8 text-center text-gray-500" colSpan={10}>Tidak ada data yang sesuai filter</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {processedData.length > 0 && (
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-4 border-t pt-4 text-sm">
-            <div className="text-gray-600">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} entries
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white border hover:bg-gray-50'}`}
-              >
-                Previous
-              </button>
-              <div className="flex items-center gap-2">
-                <span>Page</span>
-                <input
-                  type="number"
-                  min="1"
-                  max={totalPages}
-                  value={pageInput}
-                  onChange={(e) => setPageInput(Number(e.target.value))}
-                  onBlur={() => handlePageChange(pageInput)}
-                  className="w-16 border rounded px-2 py-1 text-center"
-                />
-                <span>of {totalPages}</span>
-                <button
-                  onClick={() => handlePageChange(pageInput)}
-                  className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Go
-                </button>
-              </div>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-white border hover:bg-gray-50'}`}
-              >
-                Next
-              </button>
-            </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {Object.keys(groupedTop3Po).length === 0 ? (
+                  <tr><td colSpan={7} className="px-4 py-10 text-gray-400 italic text-center">Tidak ada data ditemukan.</td></tr>
+                ) : Object.entries(groupedTop3Po).map(([poName, rows]) => (
+                  rows.map((row, idx) => (
+                    <tr key={`${poName}-${idx}`} className="hover:bg-blue-50/30">
+                      {idx === 0 && <td rowSpan={rows.length} className="px-2 py-2 border font-bold bg-gray-50 text-left align-top text-indigo-700 uppercase">{poName}</td>}
+                      <td className="px-2 py-2 border text-left truncate max-w-[150px]" title={row.uraian_kegiatan}>{row.uraian_kegiatan}</td>
+                      <td className="px-2 py-2 border font-mono">{row.id_i_hld}</td>
+                      <td className="px-2 py-2 border">{formatDate(row.tanggal_mom)}</td>
+                      <td className="px-2 py-2 border text-right font-medium">{formatNumber(row.revenue_plan)}</td>
+                      <td className="px-2 py-2 border truncate max-w-[100px]" title={row.status_tomps_new}>{row.status_tomps_new}</td>
+                      <td className="px-2 py-2 border font-black text-red-600">{row.usia}</td>
+                    </tr>
+                  ))
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
 
+      {/* Admin Manajemen Data - Standarized Layout */}
       {isAdminMode && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Unggah Data Tambahan</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6 mt-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Manajemen Data JT</h2>
+              <p className="text-sm text-gray-500">Upload dataset baru atau reset data Jaringan Tambahan.</p>
+            </div>
             <button
                onClick={async () => {
-                 if (window.confirm('Apakah Anda yakin ingin menghapus SEMUA data JT? Tindakan ini tidak dapat dibatalkan.')) {
+                 if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data JT? Tindakan ini tidak dapat dibatalkan.')) {
                    try {
                      const token = localStorage.getItem('accessToken')
-                     await axios.post(
-                       `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/jt`,
-                       {},
-                       { headers: { Authorization: `Bearer ${token}` } }
-                     )
+                     await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/jt`, {}, { headers: { Authorization: `Bearer ${token}` } })
                      alert('Data JT berhasil dihapus')
                      setRefreshKey(prev => prev + 1)
-                   } catch (err) {
-                     alert('Gagal menghapus dataset: ' + (err.response?.data?.message || err.message))
-                   }
+                   } catch (err) { alert('Gagal hapus data.') }
                  }
                }}
-               className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition duration-200 text-sm font-semibold"
+               className="bg-red-50 text-red-600 px-6 py-2 rounded-xl font-bold hover:bg-red-100 border border-red-200 transition-all text-sm"
             >
-              Hapus Data JT
+              Hapus Semua Data (Reset)
             </button>
           </div>
-          <FileUploadForm
-            type="jt"
-            onSuccess={() => {
-              // Refresh data after successful upload
-              setRefreshKey(prev => prev + 1)
-            }}
-          />
+          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+            <FileUploadForm 
+              type="jt" 
+              onSuccess={() => setRefreshKey(prev => prev + 1)} 
+            />
+          </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 

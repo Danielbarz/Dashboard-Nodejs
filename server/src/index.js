@@ -9,6 +9,12 @@ import logger from './config/logger.js'
 import routes from './routes/index.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 
+// --- BIGINT SERIALIZATION FIX ---
+BigInt.prototype.toJSON = function () {
+  return this.toString()
+}
+// --------------------------------
+
 const app = express()
 
 // Security middleware

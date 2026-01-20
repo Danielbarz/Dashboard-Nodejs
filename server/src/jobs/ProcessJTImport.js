@@ -69,14 +69,23 @@ export class ProcessJTImport {
       await this.updateProgress(5, 'Parsing file...')
       console.log(`\n📥 Starting JT import: ${fileName}`)
 
-      const records = await this.parseFile(filePath, fileName)
-      if (!records || records.length === 0) throw new Error('File is empty or invalid')
+      const rawRecords = await this.parseFile(filePath, fileName)
+      if (!rawRecords || rawRecords.length === 0) throw new Error('File is empty or invalid')
 
-      console.log(`✅ File parsed: ${records.length} rows found\n`)
+      // --- DEDUPLICATION (Remove Exact Duplicates) ---
+      const uniqueSet = new Set()
+      const records = rawRecords.filter(record => {
+          const sig = JSON.stringify(record) // Simple deduplication for exact rows
+          if(uniqueSet.has(sig)) return false
+          uniqueSet.add(sig)
+          return true
+      })
+      const duplicatesRemoved = rawRecords.length - records.length
+      console.log(`✅ File parsed: ${rawRecords.length} rows found. Deduplicated to ${records.length} (Removed ${duplicatesRemoved})\n`)
 
-      await this.updateProgress(15, `Found ${records.length} rows, clearing table...`)
+      await this.updateProgress(15, `Found ${records.length} unique rows, clearing table...`)
 
-      // Delete all existing records instead of TRUNCATE (more efficient with connection pooling)
+      // OVERLAY STRATEGY FOR JT: REPLACE ALL (Safe default for non-unique tables)
       await prisma.spmkMom.deleteMany({})
 
       const chunkSize = 100
@@ -94,8 +103,6 @@ export class ProcessJTImport {
         failedCount += result.failed
         errors.push(...result.errors)
 
-        console.log(`✅ Batch ${batchNum}: Inserted ${result.success} JT rows`)
-
         if (failedCount > 0) {
           console.log(`⚠️  Batch ${batchNum}: ${result.failed} rows failed`)
         }
@@ -107,14 +114,16 @@ export class ProcessJTImport {
       }
 
       console.log(`\n📤 Flushing remaining buffers...`)
-      unlinkSync(filePath)
+      try { if (filePath) unlinkSync(filePath) } catch(e) {}
       await this.updateProgress(100, 'JT import completed')
 
       console.log(`✅ Import complete: ${successCount} success, ${failedCount} failed\n`)
 
       return {
         success: true,
-        totalRows: records.length,
+        totalRows: rawRecords.length,
+        uniqueRows: records.length,
+        duplicatesRemoved,
         successRows: successCount,
         failedRows: failedCount,
         batchId,
@@ -156,19 +165,12 @@ export class ProcessJTImport {
       try {
         const keyMap = buildKeyMap(record)
 
-        // Debug: log first record to see actual keys
-        if (chunk.indexOf(record) === 0) {
-          console.log('First record keys:', Object.keys(record).slice(0, 10))
-          console.log('Normalized keyMap sample:', Object.keys(keyMap).slice(0, 10))
-        }
-
         const tanggalMom = parseDate(getValue(record, keyMap, 'tanggalmom', 'tanggal_mom', 'tgl_mom', 'tanggal mom'))
         const usia = tanggalMom ? dayjs().diff(dayjs(tanggalMom), 'day') : null
         const statusTompsNew = getValue(record, keyMap, 'statustompsnew', 'status_tomps_new', 'status tomps new') || ''
         const statusProyek = getValue(record, keyMap, 'statusproyek', 'status_proyek', 'status proyek') || ''
         const { goLive, populasiNonDrop } = deriveFlags(statusTompsNew, statusProyek)
 
-        // Use file USIA/GOLIVE if present, otherwise derive
         const usiaFromFile = getValue(record, keyMap, 'usia')
         const goliveFromFile = getValue(record, keyMap, 'golive', 'go live')
         const populasiFromFile = getValue(record, keyMap, 'populasinondrop', 'populasi_non_drop', 'populasi non drop', 'populasi')
@@ -225,7 +227,7 @@ export class ProcessJTImport {
     return { success, failed, errors }
   }
 
-  async updateProgress(progress, message) {
+  async updateProgress(percent, message) {
     await redis.set(this.progressKey, JSON.stringify({ progress, message }), 'EX', 60 * 60)
   }
 }

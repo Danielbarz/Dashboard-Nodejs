@@ -1,41 +1,49 @@
 import express from 'express'
 import { authenticate } from '../middleware/auth.js'
+
 import {
+  getJTDashboard,
+  getJTFilters,
+  getJTReport,
+  getReportTambahan,
+  exportReportTambahan,
+  exportJTReport
+} from '../controllers/dashboardJTController.js'
+
+import {
+  getReportDatin,
+  getSOSDatinFilters,
+  getSOSDatinDashboard,
+  exportReportDatin
+} from '../controllers/dashboardDatinController.js'
+
+import {
+  getDigitalProductDashboard,
+  getDigitalProductFilters,
+  getKPIData,
   getRevenueByWitel,
   getAmountByWitel,
-  getKPIData,
+  getReportAnalysis,
+  exportReportAnalysis,
   getTotalOrderByRegional,
   getSebaranDataPS,
   getCancelByFCC,
   getFilterOptions,
-  getDashboardData,
-  getReportTambahan,
-  getReportDatin,
-  getReportAnalysis,
-  getReportHSI,
-  getJTDashboard,
-  getJTFilters,
-  getJTReport,
-  exportReportAnalysis,
-  exportReportDatin,
-  exportReportTambahan,
-  exportReportHSI,
-  exportJTReport,
+  getDashboardData
+} from '../controllers/dashboardDigitalController.js'
+
+import {
   getHSIDashboard,
   getHSIFlowStats,
-  getHSIFlowDetail,
-  getSOSDatinFilters,
-  getSOSDatinDashboard,
-  getDigitalProductDashboard,
-  getDigitalProductFilters
-} from '../controllers/dashboardController.js'
+  getHSIFlowDetail
+} from '../controllers/dashboardHSIController.js'
 
 const router = express.Router()
 
 // Dashboard Main Data
 router.get('/', authenticate, getDashboardData)
 
-// SOS Dashboard Charts
+// SOS Dashboard Charts (Digital/General)
 router.get('/revenue-by-witel', authenticate, getRevenueByWitel)
 router.get('/amount-by-witel', authenticate, getAmountByWitel)
 router.get('/kpi', authenticate, getKPIData)
@@ -53,9 +61,9 @@ router.get('/digital-product/filters', authenticate, getDigitalProductFilters)
 router.get('/digital-product/stats', authenticate, getDigitalProductDashboard)
 
 // HSI Dashboard
-router.get('/hsi', authenticate, getHSIDashboard)
-router.get('/hsi/flow-stats', authenticate, getHSIFlowStats)
-router.get('/hsi/flow-detail', authenticate, getHSIFlowDetail)
+router.get('/hsi/dashboard', authenticate, getHSIDashboard)
+router.get('/hsi/flow', authenticate, getHSIFlowStats)
+router.get('/hsi/flow/detail', authenticate, getHSIFlowDetail)
 
 // JT (Jaringan Tambahan) Dashboard
 router.get('/jt/stats', authenticate, getJTDashboard)
@@ -66,13 +74,10 @@ router.get('/jt/report', authenticate, getJTReport)
 router.get('/report-tambahan', authenticate, getReportTambahan)
 router.get('/report-datin', authenticate, getReportDatin)
 router.get('/report-analysis', authenticate, getReportAnalysis)
-router.get('/report-hsi', authenticate, getReportHSI)
 
 // Exports
 router.get('/export/report-analysis', exportReportAnalysis)
 router.get('/export/report-datin', exportReportDatin)
 router.get('/export/report-tambahan', exportReportTambahan)
-router.get('/export/report-hsi', exportReportHSI)
-router.get('/export/jt-report', exportJTReport)
 
 export default router

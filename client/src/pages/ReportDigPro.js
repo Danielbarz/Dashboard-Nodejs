@@ -46,19 +46,12 @@ const DetailTable = ({
              // Special handling for Witel to support Region -> Branch mapping
              const itemWitel = (item[key] || '').toUpperCase()
              const matchesWitel = values.some(selectedRegion => {
-                // Check if itemWitel is the region itself
                 if (itemWitel === selectedRegion) return true
-                
-                // Check if itemWitel is a branch of the selected region
                 const branches = regionMapping[selectedRegion]
                 if (branches && branches.includes(itemWitel)) return true
-                
-                // Fallback: check if itemWitel contains the selected region string
                 if (itemWitel.includes(selectedRegion)) return true
-                
                 return false
              })
-             
              if (!matchesWitel) return false
           } else {
              if (!values.includes(item[key])) {
@@ -67,7 +60,6 @@ const DetailTable = ({
           }
         }
       }
-
       return true
     })
   }, [data, searchQuery, activeFilters])
@@ -150,24 +142,18 @@ const DetailTable = ({
           <thead>
             <tr className="text-white">
               <th className="bg-gray-800 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order ID</th>
-
               <FilterHeader title="Segment" columnKey="segment" bgClass="bg-blue-600" />
               <FilterHeader title="Channel" columnKey="channel" bgClass="bg-blue-600" />
               <FilterHeader title="Product" columnKey="product_name" bgClass="bg-blue-600" />
-
               <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Layanan</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Customer Name</th>
-
               <FilterHeader title="Order Status" columnKey="order_status" bgClass="bg-orange-600" />
-
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Sub Type</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Milestone</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Week</th>
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order Date</th>
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Net Price</th>
-
               <FilterHeader title="Witel" columnKey="witel" bgClass="bg-green-700" />
-
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Branch</th>
             </tr>
           </thead>
@@ -221,23 +207,6 @@ const DetailTable = ({
             >
               Previous
             </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let p = i + 1;
-                if (totalPages > 5) {
-                    if (currentPage > 3) p = currentPage - 2 + i;
-                    if (p > totalPages) p = totalPages - (4 - i);
-                    if (p < 1) p = i + 1;
-                }
-                return (
-                    <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
-                        className={`px-3 py-1 border rounded ${currentPage === p ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
-                    >
-                        {p}
-                    </button>
-                )
-            })}
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
@@ -257,7 +226,6 @@ const ReportDigPro = () => {
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   const now = new Date()
-  // Default to 2025 for demo data if current year is 2026
   const defaultYear = now.getFullYear() === 2026 ? 2025 : now.getFullYear()
   const startOfMonth = new Date(defaultYear, 0, 1)
   const endOfData = new Date(defaultYear, 11, 31)
@@ -368,31 +336,6 @@ const ReportDigPro = () => {
     }
   }
 
-  useEffect(() => {
-    const fetchFilterOptions = async () => {
-      try {
-        const token = localStorage.getItem('accessToken')
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/filter-options`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        if (response.data?.data?.filters) {
-          // if (response.data.data.filters.witels && response.data.data.filters.witels.length > 0) {
-          //   setWitelOptions(response.data.data.filters.witels)
-          // }
-        }
-      } catch (error) {
-        console.error('Failed to fetch filter options:', error)
-      }
-    }
-    fetchFilterOptions()
-  }, [])
-
-  useEffect(() => {
-    console.log('Detail Data Length:', detailData.length)
-    console.log('Active Filters:', activeFilters)
-  }, [detailData, activeFilters])
-
   const tableConfig = [
     {
       groupTitle: 'In Progress',
@@ -494,7 +437,6 @@ const ReportDigPro = () => {
       }
 
       if (detailRes.data?.data) {
-        console.log('API Response detailData:', detailRes.data.data);
         setDetailData(detailRes.data.data)
       }
 
@@ -510,7 +452,6 @@ const ReportDigPro = () => {
 
   useEffect(() => {
     fetchReportData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, selectedSegment, selectedWitel, refreshKey])
 
   const handleExport = () => {
@@ -721,103 +662,111 @@ const ReportDigPro = () => {
   )
 
   return (
-    <>
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Filter Data</h2>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10">
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+    <div className="space-y-6 w-full max-w-[1600px] mx-auto px-4 pb-10">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center py-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Report Digital Product</h1>
+          <p className="text-gray-500 text-sm mt-1">Laporan detail performansi dan revenue Digital Product</p>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+        <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center justify-between">
+          
+          <div className="flex flex-col md:flex-row gap-4 w-full xl:w-auto">
+            {/* Date Picker */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 w-full md:w-auto">
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Dari</span>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+              </div>
+              <span className="text-gray-400 font-light">|</span>
+              <div className="flex flex-col justify-center px-1">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+              </div>
             </div>
-            <span className="text-gray-400 font-light">|</span>
-            <div className="flex flex-col justify-center px-1">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Sampai</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-none p-0 text-sm focus:ring-0 h-4 bg-transparent text-gray-700" />
+
+            {/* Segment Filter */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative w-full md:w-48">
+              <div className="flex flex-col justify-center px-2 h-full w-full">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Segment</span>
+                <div
+                  className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
+                >
+                  <span className="truncate">{selectedSegment.length > 0 ? selectedSegment.join(', ') : 'Semua'}</span>
+                  <FiChevronDown className={`ml-1 transition-transform ${isSegmentDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              {isSegmentDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50">
+                  {segmentOptions.map(option => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => toggleSegment(option)}
+                    >
+                      <input type="checkbox" checked={selectedSegment.includes(option)} readOnly className="rounded text-blue-600 h-4 w-4" />
+                      <span className="text-sm text-gray-700">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Witel Filter */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative w-full md:w-56">
+              <div className="flex flex-col justify-center px-2 h-full w-full">
+                <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
+                <div
+                  className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
+                  onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
+                >
+                  <span className="truncate">{selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}</span>
+                  <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              {isWitelDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {witelList.map(option => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => toggleWitel(option)}
+                    >
+                      <input type="checkbox" checked={selectedWitel.includes(option)} readOnly className="rounded text-blue-600 h-4 w-4" />
+                      <span className="text-sm text-gray-700">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
-            <div className="flex flex-col justify-center px-2 h-full w-24">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Segment</span>
-              <div
-                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
-                onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
-              >
-                <span className="truncate">{selectedSegment.length > 0 ? selectedSegment.join(', ') : 'Semua'}</span>
-                <FiChevronDown className={`ml-1 transition-transform ${isSegmentDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </div>
-            {isSegmentDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                {segmentOptions.map(option => (
-                  <div
-                    key={option}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                    onClick={() => toggleSegment(option)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedSegment.includes(option)}
-                      readOnly
-                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-700">{option}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Actions */}
+          <div className="flex gap-2">
+             <button onClick={handleExport} className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-sm transition-colors h-10 min-w-[140px]">
+                <FiDownload className="mr-2" size={16} />
+                Export Excel
+             </button>
           </div>
-
-          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-300 h-10 relative">
-            <div className="flex flex-col justify-center px-2 h-full w-40">
-              <span className="text-[9px] text-gray-500 font-bold uppercase leading-none">Witel</span>
-              <div
-                className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center justify-between"
-                onClick={() => setIsWitelDropdownOpen(!isWitelDropdownOpen)}
-              >
-                <span className="truncate">{selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}</span>
-                <FiChevronDown className={`ml-1 transition-transform ${isWitelDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </div>
-            {isWitelDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-                {witelOptions.map(option => (
-                  <div
-                    key={option}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                    onClick={() => toggleWitel(option)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedWitel.includes(option)}
-                      readOnly
-                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
-                    />
-                    <span className="text-sm text-gray-700">{option}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button onClick={handleExport} className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 whitespace-nowrap h-10">
-            <FiDownload className="mr-2" size={16} />
-            Ekspor Report
-          </button>
         </div>
       </div>
 
       <>
           {selectedSegment.includes('LEGS') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              {renderTable(`Progress WFM Digital Product MTD`, reportData.legs || [], reportData.detailsLegs)}
+              {renderTable(`Progress WFM Digital Product MTD (LEGS)`, reportData.legs || [], reportData.detailsLegs)}
             </div>
           )}
 
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              {renderTable(`Progress WFM Digital Product MTD`, reportData.sme || [], reportData.detailsSme)}
+              {renderTable(`Progress WFM Digital Product MTD (SME)`, reportData.sme || [], reportData.detailsSme)}
             </div>
           )}
 
@@ -863,9 +812,9 @@ const ReportDigPro = () => {
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <DetailTable
-                title={`Report Digital Order Details`}
+                title={`Report Digital Order Details SME`}
                 data={detailData.filter(item => {
-                  // Removed segment filtering to show all data as requested
+                  // Simplified filter for SME/All as per previous request to show all if not LEGS specific
                   const matchesSearch = searchQuery === '' ||
                     (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
                     (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -904,17 +853,37 @@ const ReportDigPro = () => {
       </>
 
       {isAdminMode && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Unggah Data</h2>
-          <FileUploadForm
-            type="analysis"
-            onSuccess={() => {
-              setRefreshKey(prev => prev + 1)
-            }}
-          />
+        <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6 mt-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Manajemen Data</h2>
+              <p className="text-sm text-gray-500">Upload dataset baru atau reset data Digital Product.</p>
+            </div>
+            <button
+               onClick={async () => {
+                 if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data Digital Product? Tindakan ini tidak dapat dibatalkan.')) {
+                   try {
+                     const token = localStorage.getItem('accessToken')
+                     await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/digital`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                     alert('Data Digital Product berhasil dihapus')
+                     setRefreshKey(prev => prev + 1)
+                   } catch (err) { alert('Gagal hapus data.') }
+                 }
+               }}
+               className="bg-red-50 text-red-600 px-6 py-2 rounded-xl font-bold hover:bg-red-100 border border-red-200 transition-all text-sm"
+            >
+              Hapus Semua Data (Reset)
+            </button>
+          </div>
+          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+            <FileUploadForm 
+              type="analysis" 
+              onSuccess={() => setRefreshKey(prev => prev + 1)} 
+            />
+          </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 

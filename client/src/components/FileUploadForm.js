@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { fileService } from '../services/dashboardService'
 import { useAuth } from '../context/AuthContext'
+import { FiUploadCloud, FiFile, FiCheckCircle, FiXCircle, FiLoader } from 'react-icons/fi'
 
 const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const { user } = useAuth()
@@ -8,72 +9,61 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(null)
-  const [logLines, setLogLines] = useState([])
-  const [fileUploaded, setFileUploaded] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  // Modal State
-  const [showModal, setShowModal] = useState(false) // 'success' | 'error' | false
-  const [modalMessage, setModalMessage] = useState('')
-  const [modalDetails, setModalDetails] = useState('')
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  
+  // Status Details
+  const [resultSummary, setResultSummary] = useState(null)
 
   // Check if user is in admin mode
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
 
-  // Restore upload state from localStorage on mount
-  useEffect(() => {
-    const uploadState = localStorage.getItem(`fileUploadState_${type}`)
-    if (uploadState) {
-      try {
-        const { fileName, fileUploaded: wasUploaded, logLines: savedLogs } = JSON.parse(uploadState)
-        if (wasUploaded && fileName) {
-          // Create a File-like object to show in UI
-          setFile({ name: fileName, size: 0 })
-          setFileUploaded(true)
-          setLogLines(savedLogs || [])
-        }
-      } catch (e) {
-        console.error('Failed to restore upload state:', e)
-        localStorage.removeItem(`fileUploadState_${type}`)
-      }
-    }
-  }, [type])
+  // Strict Visibility: If not admin, render nothing
+  if (!isAdminMode) return null
 
-  // Save upload state to localStorage
-  useEffect(() => {
-    if (fileUploaded && file) {
-      const uploadState = {
-        fileName: file.name,
-        fileUploaded: true,
-        logLines: logLines
-      }
-      localStorage.setItem(`fileUploadState_${type}`, JSON.stringify(uploadState))
-    }
-  }, [fileUploaded, file, logLines, type])
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const droppedFiles = e.dataTransfer.files
+    if (droppedFiles && droppedFiles.length > 0) {
+      validateAndSetFile(droppedFiles[0])
+    }
+  }
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      validateAndSetFile(e.target.files[0])
+    }
+  }
+
+  const validateAndSetFile = (selectedFile) => {
+    const validExtensions = ['xlsx', 'xls', 'csv']
+    const fileExtension = selectedFile.name.split('.').pop().toLowerCase()
+    
+    if (!validExtensions.includes(fileExtension)) {
+      setError('Invalid file type. Please upload Excel (.xlsx, .xls) or CSV.')
+      setFile(null)
+      return
+    }
+
     setFile(selectedFile)
     setError(null)
     setSuccess(false)
-    setFileUploaded(false)
+    setResultSummary(null)
+    setUploadProgress(0)
   }
 
-  const handleRemoveFile = () => {
-    setFile(null)
-    setError(null)
-    setSuccess(false)
-    setUploadProgress(null)
-    setLogLines([])
-    setFileUploaded(false)
-    localStorage.removeItem(`fileUploadState_${type}`)
-    const fileInput = document.getElementById('file-input')
-    if (fileInput) fileInput.value = ''
-  }
-
-  // Check job status - polls a few times to get final result
   const checkJobStatus = async (jobId, batchId) => {
     let attempts = 0
     const maxAttempts = 30 // 30 seconds
@@ -85,318 +75,178 @@ const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {
         const jobData = statusResponse?.data?.data
 
         if (jobData?.state === 'completed' && jobData?.result) {
-          console.log('✅ Job completed:', jobData.result)
           return jobData.result
         } else if (jobData?.state === 'failed') {
-          throw new Error('Job processing failed')
+          throw new Error('Processing failed on server.')
         }
       } catch (err) {
         console.error(`Check attempt ${attempts} error:`, err.message)
       }
-
-      // Wait 1 second before next attempt
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
-
-    // Timeout - return default result
-    console.log('Job status check timeout after 30 seconds')
     return { totalRows: 0, successRows: 0, failedRows: 0, batchId }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!file) {
-      setError('Please select a file')
-      return
-    }
+  const handleUpload = async () => {
+    if (!file) return
 
     setLoading(true)
-    setUploadProgress(0)
-    setLogLines(['Menyiapkan upload...'])
     setError(null)
-    setSuccess(false)
+    setUploadProgress(10) // Start progress
 
     try {
-      console.log('Uploading file:', file.name, 'Type:', type)
       const response = await fileService.uploadFile(file, type, (event) => {
         if (event.total) {
           const percent = Math.round((event.loaded * 100) / event.total)
-          setUploadProgress(percent)
-          if (percent === 100) {
-            setLogLines((prev) => [...prev, 'Upload selesai, memproses di server...'])
-          } else {
-            setLogLines((prev) => {
-              if (prev[prev.length - 1]?.startsWith('Mengunggah')) return prev
-              return [...prev, 'Mengunggah file...']
-            })
-          }
+          setUploadProgress(percent < 90 ? percent : 90) // Keep 10% for processing
         }
       })
-      console.log('Upload response:', response)
 
       const uploadData = response?.data?.data
-      if (!uploadData) throw new Error('No response data from upload')
+      if (!uploadData) throw new Error('No response data')
 
       const { jobId, batchId, totalRows, successRows, failedRows } = uploadData
-
-      let finalResult = { totalRows: 0, successRows: 0, failedRows: 0, batchId }
+      let finalResult = { totalRows, successRows, failedRows, batchId }
 
       if (jobId) {
-        // Queue Mode (Old/Async)
-        setLogLines((prev) => [...prev, `⏳ Menunggu hasil pemrosesan... (Job ID: ${jobId})`])
+        setUploadProgress(95) // Processing...
         finalResult = await checkJobStatus(jobId, batchId)
-      } else {
-        // Direct Mode (Sync/Local)
-        setLogLines((prev) => [...prev, '✅ Pemrosesan langsung selesai.'])
-        finalResult = {
-          totalRows: totalRows || 0,
-          successRows: successRows || 0,
-          failedRows: failedRows || 0,
-          batchId
-        }
       }
 
+      setUploadProgress(100)
       setSuccess(true)
-      setFileUploaded(true)
-      setUploadProgress(null)
+      setResultSummary(finalResult)
+      
+      if (onSuccess) onSuccess(finalResult)
 
-      const successMsg = `Batch: ${finalResult.batchId}. Sukses: ${finalResult.successRows}, Gagal: ${finalResult.failedRows}`
-      setModalMessage(successMsg)
-      setModalDetails('')
-      setShowModal('success')
-
-      setLogLines((prev) => [
-        ...prev,
-        `✅ Selesai diproses. Batch: ${finalResult.batchId}`,
-        `📊 Total: ${finalResult.successRows}/${finalResult.totalRows} berhasil, ${finalResult.failedRows} gagal`
-      ])
-
-      if (onSuccess) {
-        onSuccess(finalResult)
-      }
     } catch (err) {
-      console.error('Upload error:', err)
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
-      const errorDetails = err.response?.data?.details || '' // Assuming backend might send details
-
-      setError(errorMessage)
-      setUploadProgress(null)
-
-      setModalMessage(errorMessage)
-      setModalDetails(errorDetails ? JSON.stringify(errorDetails, null, 2) : '')
-      setShowModal('error')
-
-      setLogLines((prev) => [...prev, `Gagal: ${errorMessage}`])
+      console.error('Upload Error:', err)
+      setError(err.response?.data?.message || err.message || 'Upload failed.')
+      setUploadProgress(0)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDeleteData = async () => {
-    if (!window.confirm(`⚠️ PERINGATAN KERAS!
-
-Apakah Anda yakin ingin MENGHAPUS SEMUA DATA untuk modul "${type}"?
-
-Tindakan ini tidak dapat dibatalkan. Data database akan dikosongkan.`)) {
-      return
-    }
-
-    setIsDeleting(true)
+  const resetForm = () => {
+    setFile(null)
+    setSuccess(false)
     setError(null)
-    setLogLines((prev) => [...prev, 'Menghapus data database...'])
-
-    try {
-      await fileService.truncateData(type)
-      setLogLines((prev) => [...prev, '✅ Data berhasil dihapus (Truncated).'])
-      setSuccess(true)
-      // Clear file selection too as context is reset
-      handleRemoveFile()
-      if (onSuccess) onSuccess({ reset: true })
-    } catch (err) {
-      console.error('Delete error:', err)
-      const msg = err.response?.data?.message || 'Gagal menghapus data'
-      setError(msg)
-      setLogLines((prev) => [...prev, `❌ Gagal hapus: ${msg}`])
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  // If not in admin mode, show access denied message
-  if (!isAdminMode) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Data (Excel/CSV)</h3>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
-          <p className="font-medium">Access Restricted</p>
-          <p className="text-sm mt-1">File upload is only available in admin mode. Please enter admin mode to upload files.</p>
-        </div>
-      </div>
-    )
+    setResultSummary(null)
+    setUploadProgress(0)
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Data (Excel/CSV)</h3>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {!file || !fileUploaded ? (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleFileChange}
-              disabled={loading}
-              className="hidden"
-              id="file-input"
-            />
-            <label htmlFor="file-input" className="cursor-pointer">
-              <div className="text-gray-600">
-                {file && !fileUploaded ? (
-                  <div>
-                    <p className="text-green-600 font-medium">{file.name}</p>
-                    <p className="text-gray-500 text-sm">{(file.size / 1024).toFixed(2)} KB</p>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-lg font-medium">Drag and drop your file here</p>
-                    <p className="text-sm text-gray-500">or click to select file</p>
-                    <p className="text-xs text-gray-400 mt-2">Supported formats: Excel (.xlsx, .xls), CSV</p>
-                  </>
-                )}
-              </div>
-            </label>
-          </div>
-        ) : (
-          <div className="border-2 border-solid border-green-300 bg-green-50 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <p className="text-green-800 font-semibold">{file.name}</p>
-                  <p className="text-green-600 text-sm">{(file.size / 1024).toFixed(2)} KB</p>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <label htmlFor="file-input" className="cursor-pointer px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">
-                  Ubah File
-                </label>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileChange}
-                  disabled={loading}
-                  className="hidden"
-                  id="file-input"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveFile}
-                  disabled={loading}
-                  className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition disabled:opacity-50"
-                >
-                  Hapus File
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700">
-            File uploaded successfully!
-          </div>
-        )}
-
-        {uploadProgress !== null && (
-          <div className="w-full bg-gray-100 rounded-lg h-3">
-            <div
-              className="bg-blue-600 h-3 rounded-lg transition-all"
-              style={{ width: `${uploadProgress}%` }}
-            />
-            <div className="text-sm text-gray-600 mt-1 text-right">{uploadProgress}%</div>
-          </div>
-        )}
-
-        {logLines.length > 0 && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 space-y-1 max-h-40 overflow-y-auto">
-            {logLines.map((line, idx) => (
-              <div key={idx}>• {line}</div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={!file || loading || isDeleting}
-          className={`w-full py-2 px-4 rounded-lg font-medium transition ${file && !loading && !isDeleting
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+    <div className="w-full">
+      {!file ? (
+        <div 
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`
+            border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer
+            flex flex-col items-center justify-center gap-3
+            ${isDragging 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+            }
+          `}
         >
-          {loading ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : '...'}` : 'Upload File'}
-        </button>
-
-        <div className="border-t border-gray-200 pt-4 mt-4">
-          <button
-            type="button"
-            onClick={handleDeleteData}
-            disabled={loading || isDeleting}
-            className="w-full py-2 px-4 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition flex justify-center items-center"
-          >
-            {isDeleting ? 'Menghapus...' : '🗑️ Hapus Semua Data Database (Reset)'}
-          </button>
+          <input 
+            type="file" 
+            id={`file-upload-${type}`} 
+            className="hidden" 
+            onChange={handleFileSelect} 
+            accept=".xlsx,.xls,.csv"
+          />
+          <label htmlFor={`file-upload-${type}`} className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+            <div className="p-4 bg-blue-50 rounded-full text-blue-600 mb-2">
+              <FiUploadCloud size={32} />
+            </div>
+            <p className="text-sm font-bold text-gray-700">Click to upload or drag and drop</p>
+            <p className="text-xs text-gray-500">Excel or CSV files only</p>
+          </label>
         </div>
-      </form>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          {/* File Info */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                <FiFile size={24} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800 truncate max-w-xs">{file.name}</p>
+                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+              </div>
+            </div>
+            {!loading && !success && (
+              <button onClick={resetForm} className="text-gray-400 hover:text-red-500 text-sm">
+                Remove
+              </button>
+            )}
+          </div>
 
-      {/* Status Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 transition-opacity">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
-            <div className={`p-6 text-center ${showModal === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
-              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${
-                showModal === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-              }`}>
-                {showModal === 'success' ? (
-                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+          {/* Progress Bar */}
+          {loading && (
+            <div className="mb-4">
+              <div className="flex justify-between text-xs mb-1 text-gray-600">
+                <span>Uploading & Processing...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out" 
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Success State */}
+          {success && (
+            <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-4 flex items-start gap-3 animate-fade-in">
+              <FiCheckCircle className="text-green-600 mt-0.5" size={18} />
+              <div>
+                <p className="text-sm font-bold text-green-800">Upload Successful!</p>
+                {resultSummary && (
+                  <p className="text-xs text-green-700 mt-1">
+                    Batch: {resultSummary.batchId} • Success: {resultSummary.successRows} • Failed: {resultSummary.failedRows}
+                  </p>
                 )}
               </div>
-              <h3 className={`text-xl font-bold mb-2 ${showModal === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-                {showModal === 'success' ? 'Upload Berhasil!' : 'Upload Gagal'}
-              </h3>
-              <p className="text-gray-600 font-medium mb-2">{modalMessage}</p>
-              {modalDetails && (
-                <div className="mt-2 p-3 bg-white rounded border text-sm text-left text-gray-700 max-h-32 overflow-y-auto">
-                  {modalDetails}
-                </div>
-              )}
             </div>
-            <div className="p-4 bg-gray-50 flex justify-center">
-              <button
-                onClick={() => setShowModal(false)}
-                className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors shadow-md ${
-                  showModal === 'success'
-                    ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                    : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                }`}
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4 flex items-start gap-3 animate-fade-in">
+              <FiXCircle className="text-red-600 mt-0.5" size={18} />
+              <div>
+                <p className="text-sm font-bold text-red-800">Upload Failed</p>
+                <p className="text-xs text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-2">
+            {!success && !loading && (
+              <button 
+                onClick={handleUpload}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition shadow-md shadow-blue-100"
               >
-                Tutup
+                Start Upload
               </button>
-            </div>
+            )}
+            {(success || error) && !loading && (
+              <button 
+                onClick={resetForm}
+                className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition"
+              >
+                Upload Another
+              </button>
+            )}
           </div>
         </div>
       )}
