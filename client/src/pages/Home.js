@@ -39,7 +39,7 @@ const Home = () => {
       },
       {
         title: "Datin Dashboard",
-        desc: "Data Internet Performance",
+        desc: "Digital Accession Terminal Integrated Network Performance",
         path: "/datin",
         icon: <FiDatabase />,
         colorClass: "bg-purple-50 text-purple-600",
@@ -196,7 +196,7 @@ const Home = () => {
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-4 pb-10 min-h-[80vh]">
-      
+
       {/* Header */}
       <div className="py-8 mb-4 border-b border-gray-100">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
