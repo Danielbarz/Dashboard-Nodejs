@@ -137,8 +137,97 @@ export const getDigitalProductDashboard = async (req, res, next) => {
 }
 
 export const getDigitalProductFilters = async (req, res, next) => {
-  try { successResponse(res, { products: ['Antares', 'Netmonk', 'OCA', 'Pijar'], witels: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'] }) } catch (error) { next(error) }
-}
+try {
+  const branchMap = {
+    'BALI': [
+      'BALI',
+      'DENPASAR',
+      'GIANYAR',
+      'JEMBRANA',
+      'JIMBARAN',
+      'KLUNGKUNG',
+      'Non-Telda (NCX)',
+      'SANUR',
+      'SINGARAJA',
+      'TABANAN',
+      'UBUNG',
+      'BADUNG',
+      'BULELENG'
+    ],
+    'JATIM BARAT': [
+      'JATIM BARAT',
+      'MALANG',
+      'BATU',
+      'BLITAR',
+      'BOJONEGORO',
+      'KEDIRI',
+      'KEPANJEN',
+      'MADIUN',
+      'NGANJUK',
+      'NGAWI',
+      'Non-Telda (NCX)',
+      'PONOROGO',
+      'TRENGGALEK',
+      'TUBAN',
+      'TULUNGAGUNG'
+    ],
+    'JATIM TIMUR': [
+      'JATIM TIMUR',
+      'SIDOARJO',
+      'BANYUWANGI',
+      'BONDOWOSO',
+      'INNER - JATIM TIMUR',
+      'JEMBER',
+      'JOMBANG',
+      'LUMAJANG',
+      'MOJOKERTO',
+      'Non-Telda (NCX)',
+      'PASURUAN',
+      'PROBOLINGGO',
+      'SITUBONDO'
+    ],
+    'NUSA TENGGARA': [
+      'NUSA TENGGARA',
+      'NTB',
+      'NTT',
+      'ATAMBUA',
+      'BIMA',
+      'ENDE',
+      'INNER - NUSA TENGGARA',
+      'KUPANG',
+      'LABOAN BAJO',
+      'LOMBOK BARAT TENGAH',
+      'LOMBOK TIMUR UTARA',
+      'MAUMERE',
+      'Non-Telda (NCX)',
+      'SUMBAWA',
+      'WAIKABUBAK',
+      'WAINGAPU',
+      'MATARAM',
+      'SUMBA'
+    ],
+    'SURAMADU': [
+      'SURAMADU',
+      'BANGKALAN',
+      'GRESIK',
+      'KENJERAN',
+      'KETINTANG',
+      'LAMONGAN',
+      'MANYAR',
+      'Non-Telda (NCX)',
+      'PAMEKASAN',
+      'TANDES'
+    ]
+  }
+
+  successResponse(res, {
+    products: ['Antares', 'Netmonk', 'OCA', 'Pijar'],
+    witels: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU'],
+    branchMap
+  })
+} catch (error) {
+  next(error)
+}}
 
 export const getKPIData = async (req, res, next) => successResponse(res, {})
 export const getRevenueByWitel = async (req, res, next) => successResponse(res, [])

@@ -20,7 +20,7 @@ const app = express()
 // Security middleware
 app.use(helmet())
 app.use(cors({
-  origin: config.cors.origin,
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -68,5 +68,7 @@ app.listen(PORT, () => {
   logger.info(`📍 Environment: ${config.app.env}`)
   logger.info(`🔗 API URL: ${config.app.url}`)
 })
+
+
 
 export default app

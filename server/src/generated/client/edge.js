@@ -778,7 +778,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\Bara\\OneDrive\\Documents\\Telkom\\Telkom Dashboard Nodejs\\server\\src\\generated\\client",
+      "value": "G:\\Dashboard-Nodejs\\server\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -792,7 +792,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\Bara\\OneDrive\\Documents\\Telkom\\Telkom Dashboard Nodejs\\server\\prisma\\schema.prisma",
+    "sourceFilePath": "G:\\Dashboard-Nodejs\\server\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

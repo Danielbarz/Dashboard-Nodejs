@@ -80,7 +80,7 @@ const DashboardPage = () => {
   // Derived Branches (Matching JSX name)
   const availableBranchOptions = useMemo(() => {
     if (selectedWitels.length === 0) return Object.values(filterOptions.branchMap || {}).flat().sort()
-    return selectedWitels.flatMap(w => filterOptions.branchMap[w] || []).sort()
+    return selectedWitels.flatMap(w => (filterOptions.branchMap || {})[w] || []).sort()
   }, [selectedWitels, filterOptions.branchMap])
 
   // Fetch Stats
