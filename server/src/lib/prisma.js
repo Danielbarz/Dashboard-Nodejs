@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/client/index.js'
+import { PrismaClient } from '@prisma/client'
 
 // Ensure single PrismaClient instance across hot reloads (nodemon)
 const globalForPrisma = globalThis
