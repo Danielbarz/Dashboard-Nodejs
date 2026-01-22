@@ -1,5 +1,4 @@
-import { PrismaClient } from '../generated/client/index.js'
-
+import { PrismaClient } from '@prisma/client'
 // Use the existing global prisma instance if possible, or create a new one
 // Ideally we should reuse the one from ../lib/prisma.js but importing it here might cause circular deps depending on structure
 // For safety, we use a new client but pointing to the same DB URL.
