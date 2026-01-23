@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { fileService } from '../services/dashboardService'
+import { fileService } from '../services/coreService'
 import { useAuth } from '../context/AuthContext'
 
 const FileUploadForm = ({ onSuccess, type = 'digital_product' }) => {

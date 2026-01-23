@@ -32,20 +32,20 @@ const parseExcel = (filePath) => {
 // Merge multiple CSV/XLSX files
 export const mergeFiles = async (req, res, next) => {
   const uploadedFiles = []
+  console.log('[MergeFiles] Started merging process...')
 
   try {
     const files = req.files
 
     if (!files || files.length === 0) {
+      console.error('[MergeFiles] No files uploaded')
       return errorResponse(res, 'No files uploaded', 400)
     }
 
+    console.log(`[MergeFiles] Received ${files.length} files`)
+
     if (files.length < 2) {
       return errorResponse(res, 'At least 2 files are required to merge', 400)
-    }
-
-    if (files.length > 10) {
-      return errorResponse(res, 'Maximum 10 files can be merged at once', 400)
     }
 
     // Validate file types
@@ -53,13 +53,10 @@ export const mergeFiles = async (req, res, next) => {
     for (const file of files) {
       const ext = path.extname(file.originalname).toLowerCase()
       if (!allowedExtensions.includes(ext)) {
-        // Clean up uploaded files
-        for (const f of files) {
-          if (fs.existsSync(f.path)) {
-            await unlinkAsync(f.path)
-          }
-        }
-        return errorResponse(res, `Invalid file type: ${file.originalname}. Only CSV and XLSX files are allowed`, 400)
+        console.error(`[MergeFiles] Invalid extension: ${ext} for file ${file.originalname}`)
+        // Clean up
+        for (const f of files) if (fs.existsSync(f.path)) await unlinkAsync(f.path)
+        return errorResponse(res, `Invalid file type: ${file.originalname}`, 400)
       }
     }
 
@@ -70,52 +67,64 @@ export const mergeFiles = async (req, res, next) => {
     for (const file of files) {
       uploadedFiles.push(file.path)
       const ext = path.extname(file.originalname).toLowerCase()
+      console.log(`[MergeFiles] Parsing file: ${file.originalname} (${ext})`)
 
       let fileData = []
-
-      if (ext === '.csv') {
-        fileData = await parseCSV(file.path)
-      } else {
-        fileData = parseExcel(file.path)
+      try {
+        if (ext === '.csv') {
+          fileData = await parseCSV(file.path)
+        } else {
+          fileData = parseExcel(file.path)
+        }
+      } catch (parseError) {
+        console.error(`[MergeFiles] Error parsing ${file.originalname}:`, parseError)
+        throw new Error(`Failed to parse ${file.originalname}: ${parseError.message}`)
       }
 
+      console.log(`[MergeFiles] ${file.originalname} has ${fileData.length} rows`)
+
       if (fileData.length === 0) {
-        throw new Error(`File ${file.originalname} is empty`)
+        console.warn(`[MergeFiles] File ${file.originalname} is empty`)
+        continue
       }
 
       // Check headers consistency
       const fileHeaders = Object.keys(fileData[0])
       if (!headers) {
         headers = fileHeaders
+        console.log('[MergeFiles] Base headers set:', headers)
       } else {
-        const headersMatch = headers.length === fileHeaders.length &&
-          headers.every((h, i) => h === fileHeaders[i])
-
-        if (!headersMatch) {
-          throw new Error(`File ${file.originalname} has different column structure`)
+        if (headers.length !== fileHeaders.length) {
+          console.warn(`[MergeFiles] Header length mismatch in ${file.originalname}`)
         }
       }
 
       allData.push(...fileData)
     }
 
+    if (allData.length === 0) {
+      throw new Error('No data found in uploaded files')
+    }
+
     // Create merged file
     const mergedDir = path.join(process.cwd(), 'uploads', 'merged')
     if (!fs.existsSync(mergedDir)) {
+      console.log('[MergeFiles] Creating directory:', mergedDir)
       await mkdirAsync(mergedDir, { recursive: true })
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0]
+    const timestamp = new Date().getTime()
     const mergedFileName = `merged_${timestamp}.xlsx`
     const mergedFilePath = path.join(mergedDir, mergedFileName)
 
-    // Create workbook and worksheet
+    console.log(`[MergeFiles] Creating merged file at: ${mergedFilePath}`)
+
     const worksheet = XLSX.utils.json_to_sheet(allData)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Merged Data')
 
-    // Write to file
     XLSX.writeFile(workbook, mergedFilePath)
+    console.log('[MergeFiles] Merged file written successfully')
 
     // Clean up uploaded files
     for (const filePath of uploadedFiles) {
@@ -133,19 +142,15 @@ export const mergeFiles = async (req, res, next) => {
     }, 'Files merged successfully', 201)
 
   } catch (error) {
-    console.error('Error merging files:', error)
-
+    console.error('[MergeFiles] Fatal error:', error)
     // Clean up uploaded files on error
     for (const filePath of uploadedFiles) {
       try {
-        if (fs.existsSync(filePath)) {
-          await unlinkAsync(filePath)
-        }
+        if (fs.existsSync(filePath)) await unlinkAsync(filePath)
       } catch (cleanupError) {
         console.error('Error cleaning up file:', cleanupError)
       }
     }
-
     errorResponse(res, error.message || 'Failed to merge files', 500)
   }
 }
@@ -161,7 +166,6 @@ export const downloadMergedFile = async (req, res, next) => {
 
     const fullPath = path.join(process.cwd(), filePath)
 
-    // Security check: ensure file is in merged directory
     const mergedDir = path.join(process.cwd(), 'uploads', 'merged')
     if (!fullPath.startsWith(mergedDir)) {
       return errorResponse(res, 'Invalid file path', 400)
@@ -173,11 +177,9 @@ export const downloadMergedFile = async (req, res, next) => {
 
     const fileName = path.basename(fullPath)
     res.download(fullPath, fileName, (err) => {
-      if (err) {
+      if (err && !res.headersSent) {
         console.error('Error downloading file:', err)
-        if (!res.headersSent) {
-          errorResponse(res, 'Failed to download file', 500)
-        }
+        errorResponse(res, 'Failed to download file', 500)
       }
     })
 

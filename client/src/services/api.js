@@ -1,63 +1,45 @@
 import axios from 'axios'
 
-const API_URL = process.env.REACT_APP_API_URL || '/api'
+// Detect base URL dynamically to support port forwarding / network access
+const getBaseUrl = () => {
+  const { protocol, hostname, port } = window.location
+  
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL
+  }
+
+  // LOGIC: 
+  // If we are on port 3000 (React Dev Server), the backend is usually on port 5000
+  // of the SAME host (IP/Domain).
+  if (port === '3000') {
+    return `${protocol}//${hostname}:5000/api`
+  }
+  
+  // Default to the current hostname but on port 5000
+  return `${protocol}//${hostname}:5000/api`
+}
+
+export const API_URL = getBaseUrl()
+// Export the base server URL (without /api) for non-api calls like direct downloads
+export const SERVER_URL = API_URL.replace(/\/api$/, '')
+
+console.log(`%c [API CONFIG] %c Using Backend: ${API_URL}`, "color: white; background: #f44336; font-weight: bold;", "color: #f44336;")
 
 const api = axios.create({
-  baseURL: API_URL
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  withCredentials: true
 })
 
-// Request interceptor - add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
-)
-
-// Response interceptor - handle errors & refresh token
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
-
-    // If 401 and not already retried, try to refresh token
-    // Don't retry if the failed request was login
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
-      originalRequest._retry = true
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (!refreshToken) {
-          throw new Error('No refresh token')
-        }
-
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, {
-          refreshToken
-        })
-
-        const { accessToken } = response.data.data
-        localStorage.setItem('accessToken', accessToken)
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`
-        return api(originalRequest)
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-        return Promise.reject(refreshError)
-      }
-    }
-
-    return Promise.reject(error)
-  }
-)
+  return config
+})
 
 export default api

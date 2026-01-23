@@ -1,46 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { roleService } from '../services/dashboardService'
 import {
   MdHome,
   MdDashboard,
-  MdAssessment,
   MdExitToApp,
-  MdBarChart,
-  MdAdminPanelSettings,
-  MdKeyboardArrowDown,
   MdPeople,
   MdHistory,
   MdMerge,
-  MdStorage
+  MdStorage,
+  MdAssessment,
+  MdKeyboardArrowDown,
+  MdTimeline,
+  MdNetworkCheck,
+  MdDescription
 } from 'react-icons/md'
-import { FiMenu, FiX, FiUser, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { FiMenu, FiX, FiMonitor, FiDatabase, FiActivity, FiFileText } from 'react-icons/fi'
 import ChatBot from '../components/ChatBot'
 
 // ==================== HELPER COMPONENTS ====================
 
 const Logo = ({ isSidebarOpen }) => (
-  <div className="flex items-center justify-center h-24 border-b border-gray-200 transition-all duration-300 px-2 overflow-hidden">
+  <div className="flex items-center justify-center h-24 border-b border-gray-200 transition-all duration-300 px-2 overflow-hidden bg-white">
     {isSidebarOpen ? (
       <img
         src="/images/logotelkom_full.png"
         alt="Telkom Indonesia"
-        className="h-16 w-auto object-contain transition-all duration-300 animate-fade-in scale-125"
-        onError={(e) => {
-          console.error('Failed to load full logo')
-          e.target.style.display = 'none'
-        }}
+        className="h-16 w-auto object-contain transition-all duration-300 scale-125"
       />
     ) : (
       <img
-        src="/images/logotelkom.png?v=1"
+        src="/images/logotelkom.png"
         alt="Telkom"
         className="h-12 w-12 object-contain transition-all duration-300"
-        onError={(e) => {
-          console.error('Failed to load logo')
-          e.target.style.display = 'none'
-        }}
       />
     )}
   </div>
@@ -52,7 +44,7 @@ const NavLink = ({ href, active, icon: Icon, isSidebarOpen, children }) => (
       to={href}
       className={`flex items-center py-4 text-gray-600 hover:bg-gray-100 transition-colors duration-200 ${
         isSidebarOpen ? 'px-6' : 'justify-center'
-      } ${active ? 'bg-gray-200 text-gray-800 font-bold' : ''}`}
+      } ${active ? 'bg-gray-200 text-gray-800 font-bold border-r-4 border-red-600' : ''}`}
     >
       <Icon size={isSidebarOpen ? 22 : 26} />
       <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
@@ -69,7 +61,21 @@ const NavLink = ({ href, active, icon: Icon, isSidebarOpen, children }) => (
   </div>
 )
 
-const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switching, isAdminMode, onSwitch, onLogout }) => {
+const SubNavLink = ({ href, active, icon: Icon, isSidebarOpen, children }) => (
+  <Link
+    to={href}
+    className={`flex items-center py-3 pl-12 pr-6 text-sm transition-colors duration-200 ${
+      active 
+        ? 'bg-blue-50 text-blue-700 font-bold' 
+        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+    } ${!isSidebarOpen && 'hidden'}`}
+  >
+    {Icon && <Icon className="mr-3" size={16} />}
+    <span className="truncate">{children}</span>
+  </Link>
+)
+
+const UserProfile = ({ user, isSidebarOpen, currentRole, onLogout }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileRef = useRef(null)
 
@@ -83,54 +89,26 @@ const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switchin
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Auto-close profile popup when sidebar collapses
-  useEffect(() => {
-    if (!isSidebarOpen) {
-      setIsProfileOpen(false)
-    }
-  }, [isSidebarOpen])
-
   if (!user) return null
 
-  const switchLabel = switching ? 'Switching...' : isAdminMode ? 'Keluar Mode Admin' : 'Masuk Mode Admin'
-  const switchIcon = isAdminMode ? <MdExitToApp size={16} /> : <MdAdminPanelSettings size={16} />
-
   return (
-    <div className="mt-auto p-2 border-t border-gray-200 relative" ref={profileRef}>
+    <div className="mt-auto p-2 border-t border-gray-200 relative bg-white" ref={profileRef}>
       {isProfileOpen && (
-        <div className={`absolute bottom-full mb-2 bg-white rounded-md shadow-lg border py-2 z-20 ${
+        <div className={`absolute bottom-full mb-2 bg-white rounded-md shadow-lg border py-2 z-50 ${
           isSidebarOpen ? 'w-[calc(100%-1rem)]' : 'left-full ml-2 w-56'
         }`}>
           <div className="px-4 py-3 border-b">
             <p className="font-bold text-gray-800 truncate">{user.name}</p>
             <p className="text-sm text-gray-500 truncate">{user.email}</p>
-            <p className="text-xs text-gray-400 mt-1">Current: <span className="capitalize font-semibold">{currentRole}</span></p>
+            <p className="text-xs text-gray-400 mt-1 uppercase font-black tracking-widest">Role: {currentRole}</p>
           </div>
           <div className="mt-2">
-            {canSwitchRole && (
-              <button
-                onClick={() => {
-                  onSwitch()
-                  setIsProfileOpen(false)
-                }}
-                disabled={switching}
-                className={`flex items-center w-full px-4 py-2 text-sm space-x-2 disabled:opacity-50 ${
-                  isAdminMode ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'
-                }`}
-              >
-                {switchIcon}
-                <span>{switchLabel}</span>
-              </button>
-            )}
             <button
-              onClick={() => {
-                onLogout()
-                setIsProfileOpen(false)
-              }}
-              className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-100 space-x-2"
+              onClick={onLogout}
+              className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-100 space-x-2 font-bold"
             >
               <MdExitToApp size={16} />
-              <span>Logout</span>
+              <span>LOGOUT</span>
             </button>
           </div>
         </div>
@@ -154,166 +132,25 @@ const UserProfile = ({ user, isSidebarOpen, currentRole, canSwitchRole, switchin
 // ==================== MAIN LAYOUT ====================
 
 const AppLayout = ({ children, pageTitle }) => {
-  const { user, logout, refreshUser } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile open state, Desktop always false (dynamic)
-  const [isHovered, setIsHovered] = useState(false) // Hover state
-  const [currentRole, setCurrentRole] = useState(null)
-  const [canSwitchRole, setCanSwitchRole] = useState(false)
-  const [switching, setSwitching] = useState(false)
-  const [cooldownUntil, setCooldownUntil] = useState(0)
-
-  // Effectively open if pinned (mobile) OR hovered
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   const isExpanded = isSidebarOpen || isHovered
 
-  // Menu expansion states
-  const [isDashboardOpen, setIsDashboardOpen] = useState(true)
-  const [isDashboardConnectivityOpen, setIsDashboardConnectivityOpen] = useState(false)
+  // Dropdown states
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false)
   const [isReportsOpen, setIsReportsOpen] = useState(false)
-  const [isReportConnectivityOpen, setIsReportConnectivityOpen] = useState(false)
-  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(true)
 
-  // Close sidebar on mobile resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsSidebarOpen(false)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  const isSuperAdminAccount = user?.email === 'superadmin@telkom.co.id' || user?.role === 'superadmin'
+  const currentRole = isSuperAdminAccount ? 'superadmin' : (user?.currentRoleAs || user?.role || 'user')
+  const isCurrentlySuperAdmin = currentRole === 'superadmin'
 
-  // AGGRESSIVE FIX: Clear stale localStorage for superadmin
-  useEffect(() => {
-    if (user?.role === 'superadmin' && !user?.currentRoleAs) {
-      const storedRole = localStorage.getItem('currentRole')
-      if (storedRole && storedRole !== 'superadmin') {
-        console.log('Force clearing stale role from localStorage for superadmin')
-        localStorage.removeItem('currentRole')
-        setCurrentRole('superadmin')
-      }
-    }
-  }, [user])
-
-  // Fetch current role
-  useEffect(() => {
-    if (user) {
-      const userRole = user.role || 'user'
-      const activeRole = user.currentRoleAs || userRole
-      const canSwitch = ['admin', 'superadmin'].includes(userRole)
-
-      setCurrentRole(activeRole)
-      setCanSwitchRole(canSwitch)
-      fetchCurrentRole()
-    }
-  }, [user])
-
-  // Refetch role periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (user) {
-        fetchCurrentRole()
-      }
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [user])
-
-  const fetchCurrentRole = async () => {
-    if (switching) return
-
-    const fallbackRole = localStorage.getItem('currentRole') || user?.role || 'user'
-    const fallbackCanSwitch = ['admin', 'superadmin'].includes(user?.role || fallbackRole)
-
-    try {
-      const response = await roleService.getCurrentRole()
-      const data = response?.data?.data || {}
-      const nextRole = data.activeRole || fallbackRole
-      const nextCanSwitch =
-        data.canSwitchRole !== undefined
-          ? data.canSwitchRole || ['admin', 'superadmin'].includes(data.actualRole)
-          : fallbackCanSwitch
-
-      setCurrentRole(nextRole)
-      localStorage.setItem('currentRole', nextRole)
-      setCanSwitchRole(nextCanSwitch)
-    } catch (error) {
-      console.error('Failed to get current role:', error)
-      // Do not overwrite current state on error to prevent UI flickering/reverting
-      // setCurrentRole(fallbackRole)
-      // localStorage.setItem('currentRole', fallbackRole)
-      // setCanSwitchRole(fallbackCanSwitch)
-    }
-  }
-
-  const handleRoleSwitch = async () => {
-    const now = Date.now()
-    if (now < cooldownUntil) {
-      alert('Tunggu beberapa detik sebelum mencoba lagi (rate limit)')
-      return
-    }
-
-    let targetRole
-    try {
-      setSwitching(true)
-      // If currently user, switch to actual role (admin/superadmin). If currently admin/superadmin, switch to user.
-      targetRole = currentRole === 'user' ? (user?.role || 'admin') : 'user'
-
-      let response
-      let attempt = 0
-      while (attempt < 3) {
-        try {
-          response = await roleService.switchRole(targetRole)
-          break
-        } catch (error) {
-          const isRateLimited = error?.response?.status === 429
-          if (isRateLimited && attempt < 2) {
-            const delay = 2000 * Math.pow(2, attempt)
-            await new Promise((res) => setTimeout(res, delay))
-            attempt += 1
-            continue
-          }
-          if (isRateLimited) {
-            setCooldownUntil(Date.now() + 15000)
-          }
-          throw error
-        }
-      }
-
-      if (!response) {
-        throw new Error('Switch role failed after retries')
-      }
-
-      setCurrentRole(targetRole)
-      localStorage.setItem('currentRole', targetRole)
-      refreshUser()
-
-      // Removed forced navigation to keep user on the same page
-    } catch (error) {
-      console.error('Failed to switch role:', error)
-      if (targetRole === 'user') {
-        setCurrentRole(user?.role || 'user')
-        setCanSwitchRole(['admin', 'superadmin'].includes(user?.role))
-        // Force navigate to user dashboard even on error
-        navigate('/dashboard')
-        setTimeout(() => fetchCurrentRole(), 2000)
-      }
-      if (error?.response?.status === 429) {
-        setCooldownUntil(Date.now() + 15000)
-      }
-      alert('Failed to switch role: ' + (error.response?.data?.message || error.message))
-    } finally {
-      setSwitching(false)
-    }
-  }
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const isActive = (path) => location.pathname === path
 
   const getPageTitle = () => {
     if (pageTitle) return pageTitle
-
     const pathMap = {
       '/': 'Home',
       '/home': 'Home',
@@ -323,357 +160,177 @@ const AppLayout = ({ children, pageTitle }) => {
       '/hsi': 'Dashboard HSI',
       '/flow-process-hsi': 'Flow Process HSI',
       '/report-digpro': 'Report Digital Product',
-      '/reports-tambahan': 'Report Jaringan Tambahan',
+      '/reports-tambahan': 'Report JT',
       '/reports-datin': 'Report Datin',
       '/reports-hsi': 'Report HSI',
       '/admin/users': 'User Management',
-      '/admin/rollback': 'Rollback Batch'
+      '/admin/rollback': 'Rollback Batch',
+      '/admin/merge-files': 'Merge Utility',
+      '/admin/master-data-po': 'Master Data PO'
     }
     return pathMap[location.pathname] || 'Dashboard'
   }
 
-  const isActive = (path) => location.pathname === path
-  const activeRole = currentRole || user?.role
-  const isAdminMode = ['admin', 'superadmin'].includes(activeRole)
-  const showSwitchButton = ['admin', 'superadmin'].includes(user?.role)
-  const isSuperAdmin = ['superadmin'].includes(activeRole)
-
-  // Debug: log user role
-  console.log('AppLayout Debug:', { userRole: user?.role, activeRole, showSwitchButton, isAdminMode })
+  // Effect to keep dropdowns open if child is active
+  useEffect(() => {
+    const dashboardPaths = ['/dashboard', '/tambahan', '/datin', '/hsi', '/flow-process-hsi']
+    const reportPaths = ['/report-digpro', '/reports-tambahan', '/reports-datin', '/reports-hsi']
+    
+    if (dashboardPaths.some(p => isActive(p))) setIsDashboardOpen(true)
+    if (reportPaths.some(p => isActive(p))) setIsReportsOpen(true)
+  }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans flex overflow-hidden">
       {/* SIDEBAR */}
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`flex flex-col bg-white h-screen fixed shadow-lg z-30 transition-all duration-300 ease-in-out ${
-          isExpanded ? 'translate-x-0 lg:w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
+        className={`flex flex-col bg-white h-screen fixed lg:relative shadow-xl z-40 transition-all duration-300 ease-in-out border-r border-gray-200 ${
+          isExpanded ? 'w-64 translate-x-0' : 'w-20 -translate-x-full lg:translate-x-0'
         }`}
       >
         <Logo isSidebarOpen={isExpanded} />
 
-        {/* Navigation */}
-        <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
-          {/* Home Link - Hide for superadmin */}
-          {!isSuperAdmin && (
-            <NavLink
-              href="/"
-              active={isActive('/') || isActive('/home')}
-              icon={MdHome}
-              isSidebarOpen={isExpanded}
-            >
-              Home
-            </NavLink>
-          )}
+        <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          {/* Main Menu Section - SHOWN TO ALL ADMINS/SUPERADMINS */}
+          <div className={`px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ${!isExpanded && 'invisible'}`}>
+            Main Menu
+          </div>
+          <NavLink href="/" active={isActive('/') || isActive('/home')} icon={MdHome} isSidebarOpen={isExpanded}>
+            Home
+          </NavLink>
 
-          {/* Dashboard Section - Only in user mode or   admin mode (NOT superadmin) */}
-          {!isSuperAdmin && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  if (!isExpanded) {
-                    setIsDashboardOpen(true)
-                  } else {
-                    setIsDashboardOpen(!isDashboardOpen)
-                  }
-                }}
-                className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
-                  isExpanded ? 'px-6' : 'justify-center'
-                }`}
-              >
-                <MdDashboard size={isExpanded ? 22 : 26} />
-                <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                  isExpanded ? 'opacity-100' : 'opacity-0 absolute'
-                }`}>
-                  Dashboard
-                </span>
-                {isExpanded && (
-                  <MdKeyboardArrowDown
-                    size={20}
-                    className={`ml-auto transition-transform duration-300 ${isDashboardOpen ? 'rotate-180' : ''}`}
-                  />
-                )}
-                {!isExpanded && (
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                    Dashboard
-                  </div>
-                )}
-              </button>
-
-              {isExpanded && isDashboardOpen && (
-                <div className="pl-12 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
-                  <Link
-                    to="/dashboard"
-                    className={`block px-4 py-2 text-sm rounded-md text-left ${
-                      isActive('/dashboard') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Dashboard Digital Product
-                  </Link>
-
-                  {/* Dashboard Connectivity Submenu */}
-                  <div>
-                    <button
-                      onClick={() => setIsDashboardConnectivityOpen(!isDashboardConnectivityOpen)}
-                      className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-md hover:bg-gray-200 text-left"
-                    >
-                      <span>Dashboard Connectivity</span>
-                      <MdKeyboardArrowDown
-                        size={18}
-                        className={`transition-transform duration-300 ${isDashboardConnectivityOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                    {isDashboardConnectivityOpen && (
-                      <div className="pl-6 mt-1 space-y-1">
-                        <Link
-                          to="/tambahan"
-                          className={`block px-4 py-2 text-sm rounded-md text-left ${
-                            isActive('/tambahan') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          Dashboard Jaringan Tambahan
-                        </Link>
-                        <Link
-                          to="/datin"
-                          className={`block px-4 py-2 text-sm rounded-md text-left ${
-                            isActive('/datin') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          Dashboard Datin
-                        </Link>
-                        <Link
-                          to="/hsi"
-                          className={`block px-4 py-2 text-sm rounded-md text-left ${
-                            isActive('/hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          Dashboard HSI
-                        </Link>
-                        <Link
-                          to="/flow-process-hsi"
-                          className={`block px-4 py-2 text-sm rounded-md text-left ${
-                            isActive('/flow-process-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          Flow Process HSI
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Reports Section */}
-          {!isSuperAdmin && (
+          {/* Dashboard Dropdown */}
           <div className="relative">
             <button
-              onClick={() => {
-                if (!isExpanded) {
-                  setIsReportsOpen(true)
-                } else {
-                  setIsReportsOpen(!isReportsOpen)
-                }
-              }}
+              onClick={() => isExpanded && setIsDashboardOpen(!isDashboardOpen)}
+              className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
+                isExpanded ? 'px-6' : 'justify-center'
+              }`}
+            >
+              <MdDashboard size={isExpanded ? 22 : 26} />
+              <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 absolute'}`}>
+                Dashboard
+              </span>
+              {isExpanded && (
+                <MdKeyboardArrowDown size={20} className={`ml-auto transition-transform duration-300 ${isDashboardOpen ? 'rotate-180' : ''}`} />
+              )}
+            </button>
+            
+            {isExpanded && isDashboardOpen && (
+              <div className="bg-gray-50/50">
+                <SubNavLink href="/dashboard" active={isActive('/dashboard')} icon={FiMonitor} isSidebarOpen={isExpanded}>Digital Product</SubNavLink>
+                <SubNavLink href="/tambahan" active={isActive('/tambahan')} icon={MdNetworkCheck} isSidebarOpen={isExpanded}>Jaringan Tambahan</SubNavLink>
+                <SubNavLink href="/datin" active={isActive('/datin')} icon={FiDatabase} isSidebarOpen={isExpanded}>Datin Dashboard</SubNavLink>
+                <SubNavLink href="/hsi" active={isActive('/hsi')} icon={FiActivity} isSidebarOpen={isExpanded}>HSI Dashboard</SubNavLink>
+                <SubNavLink href="/flow-process-hsi" active={isActive('/flow-process-hsi')} icon={MdTimeline} isSidebarOpen={isExpanded}>Flow Process HSI</SubNavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Reports Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => isExpanded && setIsReportsOpen(!isReportsOpen)}
               className={`w-full flex items-center py-4 text-gray-600 hover:bg-gray-100 transition duration-300 text-left relative group ${
                 isExpanded ? 'px-6' : 'justify-center'
               }`}
             >
               <MdAssessment size={isExpanded ? 22 : 26} />
-              <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${
-                isExpanded ? 'opacity-100' : 'opacity-0 absolute'
-              }`}>
+              <span className={`ml-4 whitespace-nowrap transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 absolute'}`}>
                 Reports
               </span>
               {isExpanded && (
-                <MdKeyboardArrowDown
-                  size={20}
-                  className={`ml-auto transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`}
-                />
-              )}
-              {!isExpanded && (
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                  Reports
-                </div>
+                <MdKeyboardArrowDown size={20} className={`ml-auto transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`} />
               )}
             </button>
-
+            
             {isExpanded && isReportsOpen && (
-              <div className="pl-8 pr-4 py-2 flex flex-col space-y-1 bg-gray-50 border-t border-b">
-                <Link
-                  to="/report-digpro"
-                  className={`block px-4 py-2 text-sm rounded-md text-left ${
-                    isActive('/report-digpro') ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Report Digital Product
-                </Link>
-
-                {/* Report Connectivity Submenu */}
-                <div>
-                  <button
-                    onClick={() => setIsReportConnectivityOpen(!isReportConnectivityOpen)}
-                    className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-md text-gray-700 hover:bg-gray-200 text-left"
-                  >
-                    <span>Report Connectivity</span>
-                    <MdKeyboardArrowDown
-                      size={18}
-                      className={`transition-transform duration-300 ${isReportConnectivityOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {isReportConnectivityOpen && (
-                    <div className="pl-6 mt-1 space-y-1">
-                      <Link
-                        to="/reports-tambahan"
-                        className={`block px-4 py-2 text-sm rounded-md text-left ${
-                          isActive('/reports-tambahan') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Report Jaringan Tambahan
-                      </Link>
-                      <Link
-                        to="/reports-datin"
-                        className={`block px-4 py-2 text-sm rounded-md text-left ${
-                          isActive('/reports-datin') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Report Datin
-                      </Link>
-                      <Link
-                        to="/reports-hsi"
-                        className={`block px-4 py-2 text-sm rounded-md text-left ${
-                          isActive('/reports-hsi') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Report HSI
-                      </Link>
-                    </div>
-                  )}
-                </div>
+              <div className="bg-gray-50/50">
+                <SubNavLink href="/report-digpro" active={isActive('/report-digpro')} icon={MdDescription} isSidebarOpen={isExpanded}>Report Digital Product</SubNavLink>
+                <SubNavLink href="/reports-tambahan" active={isActive('/reports-tambahan')} icon={FiFileText} isSidebarOpen={isExpanded}>Report JT</SubNavLink>
+                <SubNavLink href="/reports-datin" active={isActive('/reports-datin')} icon={MdBarChart} isSidebarOpen={isExpanded}>Report Datin</SubNavLink>
+                <SubNavLink href="/reports-hsi" active={isActive('/reports-hsi')} icon={MdDashboard} isSidebarOpen={isExpanded}>Report HSI</SubNavLink>
               </div>
             )}
           </div>
-          )}
 
-          {isAdminMode && (
-            <NavLink
-              href="/admin/master-data-po"
-              active={isActive('/admin/master-data-po')}
-              icon={MdStorage} // Pastikan sudah di-import di atas
-              isSidebarOpen={isExpanded}
-            >
-              Master Data PO
-            </NavLink>
-          )}
+          <NavLink href="/admin/master-data-po" active={isActive('/admin/master-data-po')} icon={MdStorage} isSidebarOpen={isExpanded}>
+            Master Data PO
+          </NavLink>
 
-          {/* Admin Section - Only for superadmin */}
-          {isSuperAdmin && (
-            <>
-              <NavLink
-                href="/admin/users"
-                active={isActive('/admin/users')}
-                icon={MdPeople}
-                isSidebarOpen={isExpanded}
-              >
+          {/* Management Section - Only for superadmin */}
+          {isCurrentlySuperAdmin && (
+            <div className="mt-4">
+              <div className={`px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ${!isExpanded && 'invisible'}`}>
+                Management
+              </div>
+              <NavLink href="/admin/users" active={isActive('/admin/users')} icon={MdPeople} isSidebarOpen={isExpanded}>
                 User Management
               </NavLink>
-
-              <NavLink
-                href="/admin/rollback"
-                active={isActive('/admin/rollback')}
-                icon={MdHistory}
-                isSidebarOpen={isExpanded}
-              >
+              <NavLink href="/admin/rollback" active={isActive('/admin/rollback')} icon={MdHistory} isSidebarOpen={isExpanded}>
                 Rollback Batch
               </NavLink>
-
-              <NavLink
-                href="/admin/merge-files"
-                active={isActive('/admin/merge-files')}
-                icon={MdMerge}
-                isSidebarOpen={isExpanded}
-              >
-                Merge CSV/XLSX
+              <NavLink href="/admin/merge-files" active={isActive('/admin/merge-files')} icon={MdMerge} isSidebarOpen={isExpanded}>
+                Merge Utility
               </NavLink>
-            </>
+            </div>
           )}
         </nav>
 
-        {/* User Profile */}
         <UserProfile
           user={user}
           isSidebarOpen={isExpanded}
           currentRole={currentRole}
-          canSwitchRole={showSwitchButton}
-          switching={switching}
-          isAdminMode={isAdminMode}
-          onSwitch={handleRoleSwitch}
-          onLogout={handleLogout}
+          onLogout={() => { logout(); navigate('/login'); }}
         />
       </div>
 
-      {/* Mobile overlay */}
+      {/* MOBILE OVERLAY */}
       {isSidebarOpen && (
-        <div
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          aria-hidden="true"
-        ></div>
+        <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm transition-all"></div>
       )}
 
-      {/* Main Content */}
-      <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-30">
-          <div className="max-w-full mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <div className="flex items-center">
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="lg:hidden mr-4 p-2 rounded-lg hover:bg-gray-100"
-                aria-label="Toggle sidebar"
-              >
-                {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-              </button>
-              <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
-            </div>
-
-            <div className="flex items-center space-x-4 ml-4">
-              {showSwitchButton && (
-                <button
-                  onClick={handleRoleSwitch}
-                  disabled={switching}
-                  className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 ${
-                    isAdminMode
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  }`}
-                >
-                  {isAdminMode ? <MdExitToApp size={18} /> : <MdAdminPanelSettings size={18} />}
-                  <span className="hidden sm:inline">
-                    {switching ? 'Switching...' : isAdminMode ? 'Keluar Mode Admin' : 'Masuk Mode Admin'}
-                  </span>
-                </button>
-              )}
-              <div className="text-right hidden sm:block">
-                <p className="text-sm text-gray-600">Welcome back,</p>
-                <p className="font-semibold text-gray-900">{user?.name}</p>
+      {/* MAIN CONTENT */}
+      <div className="flex-grow flex flex-col h-screen overflow-hidden">
+        <header className="h-20 bg-white border-b border-gray-200 flex justify-between items-center px-8 flex-shrink-0 shadow-sm z-10">
+          <div className="flex items-center">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden mr-4 p-2 rounded-lg hover:bg-gray-100">
+              {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            </button>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">{getPageTitle()}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Active</span>
               </div>
             </div>
           </div>
+          
+          <div className="flex items-center space-x-6">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Operating as</p>
+              <p className="text-sm font-black text-slate-900 uppercase">{currentRole}</p>
+            </div>
+          </div>
         </header>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {children}
+        
+        <main className="flex-grow overflow-y-auto p-4 md:p-8 bg-gray-50">
+          <div className="max-w-[1600px] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
-
-      {/* AI ChatBot */}
       <ChatBot />
     </div>
   )
 }
+
+const MdBarChart = ({ size, className }) => (
+  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height={size} width={size} className={className}>
+    <path d="M4 9h4v11H4zm6-5h4v16h-4zm6 9h4v7h-4z"></path>
+  </svg>
+)
 
 export default AppLayout

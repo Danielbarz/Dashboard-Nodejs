@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api, { SERVER_URL } from '../services/api'
 import FileUploadForm from '../components/FileUploadForm'
 
 const ReportsAnalysis = () => {
@@ -30,14 +30,9 @@ const ReportsAnalysis = () => {
   // Fetch data from API
   const fetchReportData = async () => {
     try {
-      const token = localStorage.getItem('accessToken')
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/analysis`,
-        {
-          params: { start_date: startDate, end_date: endDate },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await api.get('/report/analysis', {
+          params: { start_date: startDate, end_date: endDate }
+      })
       if (response.data?.data) {
         setTableDataFromAPI(response.data.data.tableData || [])
       }
@@ -63,7 +58,7 @@ const ReportsAnalysis = () => {
 
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-analysis?${params.toString()}`
+    window.location.href = `${SERVER_URL}/api/export/report-analysis?${params.toString()}`
   }
 
   return (

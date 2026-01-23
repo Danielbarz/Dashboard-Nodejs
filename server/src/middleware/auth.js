@@ -83,8 +83,10 @@ export const adminOnly = (req, res, next) => {
     })
   }
 
+  // Base role is used here (which we fetched from DB in 'authenticate' middleware)
   const allowedRoles = ['admin', 'superadmin']
   if (!allowedRoles.includes(req.user.role)) {
+    console.warn(`[adminOnly] Access denied for user ${req.user.email} with role ${req.user.role}`)
     return res.status(403).json({
       success: false,
       message: 'Forbidden: Admin access required'

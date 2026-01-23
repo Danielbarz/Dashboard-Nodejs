@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { FiDownload, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api from '../services/api'
 import FileUploadForm from '../components/FileUploadForm'
 import SkeletonLoader from '../components/SkeletonLoader'
 
@@ -47,14 +47,9 @@ const ReportsTambahan = () => {
   const fetchReportData = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/dashboard/report-tambahan`,
-        {
-          params: { start_date: startDate, end_date: endDate },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await api.get('/dashboard/report-tambahan', {
+          params: { start_date: startDate, end_date: endDate }
+      })
 
       const d = response.data?.data || {}
       setTableDataFromAPI(d.tableData || [])
@@ -343,8 +338,7 @@ const ReportsTambahan = () => {
                onClick={async () => {
                  if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data JT? Tindakan ini tidak dapat dibatalkan.')) {
                    try {
-                     const token = localStorage.getItem('accessToken')
-                     await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/jt`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                     await api.post('/admin/truncate/jt')
                      alert('Data JT berhasil dihapus')
                      setRefreshKey(prev => prev + 1)
                    } catch (err) { alert('Gagal hapus data.') }

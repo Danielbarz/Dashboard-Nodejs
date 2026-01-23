@@ -5,6 +5,8 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+console.clear();
+console.log('%c TELKOM DASHBOARD SYSTEM v1.1.0 ', 'background: red; color: white; font-size: 20px; font-weight: bold;');
 root.render(
   <React.StrictMode>
     <App />

@@ -34,8 +34,8 @@ const Login = () => {
         console.log('✅ Redirecting Super Admin to /admin/users')
         navigate('/admin/users', { replace: true })
       } else {
-        console.log('✅ Redirecting User/Admin to /dashboard')
-        navigate('/dashboard', { replace: true })
+        console.log('✅ Redirecting User/Admin to /')
+        navigate('/', { replace: true })
       }
     } catch (err) {
       console.error('Login error:', err)

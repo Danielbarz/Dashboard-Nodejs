@@ -13,6 +13,10 @@ import {
   mergeFiles,
   downloadMergedFile
 } from '../controllers/mergeController.js'
+import {
+  getBatchHistory,
+  rollbackBatch
+} from '../controllers/rollbackController.js'
 
 const router = express.Router()
 
@@ -42,5 +46,9 @@ router.post('/truncate/jt', truncateJT)
 // File merge endpoints
 router.post('/merge-files', upload.array('files', 10), mergeFiles)
 router.get('/merge-files/download', downloadMergedFile)
+
+// Rollback endpoints
+router.get('/batches', getBatchHistory)
+router.post('/rollback', rollbackBatch)
 
 export default router

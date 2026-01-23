@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { fileService } from '../services/dashboardService'
+import { fileService } from '../services/coreService'
 import { useAuth } from '../context/AuthContext'
 import { FiUploadCloud, FiFile, FiCheckCircle, FiXCircle, FiLoader } from 'react-icons/fi'
 

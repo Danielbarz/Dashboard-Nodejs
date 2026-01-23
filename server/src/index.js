@@ -21,9 +21,18 @@ const app = express()
 app.set('trust proxy', 1)
 
 // Security middleware
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false
+}))
 app.use(cors({
-  origin: true,
+  origin: function (origin, callback) {
+    // allow requests with no origin 
+    // (like mobile apps or curl requests)
+    if(!origin) return callback(null, true);
+    return callback(null, true); // Allow all origins dynamically
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

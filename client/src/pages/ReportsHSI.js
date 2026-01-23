@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { FiDownload, FiRefreshCw } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
+import api, { API_URL, SERVER_URL } from '../services/api'
 import axios from 'axios'
 import FileUploadForm from '../components/FileUploadForm'
 import "react-datepicker/dist/react-datepicker.css";
@@ -103,7 +103,7 @@ const ReportsHSI = () => {
                             <FiRefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                         <a 
-                            href={`http://localhost:5000/api/report/export-hsi?start_date=${startDate}&end_date=${endDate}`}
+                            href={`${SERVER_URL}/api/report/export-hsi?start_date=${startDate}&end_date=${endDate}`}
                             target="_blank" rel="noreferrer"
                             className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-sm transition-colors h-10 min-w-[140px]"
                         >
@@ -265,7 +265,7 @@ const ReportsHSI = () => {
                                 if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data HSI?')) {
                                     try {
                                         const token = localStorage.getItem('accessToken')
-                                        await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/hsi`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                                        await api.post('/admin/truncate/hsi')
                                         alert('Data HSI berhasil dihapus')
                                         setRefreshKey(prev => prev + 1)
                                     } catch (err) { alert('Gagal hapus data.') }

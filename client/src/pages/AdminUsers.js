@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import api from '../services/dashboardService'
+import api from '../services/coreService'
 import { FiEdit2, FiTrash2 } from 'react-icons/fi'
 
 const RoleBadge = ({ role }) => {
@@ -31,14 +31,32 @@ const AdminUsers = () => {
   }, [])
 
   const fetchUsers = async () => {
+    console.log('%c [NETWORK CHECK] %c Current API BaseURL is: ' + api.defaults.baseURL, "color: white; background: #000; font-weight: bold;", "color: red; font-size: 16px;");
     try {
       setLoading(true)
       setError(null)
+      console.log('[AdminUsers] Fetching users from:', api.defaults.baseURL + '/admin/users')
       const response = await api.get('/admin/users')
       setUsers(response.data?.data || [])
     } catch (err) {
-      console.error('Error fetching users:', err)
-      setError(err.response?.data?.message || 'Failed to load users')
+      console.error('[AdminUsers] Error fetching users:', err)
+      
+      // If forbidden, maybe session is stale, try to refresh profile once
+      if (err.response?.status === 403) {
+        console.warn('[AdminUsers] 403 Forbidden. Attempting to refresh profile...')
+        try {
+          const { authService } = await import('../services/authService')
+          await authService.getProfile()
+          // Retry once
+          const retryResponse = await api.get('/admin/users')
+          setUsers(retryResponse.data?.data || [])
+          return
+        } catch (retryErr) {
+          console.error('[AdminUsers] Retry failed:', retryErr)
+        }
+      }
+
+      setError(err.response?.data?.message || 'Failed to load users. Check if you have permission.')
     } finally {
       setLoading(false)
     }

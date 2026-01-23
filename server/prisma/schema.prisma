@@ -251,6 +251,7 @@ model HsiData {
   noOrderRevoke    String?   @map("no_order_revoke") @db.VarChar(255)
   datasPsRevoke    String?   @map("data_ps_revoke") @db.VarChar(255)
   untukPsPi        String?   @map("untuk_ps_pi") @db.VarChar(255)
+  batchId          String?   @map("batch_id") @db.VarChar(255)
   createdAt        DateTime? @map("created_at") @db.Timestamp(6)
   updatedAt        DateTime? @updatedAt @map("updated_at") @db.Timestamp(6)
 

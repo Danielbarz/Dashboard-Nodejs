@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { FiUpload, FiDownload, FiX } from 'react-icons/fi'
-import api from '../services/dashboardService'
+import { FiUpload, FiDownload, FiX, FiFileText, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
+import api from '../services/coreService'
 
 const AdminMergeFiles = () => {
   const [files, setFiles] = useState([])
@@ -10,17 +10,32 @@ const AdminMergeFiles = () => {
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files)
+    processFiles(selectedFiles)
+    // Clear input value so same file can be selected again
+    e.target.value = ''
+  }
+
+  const processFiles = (selectedFiles) => {
     const validFiles = selectedFiles.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return ['csv', 'xlsx', 'xls'].includes(ext)
     })
 
     if (validFiles.length !== selectedFiles.length) {
-      setError('Only CSV and XLSX files are allowed')
-      setTimeout(() => setError(null), 3000)
+      setError('Hanya file CSV dan XLSX yang diperbolehkan')
+      setTimeout(() => setError(null), 5000)
     }
 
-    setFiles(prevFiles => [...prevFiles, ...validFiles])
+    setFiles(prevFiles => {
+      const newFiles = [...prevFiles]
+      validFiles.forEach(file => {
+        if (!newFiles.find(f => f.name === file.name && f.size === file.size)) {
+          newFiles.push(file)
+        }
+      })
+      return newFiles
+    })
+    setMergeResult(null)
   }
 
   const removeFile = (index) => {
@@ -29,8 +44,7 @@ const AdminMergeFiles = () => {
 
   const handleMerge = async () => {
     if (files.length < 2) {
-      setError('Please select at least 2 files to merge')
-      setTimeout(() => setError(null), 3000)
+      setError('Pilih minimal 2 file untuk digabungkan')
       return
     }
 
@@ -44,16 +58,13 @@ const AdminMergeFiles = () => {
       setError(null)
 
       const response = await api.post('/admin/merge-files', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       setMergeResult(response.data?.data)
       setFiles([])
     } catch (err) {
-      console.error('Error merging files:', err)
-      setError(err.response?.data?.message || 'Failed to merge files')
+      setError(err.response?.data?.message || 'Gagal menggabungkan file')
     } finally {
       setLoading(false)
     }
@@ -61,13 +72,11 @@ const AdminMergeFiles = () => {
 
   const handleDownload = async () => {
     if (!mergeResult?.filePath) return
-
     try {
       const response = await api.get('/admin/merge-files/download', {
         params: { filePath: mergeResult.filePath },
         responseType: 'blob'
       })
-
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
@@ -75,210 +84,125 @@ const AdminMergeFiles = () => {
       document.body.appendChild(link)
       link.click()
       link.remove()
-      window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error downloading file:', err)
-      setError('Failed to download file')
-      setTimeout(() => setError(null), 3000)
+      setError('Gagal mengunduh file')
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Merge CSV/XLSX Files</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Upload multiple CSV or XLSX files to merge them into a single file
-          </p>
-        </div>
+    <div className="w-full max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Merge Utility</h1>
+        <p className="text-slate-500 font-medium">Satukan ribuan data CSV/XLSX dalam hitungan detik.</p>
+      </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
+      {/* UPLOAD BOX CONTAINER */}
+      <div className="relative group w-full">
+        {/* THE ACTUAL INPUT - STRETCHED TO FULL BOX */}
+        <input
+          type="file"
+          multiple
+          accept=".csv,.xlsx,.xls"
+          onChange={handleFileChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+          title=""
+        />
+        
+        {/* VISUAL BOX - UNDER THE INPUT */}
+        <div className="w-full min-h-[320px] flex flex-col items-center justify-center border-4 border-dashed border-slate-300 rounded-3xl bg-white group-hover:bg-blue-50 group-hover:border-blue-500 transition-all duration-300 shadow-sm group-hover:shadow-xl group-hover:shadow-blue-100">
+          <div className="flex flex-col items-center p-10 pointer-events-none">
+            <div className="w-24 h-24 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+              <FiUpload className="text-blue-600 text-4xl" />
             </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-400 hover:text-red-600"
-            >
-              <FiX size={20} />
-            </button>
-          </div>
-        )}
-
-        {/* File Upload Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
-            <FiUpload className="mx-auto h-12 w-12 text-gray-400" />
-            <div className="mt-4">
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <span className="mt-2 block text-sm font-medium text-gray-900">
-                  Click to upload or drag and drop
-                </span>
-                <span className="mt-1 block text-xs text-gray-500">
-                  CSV or XLSX files (max 10 files)
-                </span>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="sr-only"
-                  multiple
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                  disabled={loading}
-                />
-              </label>
+            <h3 className="text-2xl font-bold text-slate-800 mb-2 text-center">Pilih File Laporan</h3>
+            <p className="text-slate-500 text-center max-w-sm">
+              Seret file ke sini atau <span className="text-blue-600 font-bold underline">Klik Area Ini</span> untuk memilih file.
+            </p>
+            <div className="mt-6 flex gap-2">
+              <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-widest border border-slate-200">CSV</span>
+              <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-widest border border-slate-200">XLSX</span>
             </div>
           </div>
-
-          {/* Selected Files List */}
-          {files.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                Selected Files ({files.length})
-              </h3>
-              <div className="space-y-2">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <svg className="h-8 w-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-400 hover:text-red-600 transition-colors"
-                      disabled={loading}
-                    >
-                      <FiX size={20} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Merge Button */}
-          {files.length > 0 && (
-            <div className="mt-6">
-              <button
-                onClick={handleMerge}
-                disabled={loading || files.length < 2}
-                className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white ${
-                  loading || files.length < 2
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } transition-colors`}
-              >
-                {loading ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Merging Files...
-                  </>
-                ) : (
-                  'Merge Files'
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Merge Result */}
-        {mergeResult && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Merge Result</h3>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                Success
-              </span>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-600">File Name:</p>
-                  <p className="font-medium text-gray-900">{mergeResult.fileName}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Total Rows:</p>
-                  <p className="font-medium text-gray-900">
-                    {mergeResult.totalRows?.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Files Merged:</p>
-                  <p className="font-medium text-gray-900">{mergeResult.filesCount}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Created:</p>
-                  <p className="font-medium text-gray-900">
-                    {new Date(mergeResult.createdAt).toLocaleString('id-ID')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleDownload}
-              className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
-            >
-              <FiDownload className="mr-2" size={20} />
-              Download Merged File
-            </button>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-sm font-semibold text-blue-900 mb-2">Instructions:</h3>
-          <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li>Upload at least 2 CSV or XLSX files to merge</li>
-            <li>Files will be merged vertically (rows combined)</li>
-            <li>All files should have the same column structure</li>
-            <li>The merged file will be in XLSX format</li>
-            <li>Maximum 10 files can be merged at once</li>
-          </ul>
         </div>
       </div>
+
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="flex items-center p-5 text-red-800 bg-red-50 rounded-2xl border-2 border-red-100 animate-pulse">
+          <FiAlertCircle className="w-6 h-6 mr-3 flex-shrink-0" />
+          <p className="font-bold">{error}</p>
+        </div>
+      )}
+
+      {/* QUEUE LIST */}
+      {files.length > 0 && (
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Daftar Antrean ({files.length})</h2>
+            <button onClick={() => setFiles([])} className="text-red-500 font-bold hover:text-red-700 transition-colors">Reset</button>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-3 mb-8">
+            {files.map((file, index) => (
+              <div key={index} className="flex items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border border-slate-200 shadow-sm">
+                  <FiFileText className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                </div>
+                <div className="flex-grow min-w-0">
+                  <p className="text-sm font-bold text-slate-700 truncate">{file.name}</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase">{(file.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <button onClick={() => removeFile(index)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                  <FiX size={20} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleMerge}
+            disabled={loading || files.length < 2}
+            className={`w-full py-5 rounded-2xl font-black text-lg text-white shadow-xl flex items-center justify-center transition-all duration-300 ${
+              loading || files.length < 2 
+              ? 'bg-slate-200 shadow-none cursor-not-allowed text-slate-400' 
+              : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:-translate-y-1 active:translate-y-0'
+            }`}
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-4 border-white border-t-transparent mr-3"></div>
+                SEDANG MENGGABUNGKAN...
+              </div>
+            ) : (
+              <>MENGGABUNGKAN SEKARANG</>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* SUCCESS RESULT */}
+      {mergeResult && (
+        <div className="bg-emerald-500 p-8 rounded-3xl shadow-xl shadow-emerald-100 border-2 border-emerald-400">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center text-white">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mr-5 backdrop-blur-sm">
+                <FiCheckCircle size={32} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black italic tracking-tighter">PROCESS COMPLETE!</h3>
+                <p className="opacity-90 font-medium">{mergeResult.totalRows.toLocaleString()} baris data berhasil disatukan.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleDownload}
+              className="w-full md:w-auto px-10 py-5 bg-white text-emerald-600 rounded-2xl font-black text-lg shadow-lg hover:bg-slate-50 transition-all hover:-translate-y-1 active:translate-y-0 flex items-center justify-center"
+            >
+              <FiDownload className="mr-3" size={24} />
+              UNDUH XLSX
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

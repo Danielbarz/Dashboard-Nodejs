@@ -39,15 +39,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
     environment:
-      # Koneksi ke Container Postgres (host = nama service 'postgres')
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/telkom?schema=public
-      # Koneksi ke Container Redis (host = nama service 'redis')
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=5000
-      - NODE_ENV=development # Atau 'development'
-      # Masukkan JWT_SECRET atau env lain yang ada di .env server Anda di sini
+      - NODE_ENV=development
       - JWT_SECRET=rahasia_negara_api
     depends_on:
       postgres:
@@ -65,17 +65,16 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./client:/app           # Hubungkan folder Windows ke Docker
-      - /app/node_modules       # Amankan folder library Linux biar gak ketimpa
-      
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # FIX UNTUK WINDOWS HOT RELOAD
     depends_on:
       - server
     restart: unless-stopped
-    # Penting untuk React hot-reload di Windows (jika mode dev)
     stdin_open: true
     tty: true
 
 volumes:
   postgres_data:
   redis_data:
-  

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { roleService } from '../services/dashboardService'
+import { roleService } from '../services/coreService'
 
 /**
  * Custom hook to get the current active role of the user

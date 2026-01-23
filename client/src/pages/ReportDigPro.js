@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { FiDownload, FiChevronDown, FiSearch, FiFilter } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api, { SERVER_URL } from '../services/api'
 import FileUploadForm from '../components/FileUploadForm'
 
 const regionMapping = {
@@ -389,42 +389,29 @@ const ReportDigPro = () => {
   const fetchReportData = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
       const [analysisRes, detailRes, kpiRes] = await Promise.all([
-        axios.get(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/analysis`,
-          {
+        api.get('/report/analysis', {
             params: {
               start_date: startDate,
               end_date: endDate,
               witel: selectedWitel.join(',')
-            },
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        ),
-        axios.get(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/details`,
-          {
+            }
+        }),
+        api.get('/report/details', {
             params: {
               start_date: startDate,
               end_date: endDate,
               segment: selectedSegment.join(','),
               witel: selectedWitel.join(',')
-            },
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        ),
-        axios.get(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/report/kpi-po`,
-          {
+            }
+        }),
+        api.get('/report/kpi-po', {
             params: {
               start_date: startDate,
               end_date: endDate,
               witel: selectedWitel.join(',')
-            },
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
+            }
+        })
       ])
 
       if (analysisRes.data?.data) {
@@ -456,7 +443,7 @@ const ReportDigPro = () => {
 
   const handleExport = () => {
     const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `/api/export/report-analysis?${params.toString()}`
+    window.location.href = `${SERVER_URL}/api/analysis/digital-product/export?${params.toString()}`
   }
 
   const getCellValue = (item, col, parentCol = null) => {
@@ -863,8 +850,7 @@ const ReportDigPro = () => {
                onClick={async () => {
                  if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data Digital Product? Tindakan ini tidak dapat dibatalkan.')) {
                    try {
-                     const token = localStorage.getItem('accessToken')
-                     await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/truncate/digital`, {}, { headers: { Authorization: `Bearer ${token}` } })
+                     await api.post('/admin/truncate/digital')
                      alert('Data Digital Product berhasil dihapus')
                      setRefreshKey(prev => prev + 1)
                    } catch (err) { alert('Gagal hapus data.') }
