@@ -1,6 +1,7 @@
 import logger from '../config/logger.js'
 
 export const errorHandler = (err, req, res, next) => {
+  console.error('ERROR CAUGHT IN HANDLER:', err)
   logger.error(err.stack)
 
   const status = err.status || 500

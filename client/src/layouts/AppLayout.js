@@ -226,9 +226,10 @@ const AppLayout = ({ children, pageTitle }) => {
       setCanSwitchRole(nextCanSwitch)
     } catch (error) {
       console.error('Failed to get current role:', error)
-      setCurrentRole(fallbackRole)
-      localStorage.setItem('currentRole', fallbackRole)
-      setCanSwitchRole(fallbackCanSwitch)
+      // Do not overwrite current state on error to prevent UI flickering/reverting
+      // setCurrentRole(fallbackRole)
+      // localStorage.setItem('currentRole', fallbackRole)
+      // setCanSwitchRole(fallbackCanSwitch)
     }
   }
 
@@ -242,7 +243,8 @@ const AppLayout = ({ children, pageTitle }) => {
     let targetRole
     try {
       setSwitching(true)
-      targetRole = currentRole === 'user' ? 'admin' : 'user'
+      // If currently user, switch to actual role (admin/superadmin). If currently admin/superadmin, switch to user.
+      targetRole = currentRole === 'user' ? (user?.role || 'admin') : 'user'
 
       let response
       let attempt = 0
@@ -321,7 +323,7 @@ const AppLayout = ({ children, pageTitle }) => {
   const isActive = (path) => location.pathname === path
   const activeRole = currentRole || user?.role
   const isAdminMode = ['admin', 'superadmin'].includes(activeRole)
-  const showSwitchButton = user?.role === 'admin'
+  const showSwitchButton = ['admin', 'superadmin'].includes(user?.role)
   const isSuperAdmin = ['superadmin'].includes(activeRole)
 
   // Debug: log user role

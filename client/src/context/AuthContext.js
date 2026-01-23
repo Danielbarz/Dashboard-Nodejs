@@ -12,6 +12,24 @@ export const AuthProvider = ({ children }) => {
     const currentUser = authService.getCurrentUser()
     if (currentUser) {
       setUser(currentUser)
+      // Fetch latest profile from server to sync state
+      authService.getProfile()
+        .then(response => {
+          if (response.success && response.data) {
+            console.log('Synced user profile from server:', response.data)
+            setUser(response.data)
+            localStorage.setItem('user', JSON.stringify(response.data))
+            // Sync currentRoleAs to localStorage
+            const activeRole = response.data.currentRoleAs || response.data.role
+            localStorage.setItem('currentRole', activeRole)
+          }
+        })
+        .catch(err => {
+          console.error('Failed to sync user profile:', err)
+          if (err.response?.status === 401) {
+            logout()
+          }
+        })
     }
     setLoading(false)
   }, [])

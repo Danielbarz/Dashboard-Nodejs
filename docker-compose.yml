@@ -46,7 +46,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=5000
-      - NODE_ENV=production # Atau 'development'
+      - NODE_ENV=development # Atau 'development'
       # Masukkan JWT_SECRET atau env lain yang ada di .env server Anda di sini
       - JWT_SECRET=rahasia_negara_api
     depends_on:
@@ -64,9 +64,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      # Agar frontend bisa hit backend (browser akses localhost)
-      - REACT_APP_API_URL=http://localhost:5000/api
+    volumes:
+      - ./client:/app           # Hubungkan folder Windows ke Docker
+      - /app/node_modules       # Amankan folder library Linux biar gak ketimpa
+      
     depends_on:
       - server
     restart: unless-stopped
@@ -77,3 +78,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  

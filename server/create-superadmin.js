@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const email = 'superadmin@telkom.co.id'
+  const email = 'admin@telkom.co.id'
   const password = 'password123'
   const name = 'Super Admin'
   const role = 'superadmin'

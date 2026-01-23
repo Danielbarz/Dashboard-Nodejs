@@ -25,9 +25,11 @@ const AdminModeRoute = ({ children, superOnly = false }) => {
   }
 
   const allowedRoles = superOnly ? ['superadmin'] : ['admin', 'superadmin']
+  const normalizedRole = String(currentRole).toLowerCase().trim()
 
   // Redirect to home if not allowed
-  if (!allowedRoles.includes(currentRole)) {
+  if (!allowedRoles.includes(normalizedRole)) {
+    console.warn(`Access denied. Required: ${allowedRoles}, Current: ${normalizedRole}`)
     return <Navigate to="/home" replace />
   }
 

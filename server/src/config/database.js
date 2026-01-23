@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const connectionString = process.env.DATABASE_URL
+const connectionString = process.env.DATABASE_URL ? process.env.DATABASE_URL.split('?')[0] : ''
 const sql = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,

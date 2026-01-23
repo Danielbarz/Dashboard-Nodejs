@@ -64,6 +64,7 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
+    console.log('Login attempt:', req.body.email)
     const { email, password } = req.body
 
     // Find user
