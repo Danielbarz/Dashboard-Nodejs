@@ -183,6 +183,18 @@ const AppLayout = ({ children, pageTitle }) => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // AGGRESSIVE FIX: Clear stale localStorage for superadmin
+  useEffect(() => {
+    if (user?.role === 'superadmin' && !user?.currentRoleAs) {
+      const storedRole = localStorage.getItem('currentRole')
+      if (storedRole && storedRole !== 'superadmin') {
+        console.log('Force clearing stale role from localStorage for superadmin')
+        localStorage.removeItem('currentRole')
+        setCurrentRole('superadmin')
+      }
+    }
+  }, [user])
+
   // Fetch current role
   useEffect(() => {
     if (user) {
@@ -343,15 +355,17 @@ const AppLayout = ({ children, pageTitle }) => {
 
         {/* Navigation */}
         <nav className="flex-grow pt-4 overflow-y-auto overflow-x-hidden">
-          {/* Home Link */}
-          <NavLink
-            href="/"
-            active={isActive('/') || isActive('/home')}
-            icon={MdHome}
-            isSidebarOpen={isExpanded}
-          >
-            Home
-          </NavLink>
+          {/* Home Link - Hide for superadmin */}
+          {!isSuperAdmin && (
+            <NavLink
+              href="/"
+              active={isActive('/') || isActive('/home')}
+              icon={MdHome}
+              isSidebarOpen={isExpanded}
+            >
+              Home
+            </NavLink>
+          )}
 
           {/* Dashboard Section - Only in user mode or   admin mode (NOT superadmin) */}
           {!isSuperAdmin && (

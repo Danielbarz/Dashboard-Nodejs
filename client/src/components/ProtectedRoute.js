@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import AppLayout from '../layouts/AppLayout'
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
 
   if (loading) {
     return (
@@ -16,6 +16,12 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // FORCE REDIRECT SUPERADMIN TO ADMIN PANEL
+  // Superadmin should not access Home, Dashboard, or Reports
+  if (user?.role === 'superadmin') {
+    return <Navigate to="/admin/users" replace />
   }
 
   return <AppLayout>{children}</AppLayout>

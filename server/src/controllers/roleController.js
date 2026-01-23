@@ -65,6 +65,17 @@ export const getCurrentRole = async (req, res, next) => {
       return errorResponse(res, 'User not found', 404)
     }
 
+    console.log(`[getCurrentRole] User: ${user.email}, ID: ${userId}, Role: ${user.role}, CurrentRoleAs: ${user.currentRoleAs}`)
+
+    // SAFETY OVERRIDE: Ensure superadmin is ALWAYS superadmin
+    if (user.email === 'superadmin@telkom.co.id') {
+       return successResponse(res, {
+        actualRole: 'superadmin',
+        activeRole: 'superadmin',
+        canSwitchRole: true
+      })
+    }
+
     const activeRole = user.currentRoleAs || user.role
 
     // Can switch role if actual role is admin or superadmin

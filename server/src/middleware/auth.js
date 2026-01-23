@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import config from '../config/index.js'
+import prisma from '../lib/prisma.js'
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -15,7 +16,24 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.substring(7)
 
     const decoded = jwt.verify(token, config.jwt.secret)
-    req.user = decoded
+    
+    // Fetch fresh user data from database to ensure up-to-date role
+    const user = await prisma.user.findUnique({
+      where: { id: BigInt(decoded.id) }
+    })
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      })
+    }
+
+    // Assign full user object to req.user
+    req.user = {
+      ...user,
+      id: user.id.toString() // Keep ID as string for compatibility
+    }
 
     next()
   } catch (error) {
