@@ -251,7 +251,7 @@ model HsiData {
   insAddress       String?   @map("ins_address")
   gpsLongitude     String?   @map("gps_longitude") @db.VarChar(255)
   gpsLatitude      String?   @map("gps_latitude") @db.VarChar(255)
-  kcontact         String?   @db.VarChar(255)
+  kcontact         String?
   channel          String?   @db.VarChar(255)
   statusInet       String?   @map("status_inet") @db.VarChar(255)
   statusOnu        String?   @map("status_onu") @db.VarChar(255)
@@ -272,7 +272,7 @@ model HsiData {
   addon            String?   @db.VarChar(255)
   tglPs            DateTime? @map("tgl_ps") @db.Timestamp(6)
   statusMessage    String?   @map("status_message") @db.VarChar(255)
-  packageName      String?   @map("package_name") @db.VarChar(255)
+  packageName      String?   @map("package_name")
   groupPaket       String?   @map("group_paket") @db.VarChar(255)
   reasonCancel     String?   @map("reason_cancel") @db.VarChar(255)
   keteranganCancel String?   @map("keterangan_cancel")
@@ -301,7 +301,7 @@ model HsiData {
 
 model SpmkMom {
   id                      BigInt    @id @default(autoincrement())
-  bulan                   String?   @db.VarChar(7)
+  bulan                   String?
   tahun                   Int?
   region                  String?   @db.VarChar(255)
   witelLama               String?   @map("witel_lama") @db.VarChar(255)
