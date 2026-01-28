@@ -32,9 +32,9 @@ const DetailTable = ({
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch =
-          item.batch_id?.toString().toLowerCase().includes(query) ||
-          item.order_id?.toString().toLowerCase().includes(query) ||
-          item.customer_name?.toLowerCase().includes(query)
+          item.batchId?.toString().toLowerCase().includes(query) ||
+          item.orderId?.toString().toLowerCase().includes(query) ||
+          item.custName?.toLowerCase().includes(query)
 
         if (!matchesSearch) return false
       }
@@ -142,45 +142,45 @@ const DetailTable = ({
           <thead>
             <tr className="text-white">
               <th className="bg-gray-800 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order ID</th>
-              <FilterHeader title="Segment" columnKey="segment" bgClass="bg-blue-600" />
+              <FilterHeader title="Segment" columnKey="segmen" bgClass="bg-blue-600" />
               <FilterHeader title="Channel" columnKey="channel" bgClass="bg-blue-600" />
-              <FilterHeader title="Product" columnKey="product_name" bgClass="bg-blue-600" />
+              <FilterHeader title="Product" columnKey="product" bgClass="bg-blue-600" />
               <th className="bg-blue-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Layanan</th>
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Customer Name</th>
-              <FilterHeader title="Order Status" columnKey="order_status" bgClass="bg-orange-600" />
+              <FilterHeader title="Order Status" columnKey="orderStatus" bgClass="bg-orange-600" />
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Sub Type</th>
-              <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Milestone</th>
+              <FilterHeader title="Milestone" columnKey="milestone" bgClass="bg-orange-600" />
               <th className="bg-orange-600 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Week</th>
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Order Date</th>
               <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Net Price</th>
               <FilterHeader title="Witel" columnKey="witel" bgClass="bg-green-700" />
-              <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Branch</th>
+              <th className="bg-green-700 border border-gray-400 px-3 py-2 font-semibold tracking-wider whitespace-nowrap">Branch/Telda</th>
             </tr>
           </thead>
           <tbody>
             {currentData.length > 0 ? (
               currentData.map((item, idx) => (
                 <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_id}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.segment}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.orderId}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.segmen}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.channel}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.product_name}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.product}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.layanan}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.customer_name}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_status}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.order_subtype}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.custName}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.orderStatus}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.orderSubtype}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.milestone}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.week}</td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">
-                    {new Date(item.order_created_date).toLocaleString('id-ID', {
-                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    {new Date(item.orderDate || item.createdAt).toLocaleString('id-ID', {
+                      day: '2-digit', month: '2-digit', year: 'numeric'
                     })}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 text-right whitespace-nowrap">
-                    {item.net_price?.toLocaleString('id-ID')}
+                    {item.netPrice?.toLocaleString('id-ID')}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.witel}</td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.branch}</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 whitespace-nowrap">{item.telda || item.branch}</td>
                 </tr>
               ))
             ) : (
@@ -255,19 +255,21 @@ const ReportDigPro = () => {
   const [searchQuery, setSearchQuery] = useState('')
 
   const [activeFilters, setActiveFilters] = useState({
-    segment: [],
+    segmen: [],
     channel: [],
-    product_name: [],
-    order_status: [],
-    witel: []
+    product: [],
+    orderStatus: [],
+    witel: [],
+    milestone: []
   })
 
   const [filterOptions, setFilterOptions] = useState({
-    segment: [],
+    segmen: [],
     channel: [],
-    product_name: [],
-    order_status: [],
-    witel: []
+    product: [],
+    orderStatus: [],
+    witel: [],
+    milestone: []
   })
 
   const [openFilter, setOpenFilter] = useState(null)
@@ -285,11 +287,15 @@ const ReportDigPro = () => {
 
   useEffect(() => {
     const uniqueSegments = detailData.length > 0
-      ? [...new Set(detailData.map(item => item.segment).filter(Boolean))].sort()
+      ? [...new Set(detailData.map(item => item.segmen).filter(Boolean))].sort()
       : []
 
     const uniqueOrderStatus = detailData.length > 0
-      ? [...new Set(detailData.map(item => item.order_status).filter(Boolean))].sort()
+      ? [...new Set(detailData.map(item => item.orderStatus).filter(Boolean))].sort()
+      : []
+
+    const uniqueMilestones = detailData.length > 0
+      ? [...new Set(detailData.map(item => item.milestone).filter(Boolean))].sort()
       : []
 
     const uniqueChannels = detailData.length > 0
@@ -297,14 +303,15 @@ const ReportDigPro = () => {
       : ['SC-ONE', 'NCX']
 
     const uniqueProducts = detailData.length > 0
-      ? [...new Set(detailData.map(item => item.product_name).filter(Boolean))].sort()
+      ? [...new Set(detailData.map(item => item.product).filter(Boolean))].sort()
       : ['Antares', 'Netmonk', 'OCA', 'Pijar']
 
     const options = {
-      segment: uniqueSegments,
+      segmen: uniqueSegments,
       channel: uniqueChannels,
-      product_name: uniqueProducts,
-      order_status: uniqueOrderStatus,
+      product: uniqueProducts,
+      orderStatus: uniqueOrderStatus,
+      milestone: uniqueMilestones,
       witel: ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'NUSA TENGGARA', 'SURAMADU']
     }
     setFilterOptions(options)
@@ -336,7 +343,58 @@ const ReportDigPro = () => {
     }
   }
 
-  const tableConfig = [
+  const smeTableConfig = [
+    {
+      groupTitle: 'In Progress',
+      groupClass: 'bg-blue-600',
+      columnClass: 'bg-blue-400',
+      columns: [
+        { key: 'in_progress_n', title: 'N' },
+        { key: 'in_progress_o', title: 'O' },
+        { key: 'in_progress_ae', title: 'AE' },
+        { key: 'in_progress_ps', title: 'PS' },
+      ]
+    },
+    {
+      groupTitle: 'Prov Comp',
+      groupClass: 'bg-orange-600',
+      columnClass: 'bg-orange-400',
+      subColumnClass: 'bg-orange-200',
+      columns: [
+        { key: 'prov_comp_n', title: 'N', subColumns: [{ key: '_target', title: 'T' }, { key: '_realisasi', title: 'R' }, { key: '_percentage', title: '%', isPercentage: true }] },
+        { key: 'prov_comp_o', title: 'O', subColumns: [{ key: '_target', title: 'T' }, { key: '_realisasi', title: 'R' }, { key: '_percentage', title: '%', isPercentage: true }] },
+        { key: 'prov_comp_ae', title: 'AE', subColumns: [{ key: '_target', title: 'T' }, { key: '_realisasi', title: 'R' }, { key: '_percentage', title: '%', isPercentage: true }] },
+        { key: 'prov_comp_ps', title: 'PS', subColumns: [{ key: '_target', title: 'T' }, { key: '_realisasi', title: 'R' }, { key: '_percentage', title: '%', isPercentage: true }] },
+      ]
+    },
+    {
+      groupTitle: 'REVENUE (Rp Juta)',
+      groupClass: 'bg-green-700',
+      columnClass: 'bg-green-500',
+      subColumnClass: 'bg-green-300',
+      columns: [
+        { key: 'revenue_n', title: 'N', subColumns: [{ key: '_ach', title: 'ACH' }, { key: '_target', title: 'T' }] },
+        { key: 'revenue_o', title: 'O', subColumns: [{ key: '_ach', title: 'ACH' }, { key: '_target', title: 'T' }] },
+        { key: 'revenue_ae', title: 'AE', subColumns: [{ key: '_ach', title: 'ACH' }, { key: '_target', title: 'T' }] },
+        { key: 'revenue_ps', title: 'PS', subColumns: [{ key: '_ach', title: 'ACH' }, { key: '_target', title: 'T' }] },
+      ]
+    },
+    {
+      groupTitle: 'Grand Total',
+      groupClass: 'bg-gray-600',
+      columnClass: 'bg-gray-500',
+      columns: [
+        {
+          key: 'grand_total_realisasi',
+          title: 'Total',
+          isCalculation: true,
+          operands: ['prov_comp_n_realisasi', 'prov_comp_o_realisasi', 'prov_comp_ae_realisasi', 'prov_comp_ps_realisasi']
+        }
+      ]
+    }
+  ]
+
+  const legsTableConfig = [
     {
       groupTitle: 'In Progress',
       groupClass: 'bg-blue-600',
@@ -441,9 +499,48 @@ const ReportDigPro = () => {
     fetchReportData()
   }, [startDate, endDate, selectedSegment, selectedWitel, refreshKey])
 
-  const handleExport = () => {
-    const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-    window.location.href = `${SERVER_URL}/api/analysis/digital-product/export?${params.toString()}`
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/analysis/digital-product/export', {
+        params: {
+          start_date: startDate,
+          end_date: endDate,
+          witel: selectedWitel.join(',')
+        },
+        responseType: 'blob',
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `Digital_Product_Report_${startDate}_${endDate}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Gagal mengunduh laporan')
+    }
+  }
+
+  const handleCleanData = async () => {
+    if (!window.confirm('Proses Clean Data akan memproses data RAW, melakukan pemisahan produk (split), dan membersihkan data QC MIA. Lanjutkan?')) return;
+    
+    setLoading(true)
+    try {
+      // Send empty object as body to ensure Content-Type header is set
+      const res = await api.post('/master/digital-raw/process', {})
+      if (res.data.success) {
+        const { originalCount, finalCount, splitCount, ignoredCount, remaining } = res.data.data
+        alert(`Berhasil memproses data!\n\n- Data Diproses: ${originalCount}\n- Data Published: ${finalCount}\n- Produk di-Split: ${splitCount}\n- Data QC MIA di-Ignore: ${ignoredCount}\n\n⚠️ SISA DATA DRAFT: ${remaining} (Klik lagi jika > 0)`)
+        setRefreshKey(prev => prev + 1)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Gagal memproses data: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getCellValue = (item, col, parentCol = null) => {
@@ -454,6 +551,10 @@ const ReportDigPro = () => {
 
     const fullKey = parentCol ? `${parentCol.key}${col.key}` : col.key
     const value = item[fullKey]
+
+    if (col.isPercentage) {
+        return value ? `${value.toFixed(1)}%` : '0%'
+    }
 
     if (fullKey.startsWith('revenue_') && typeof value === 'number') {
       return value.toLocaleString('id-ID', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
@@ -474,7 +575,7 @@ const ReportDigPro = () => {
     return totals
   }
 
-  const renderTable = (title, data, details) => {
+  const renderTable = (title, data, details, config) => {
     const grandTotals = calculateGrandTotals(data)
 
     return (
@@ -506,7 +607,7 @@ const ReportDigPro = () => {
                 <th rowSpan="3" className="bg-gray-800 text-white border border-gray-400 px-3 py-2 font-semibold tracking-wider">
                   {selectedWitel.length === 1 ? 'Branch/Telda' : 'WILAYAH TELKOM'}
                 </th>
-                {tableConfig.map((group, idx) => (
+                {config.map((group, idx) => (
                   <th
                     key={idx}
                     colSpan={group.columns.reduce((acc, col) => acc + (col.subColumns ? col.subColumns.length : 1), 0)}
@@ -517,7 +618,7 @@ const ReportDigPro = () => {
                 ))}
               </tr>
               <tr>
-                {tableConfig.map(group => (
+                {config.map(group => (
                   group.columns.map((col, idx) => (
                     <th
                       key={idx}
@@ -531,7 +632,7 @@ const ReportDigPro = () => {
                 ))}
               </tr>
               <tr>
-                {tableConfig.map(group => (
+                {config.map(group => (
                   group.columns.map(col => (
                     col.subColumns && col.subColumns.map((subCol, idx) => (
                       <th
@@ -549,7 +650,7 @@ const ReportDigPro = () => {
               {data.map((item, idx) => (
                 <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
                   <td className="border border-gray-300 px-3 py-2 font-bold text-gray-800">{item.nama_witel}</td>
-                  {tableConfig.map(group => (
+                  {config.map(group => (
                     group.columns.map(col => {
                       if (col.subColumns) {
                         return col.subColumns.map((subCol, subIdx) => (
@@ -572,7 +673,7 @@ const ReportDigPro = () => {
             <tfoot>
               <tr className="font-bold bg-gray-100">
                 <td className="bg-gray-800 text-white border border-gray-400 px-3 py-2">GRAND TOTAL</td>
-                {tableConfig.map(group => (
+                {config.map(group => (
                   group.columns.map(col => {
                     if (col.subColumns) {
                       return col.subColumns.map((subCol, subIdx) => (
@@ -747,13 +848,13 @@ const ReportDigPro = () => {
       <>
           {selectedSegment.includes('LEGS') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              {renderTable(`Progress WFM Digital Product MTD (LEGS)`, reportData.legs || [], reportData.detailsLegs)}
+              {renderTable(`Progress WFM Digital Product MTD (LEGS)`, reportData.legs || [], reportData.detailsLegs, legsTableConfig)}
             </div>
           )}
 
           {selectedSegment.includes('SME') && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              {renderTable(`Progress WFM Digital Product MTD (SME)`, reportData.sme || [], reportData.detailsSme)}
+              {renderTable(`Progress WFM Digital Product MTD (SME)`, reportData.sme || [], reportData.detailsSme, smeTableConfig)}
             </div>
           )}
 
@@ -763,24 +864,25 @@ const ReportDigPro = () => {
                 title={`Report Digital Order Details LEGS Witel ${selectedWitel.length > 0 ? selectedWitel.join(', ') : 'Semua Witel'}`}
                 data={detailData.filter(item => {
                   const legsSegments = ['LEGS', 'DGS', 'DPS', 'GOV', 'ENTERPRISE', 'REG'];
-                  const matchesSegment = item.segment && legsSegments.some(s => item.segment.toUpperCase().includes(s));
+                  const matchesSegment = item.segmen && legsSegments.some(s => item.segmen.toUpperCase().includes(s));
                   const matchesSearch = searchQuery === '' ||
-                    (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
+                    (item.batchId && item.batchId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.orderId && item.orderId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.custName && item.custName.toLowerCase().includes(searchQuery.toLowerCase()));
 
                   const matchesFilters =
-                    (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
+                    (activeFilters.segmen.length === 0 || activeFilters.segmen.includes(item.segmen)) &&
                     (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
-                    (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
-                      const pName = (item.product_name || '').toLowerCase();
+                    (activeFilters.product.length === 0 || activeFilters.product.some(f => {
+                      const pName = (item.product || '').toLowerCase();
                       const fValue = f.toLowerCase();
                       if (fValue === 'antares') {
                         return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
                       }
                       return pName.includes(fValue);
                     })) &&
-                    (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
+                    (activeFilters.orderStatus.length === 0 || activeFilters.orderStatus.includes(item.orderStatus)) &&
+                    (activeFilters.milestone.length === 0 || activeFilters.milestone.includes(item.milestone)) &&
                     (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
 
                   return matchesSegment && matchesSearch && matchesFilters;
@@ -801,27 +903,30 @@ const ReportDigPro = () => {
               <DetailTable
                 title={`Report Digital Order Details SME`}
                 data={detailData.filter(item => {
-                  // Simplified filter for SME/All as per previous request to show all if not LEGS specific
+                  const smeSegments = ['SME', 'RBS', 'RETAIL', 'UMKM', 'FINANCIAL', 'LOGISTIC', 'TOURISM', 'MANUFACTURE'];
+                  const matchesSegment = item.segmen && smeSegments.some(s => item.segmen.toUpperCase().includes(s));
+
                   const matchesSearch = searchQuery === '' ||
-                    (item.batch_id && item.batch_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (item.order_id && item.order_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (item.customer_name && item.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
+                    (item.batchId && item.batchId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.orderId && item.orderId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (item.custName && item.custName.toLowerCase().includes(searchQuery.toLowerCase()));
 
                   const matchesFilters =
-                    (activeFilters.segment.length === 0 || activeFilters.segment.includes(item.segment)) &&
+                    (activeFilters.segmen.length === 0 || activeFilters.segmen.includes(item.segmen)) &&
                     (activeFilters.channel.length === 0 || activeFilters.channel.some(f => f.toLowerCase() === (item.channel || '').toLowerCase())) &&
-                    (activeFilters.product_name.length === 0 || activeFilters.product_name.some(f => {
-                      const pName = (item.product_name || '').toLowerCase();
+                    (activeFilters.product.length === 0 || activeFilters.product.some(f => {
+                      const pName = (item.product || '').toLowerCase();
                       const fValue = f.toLowerCase();
                       if (fValue === 'antares') {
                         return pName.includes('antares') || pName.includes('camera') || pName.includes('cctv') || pName.includes('iot') || pName.includes('recording');
                       }
                       return pName.includes(fValue);
                     })) &&
-                    (activeFilters.order_status.length === 0 || activeFilters.order_status.includes(item.order_status)) &&
+                    (activeFilters.orderStatus.length === 0 || activeFilters.orderStatus.includes(item.orderStatus)) &&
+                    (activeFilters.milestone.length === 0 || activeFilters.milestone.includes(item.milestone)) &&
                     (activeFilters.witel.length === 0 || activeFilters.witel.some(f => f.toLowerCase() === (item.witel || '').toLowerCase()));
 
-                  return matchesSearch && matchesFilters;
+                  return matchesSegment && matchesSearch && matchesFilters;
                 })}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
@@ -846,20 +951,29 @@ const ReportDigPro = () => {
               <h2 className="text-xl font-bold text-gray-900">Manajemen Data</h2>
               <p className="text-sm text-gray-500">Upload dataset baru atau reset data Digital Product.</p>
             </div>
-            <button
-               onClick={async () => {
-                 if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data Digital Product? Tindakan ini tidak dapat dibatalkan.')) {
-                   try {
-                     await api.post('/admin/truncate/digital')
-                     alert('Data Digital Product berhasil dihapus')
-                     setRefreshKey(prev => prev + 1)
-                   } catch (err) { alert('Gagal hapus data.') }
-                 }
-               }}
-               className="bg-red-50 text-red-600 px-6 py-2 rounded-xl font-bold hover:bg-red-100 border border-red-200 transition-all text-sm"
-            >
-              Hapus Semua Data (Reset)
-            </button>
+            <div className="flex gap-3">
+              <button
+                 onClick={handleCleanData}
+                 disabled={loading}
+                 className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading ? 'Processing...' : 'Clean Data (Process Raw)'}
+              </button>
+              <button
+                 onClick={async () => {
+                   if (window.confirm('⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data Digital Product? Tindakan ini tidak dapat dibatalkan.')) {
+                     try {
+                       await api.post('/admin/truncate/digital')
+                       alert('Data Digital Product berhasil dihapus')
+                       setRefreshKey(prev => prev + 1)
+                     } catch (err) { alert('Gagal hapus data.') }
+                   }
+                 }}
+                 className="bg-red-50 text-red-600 px-6 py-2 rounded-xl font-bold hover:bg-red-100 border border-red-200 transition-all text-sm"
+              >
+                Hapus Semua Data (Reset)
+              </button>
+            </div>
           </div>
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
             <FileUploadForm 

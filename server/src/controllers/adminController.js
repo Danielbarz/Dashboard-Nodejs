@@ -224,3 +224,18 @@ export const truncateJT = async (req, res, next) => {
     errorResponse(res, 'Failed to truncate JT data', 500)
   }
 }
+
+// Truncate Digital Product Data (Raw & Final)
+export const truncateDigital = async (req, res, next) => {
+  try {
+    // Truncate Raw Table
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE "digital_product_raws" RESTART IDENTITY CASCADE;')
+    // Truncate Final Table
+    await prisma.$executeRawUnsafe('TRUNCATE TABLE "digital_products" RESTART IDENTITY CASCADE;')
+
+    successResponse(res, { truncated: true }, 'Digital Product data (Raw & Final) truncated successfully')
+  } catch (error) {
+    console.error('Error truncating Digital data:', error)
+    errorResponse(res, 'Failed to truncate Digital data', 500)
+  }
+}

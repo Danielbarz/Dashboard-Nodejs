@@ -1,11 +1,15 @@
 import prisma from "../lib/prisma.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 
-// --- HELPERS (Gaya Oryza Rey - Stable Version) ---
+// --- HELPERS (Clean Logic as per User Request) ---
 const normalizedDigitalCTE = (start_date, end_date) => `
   WITH normalized_data AS (
     SELECT
-      *,
+      id,
+      product,
+      order_id,
+      net_price,
+      -- 1. Region Mapping (Keep existing mapping as it works)
       CASE
         WHEN UPPER(witel) LIKE '%BALI%' OR UPPER(witel) LIKE '%DENPASAR%' THEN 'BALI'
         WHEN UPPER(witel) LIKE '%BARAT%' OR UPPER(witel) LIKE '%MALANG%' OR UPPER(witel) LIKE '%KEDIRI%' OR UPPER(witel) LIKE '%MADIUN%' THEN 'JATIM BARAT'
@@ -14,23 +18,36 @@ const normalizedDigitalCTE = (start_date, end_date) => `
         WHEN UPPER(witel) LIKE '%SURAMADU%' OR UPPER(witel) LIKE '%SURABAYA%' OR UPPER(witel) LIKE '%MADURA%' OR UPPER(witel) LIKE '%GRESIK%' THEN 'SURAMADU'
         ELSE 'OTHER' 
       END as region_norm,
+      
+      -- 2. Product Mapping (N, O, AE, PS)
       CASE
-        WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
-        WHEN product_name ILIKE '%OCA%' THEN 'OCA'
-        WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
-        WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
-        WHEN product_name ILIKE '%HSIE%' OR product_name ILIKE '%High Speed Internet%' THEN 'HSI Digital'
+        WHEN product ILIKE '%Netmonk%' THEN 'Netmonk'
+        WHEN product ILIKE '%OCA%' THEN 'OCA'
+        WHEN product ILIKE '%Pijar%' THEN 'Pijar'
+        WHEN product ILIKE '%Antares%' OR product ILIKE '%IOT%' OR product ILIKE '%CCTV%' THEN 'Antares'
         ELSE 'OTHER'
       END as product_norm,
+
+      -- 3. Status Logic (Based on order_status_n)
       CASE
-        WHEN status ILIKE '%complete%' OR status ILIKE '%completed%' OR status ILIKE '%ps%' THEN 'DONE'
-        ELSE 'OGP'
+        WHEN order_status_n ILIKE '%Complete%' OR order_status_n ILIKE '%Completed%' THEN 'DONE'
+        WHEN order_status_n ILIKE '%In Progress%' OR order_status_n ILIKE '%On Process%' OR order_status_n ILIKE '%onprocess%' THEN 'OGP'
+        ELSE 'IGNORE' 
       END as status_group,
-      CASE WHEN UPPER(witel) LIKE '%NCX%' THEN 'NCX' ELSE 'SCONE' END as system_type,
-      COALESCE(NULLIF(net_price, 0), NULLIF(revenue, 0), 0) as revenue_clean
+
+      -- 4. Segment Logic (SME = RBS, LEGS = DGS/DPS/DSS)
+      CASE
+        WHEN segmen ILIKE 'RBS' THEN 'SME'
+        WHEN segmen ILIKE 'DGS' OR segmen ILIKE 'DPS' OR segmen ILIKE 'DSS' OR segmen ILIKE 'LEGS' OR segmen ILIKE 'GOV' OR segmen ILIKE 'ENT%' OR segmen ILIKE 'REG' THEN 'LEGS'
+        ELSE 'OTHER'
+      END as segment_group,
+
+      COALESCE(net_price, 0) as revenue_clean
+
     FROM digital_products
     WHERE 1=1
-    ${start_date && end_date && start_date !== 'undefined' ? `AND order_date >= '${start_date}'::date AND order_date <= '${end_date}'::date` : ""}
+    -- SC exclusion removed to allow valid single SC orders (e.g. Jatim Timur case)
+    ${start_date && end_date && start_date !== 'undefined' ? `AND order_date >= '${start_date}'::date AND order_date < ('${end_date}'::date + INTERVAL '1 day')` : ""}
   )
 `;
 
@@ -39,41 +56,110 @@ export const getReportAnalysis = async (req, res, next) => {
     const { start_date, end_date } = req.query;
     const cte = normalizedDigitalCTE(start_date, end_date);
 
+    // Fetch Targets
+    const targetWhere = { dashboardType: 'DIGITAL', targetType: 'ORDER' };
+    if (start_date && end_date && start_date !== 'undefined' && end_date !== 'undefined') {
+        targetWhere.periodDate = { gte: new Date(start_date), lte: new Date(end_date) };
+    }
+    const targets = await prisma.target.findMany({ where: targetWhere });
+
     const getSegmentSummary = async (keywords) => {
       const sql = `
         ${cte}
-        SELECT region_norm as witel, product_norm, status_group, COUNT(*)::int as count, SUM(revenue_clean) as total_rev
+        SELECT region_norm as witel, product_norm, status_group, COUNT(DISTINCT REGEXP_REPLACE(order_id, '^SC', ''))::int as count, SUM(revenue_clean) as total_rev
         FROM normalized_data
-        WHERE (${keywords.map(k => `COALESCE(segment, '') ILIKE '%${k}%'`).join(' OR ')})
+        WHERE (${keywords.map(k => `COALESCE(segmen, '') ILIKE '%${k}%'`).join(' OR ')})
         GROUP BY 1, 2, 3
       `;
       const rows = await prisma.$queryRawUnsafe(sql);
       const regions = ["BALI", "JATIM BARAT", "JATIM TIMUR", "NUSA TENGGARA", "SURAMADU"];
       const map = {};
+      
+      let totalOGP = 0;
+      let totalClosed = 0;
+
       regions.forEach(r => {
-        map[r] = { nama_witel: r, in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0, prov_comp_n_realisasi: 0, prov_comp_o_realisasi: 0, prov_comp_ae_realisasi: 0, prov_comp_ps_realisasi: 0, revenue_n_ach: 0, revenue_o_ach: 0, revenue_ae_ach: 0, revenue_ps_ach: 0, revenue_n_target: 0, revenue_o_target: 0, revenue_ae_target: 0, revenue_ps_target: 0 };
+        map[r] = { 
+            nama_witel: r, 
+            in_progress_n: 0, in_progress_o: 0, in_progress_ae: 0, in_progress_ps: 0, 
+            prov_comp_n_realisasi: 0, prov_comp_n_target: 0, prov_comp_n_percentage: 0,
+            prov_comp_o_realisasi: 0, prov_comp_o_target: 0, prov_comp_o_percentage: 0,
+            prov_comp_ae_realisasi: 0, prov_comp_ae_target: 0, prov_comp_ae_percentage: 0,
+            prov_comp_ps_realisasi: 0, prov_comp_ps_target: 0, prov_comp_ps_percentage: 0,
+            revenue_n_ach: 0, revenue_o_ach: 0, revenue_ae_ach: 0, revenue_ps_ach: 0, 
+            revenue_n_target: 0, revenue_o_target: 0, revenue_ae_target: 0, revenue_ps_target: 0 
+        };
+      });
+
+      // Map Targets
+      targets.forEach(t => {
+        let tWitel = t.witel ? t.witel.toUpperCase() : 'OTHER';
+        if (!map[tWitel]) return;
+
+        let pCode = '';
+        const pName = (t.product || '').toLowerCase();
+        if (pName.includes('netmonk')) pCode = 'n';
+        else if (pName.includes('oca')) pCode = 'o';
+        else if (pName.includes('antares') || pName.includes('iot')) pCode = 'ae';
+        else if (pName.includes('pijar')) pCode = 'ps';
+
+        if (pCode) {
+            map[tWitel][`prov_comp_${pCode}_target`] += Number(t.value);
+        }
       });
 
       rows.forEach(row => {
-        const r = row.witel === 'OTHER' ? 'BALI' : row.witel; // Fallback
+        const r = row.witel === 'OTHER' ? 'BALI' : row.witel;
         if (!map[r]) return;
-        const p = row.product_norm;
+        
         const isDone = row.status_group === 'DONE';
+        const p = row.product_norm;
         const pCode = p === 'Netmonk' ? 'n' : p === 'OCA' ? 'o' : p === 'Antares' ? 'ae' : 'ps';
+
+        if (isDone) totalClosed += row.count;
+        else totalOGP += row.count;
+
         if (pCode !== 'OTHER') {
-          if (isDone) { map[r][`prov_comp_${pCode}_realisasi`] += row.count; map[r][`revenue_${pCode}_ach`] += Number(row.total_rev) / 1e6; }
-          else { map[r][`in_progress_${pCode}`] += row.count; }
+          if (isDone) { 
+            map[r][`prov_comp_${pCode}_realisasi`] += row.count; 
+            map[r][`revenue_${pCode}_ach`] += Number(row.total_rev) / 1e6; 
+          }
+          else { 
+            map[r][`in_progress_${pCode}`] += row.count; 
+          }
         }
       });
-      return Object.values(map);
+
+      // Calculate Percentages
+      Object.values(map).forEach(item => {
+        ['n', 'o', 'ae', 'ps'].forEach(p => {
+            const target = item[`prov_comp_${p}_target`];
+            const real = item[`prov_comp_${p}_realisasi`];
+            item[`prov_comp_${p}_percentage`] = target > 0 ? (real / target) * 100 : 0;
+        });
+      });
+
+      return {
+        data: Object.values(map),
+        summary: {
+          total: totalOGP + totalClosed,
+          ogp: totalOGP,
+          closed: totalClosed
+        }
+      };
     };
 
     const [legs, sme] = await Promise.all([
-      getSegmentSummary(["LEGS", "DGS", "DPS", "GOV", "ENTERPRISE", "REG"]),
-      getSegmentSummary(["SME", "DSS", "RBS", "RETAIL", "UMKM", "FINANCIAL", "LOGISTIC", "TOURISM", "MANUFACTURE"])
+      getSegmentSummary(["LEGS", "DGS", "DPS", "DSS", "GOV", "ENTERPRISE", "REG"]),
+      getSegmentSummary(["RBS", "SME"])
     ]);
 
-    successResponse(res, { legs: legs.data || legs, sme: sme.data || sme, detailsLegs: {}, detailsSme: {} });
+    successResponse(res, { 
+      legs: legs.data, 
+      sme: sme.data, 
+      detailsLegs: legs.summary, 
+      detailsSme: sme.summary 
+    });
   } catch (error) { next(error); }
 };
 
@@ -81,19 +167,27 @@ export const getReportDetails = async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query;
     const cte = normalizedDigitalCTE(start_date, end_date);
-    const rows = await prisma.$queryRawUnsafe(`${cte} SELECT * FROM normalized_data ORDER BY order_date DESC LIMIT 200`);
+    // Explicit Select to avoid any hidden 'product_name' override
+    const sql = `${cte} SELECT product, order_id, segmen, channel, layanan, cust_name, order_status, order_subtype, milestone, week, order_date, net_price, region_norm, witel, telda, batch_id, created_at FROM normalized_data ORDER BY order_date DESC LIMIT 2000`;
+    const rows = await prisma.$queryRawUnsafe(sql);
     
-    const formatted = rows.map(r => {
-      let cleanProd = r.product_name || '-';
-      if (cleanProd.length > 60) {
-         const match = cleanProd.match(/(High Speed Internet|HSI|Netmonk|OCA|Antares|Pijar|CCTV|Package|Paket)[^\[\]|~]*/i);
-         cleanProd = match ? match[0].trim() : cleanProd.substring(0, 60);
-      }
-      return {
-        order_id: r.order_number, segment: r.segment, channel: r.channel, product_name: cleanProd, layanan: r.layanan, customer_name: r.customer_name,
-        order_status: r.status, order_subtype: r.sub_type, milestone: r.milestone, week: r.week, order_created_date: r.order_date, net_price: Number(r.revenue_clean), witel: r.region_norm !== 'OTHER' ? r.region_norm : r.witel, branch: r.branch
-      };
-    });
+    const formatted = rows.map(r => ({
+        batchId: r.batch_id,
+        orderId: r.order_id,
+        segmen: r.segmen,
+        channel: r.channel,
+        product: r.product || '-',
+        layanan: r.layanan,
+        custName: r.cust_name,
+        orderStatus: r.order_status,
+        orderSubtype: r.order_subtype,
+        milestone: r.milestone,
+        week: r.week,
+        orderDate: r.order_date || r.created_at,
+        netPrice: Number(r.net_price || 0),
+        witel: r.region_norm !== 'OTHER' ? r.region_norm : r.witel,
+        telda: r.telda
+    }));
     successResponse(res, formatted);
   } catch (error) { next(error); }
 };

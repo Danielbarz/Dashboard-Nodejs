@@ -7,7 +7,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  truncateJT
+  truncateJT,
+  truncateDigital
 } from '../controllers/adminController.js'
 import {
   mergeFiles,
@@ -42,6 +43,8 @@ router.delete('/users/:id', deleteUser)
 
 // Maintenance: truncate JT data (spmk_mom)
 router.post('/truncate/jt', truncateJT)
+// Maintenance: truncate Digital Product data (Raw & Production)
+router.post('/truncate/digital', truncateDigital)
 
 // File merge endpoints
 router.post('/merge-files', upload.array('files', 10), mergeFiles)

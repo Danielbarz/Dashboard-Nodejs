@@ -16,10 +16,20 @@ import {
     createPOMaster,
     deletePOMaster
 } from '../controllers/masterController.js'
+import {
+    getDigitalRawData,
+    deleteDigitalRawData,
+    processDigitalRawData
+} from '../controllers/digitalRawController.js'
 
 const router = express.Router()
 
 router.use(authenticate) // Pastikan user login
+
+// --- DIGITAL RAW DATA PROCESSING ---
+router.get('/digital-raw', getDigitalRawData)
+router.delete('/digital-raw/:id', deleteDigitalRawData)
+router.post('/digital-raw/process', processDigitalRawData)
 
 router.get('/po', getPOMaster)
 router.post('/po', createPOMaster)

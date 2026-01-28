@@ -4,14 +4,16 @@ import { listDigitalProducts, getDigitalProductStats, exportDigitalProductsExcel
 
 export const getDigitalProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, witel, branch, status } = req.query
+    const { page = 1, limit = 20, search, witel, branch, status, start_date, end_date } = req.query
     const result = await listDigitalProducts({
       page: Number(page),
       limit: Number(limit),
       search,
       witel,
       branch,
-      status
+      status,
+      startDate: start_date,
+      endDate: end_date
     })
 
     return successResponse(res, result.data, 'Digital products fetched', 200)
@@ -32,8 +34,15 @@ export const getDigitalProductStatsHandler = async (req, res, next) => {
 
 export const exportDigitalProducts = async (req, res, next) => {
   try {
-    const { search, witel, branch, status } = req.query
-    const buffer = await exportDigitalProductsExcel({ search, witel, branch, status })
+    const { search, witel, branch, status, start_date, end_date } = req.query
+    const buffer = await exportDigitalProductsExcel({ 
+      search, 
+      witel, 
+      branch, 
+      status,
+      startDate: start_date,
+      endDate: end_date 
+    })
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename="digital_products.xlsx"')

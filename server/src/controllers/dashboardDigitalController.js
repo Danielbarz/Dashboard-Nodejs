@@ -17,20 +17,22 @@ const normalizedDigitalCTE = (start_date, end_date) => `
         ELSE 'OTHER' 
       END as region_norm,
       CASE
-        WHEN product_name ILIKE '%Netmonk%' THEN 'Netmonk'
-        WHEN product_name ILIKE '%OCA%' THEN 'OCA'
-        WHEN product_name ILIKE '%Pijar%' THEN 'Pijar'
-        WHEN product_name ILIKE '%Antares%' OR product_name ILIKE '%IOT%' OR product_name ILIKE '%CCTV%' THEN 'Antares'
+        WHEN product ILIKE '%Netmonk%' THEN 'Netmonk'
+        WHEN product ILIKE '%OCA%' THEN 'OCA'
+        WHEN product ILIKE '%Pijar%' THEN 'Pijar'
+        WHEN product ILIKE '%Antares%' OR product ILIKE '%IOT%' OR product ILIKE '%CCTV%' THEN 'Antares'
         ELSE 'OTHER'
       END as product_norm,
       CASE
-        WHEN status ILIKE '%complete%' OR status ILIKE '%completed%' OR status ILIKE '%ps%' THEN 'COMPLETED'
+        WHEN order_status ILIKE '%complete%' OR order_status ILIKE '%completed%' OR order_status ILIKE '%ps%' THEN 'COMPLETED'
+        WHEN order_status ILIKE '%cancel%' OR order_status ILIKE '%drop%' THEN 'IGNORE'
         ELSE 'IN PROGRESS'
       END as status_group,
-      CASE WHEN telda IS NOT NULL AND telda != '' THEN UPPER(telda) ELSE UPPER(branch) END as branch_norm
+      CASE WHEN telda IS NOT NULL AND telda != '' THEN UPPER(telda) ELSE UPPER(witel) END as branch_norm
     FROM digital_products
     WHERE 1=1
-    ${start_date && end_date ? `AND order_date >= '${start_date}'::date AND order_date <= '${end_date}'::date` : ""}
+    AND COALESCE(order_id, '') NOT ILIKE 'SC%'
+    ${start_date && end_date ? `AND order_date >= '${start_date}'::date AND order_date < ('${end_date}'::date + INTERVAL '1 day')` : ""}
   )
 `;
 
@@ -40,7 +42,8 @@ export const getDigitalProductDashboard = async (req, res, next) => {
     const witelList = witel ? witel.split(',').filter(Boolean) : []
     const isSingleWitel = witelList.length === 1
     const WITEL_ORDER = ['BALI', 'JATIM BARAT', 'JATIM TIMUR', 'SURAMADU', 'NUSA TENGGARA']
-    const REVENUE_COL = "COALESCE(NULLIF(net_price, 0), NULLIF(revenue, 0), (CASE WHEN product_name ~ 'Total \\(Sebelum PPN\\)\\s*:\\s*([0-9]+)' THEN (substring(product_name from 'Total \\(Sebelum PPN\\)\\s*:\\s*([0-9]+)')::numeric) ELSE 0 END), 0)"
+    // Simplified Revenue: Use net_price as the cleaned source of truth
+    const REVENUE_COL = "COALESCE(net_price, 0)"
     const GROUP_COL = isSingleWitel ? 'branch_norm' : 'region_norm'
     const ORDER_CLAUSE = isSingleWitel ? 'branch_norm ASC' : `CASE ${WITEL_ORDER.map((w, idx) => `WHEN region_norm = '${w}' THEN ${idx + 1}`).join(' ')} ELSE 99 END`
 

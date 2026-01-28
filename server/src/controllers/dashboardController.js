@@ -188,7 +188,7 @@ export const getKPIData = async (req, res, next) => {
     let pIdx = 1
 
     if (startDate && endDate) {
-      dateFilter = `AND order_date >= $${pIdx}::date AND order_date <= $${pIdx + 1}::date`
+      dateFilter = `AND order_date >= $${pIdx}::date AND order_date < ($${pIdx + 1}::date + INTERVAL '1 day')`
       params.push(startDate, endDate)
       pIdx += 2
     }
