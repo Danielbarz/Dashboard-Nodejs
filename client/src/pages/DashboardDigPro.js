@@ -20,8 +20,9 @@ const DashboardPage = () => {
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   // --- 1. STATE INITIALIZATION ---
   const now = new Date()
-  // Default to 1 year back to ensure data visibility
-  const firstDay = new Date(now.getFullYear() - 1, now.getMonth(), 1)
+  // Default to 1 month back
+  const firstDay = new Date(now)
+  firstDay.setMonth(firstDay.getMonth() - 1)
   
   const [startDate, setStartDate] = useState(firstDay.toISOString().split('T')[0])
   const [endDate, setEndDate] = useState(now.toISOString().split('T')[0])

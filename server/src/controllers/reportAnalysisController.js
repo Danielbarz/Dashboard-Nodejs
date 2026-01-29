@@ -5,10 +5,7 @@ import { successResponse, errorResponse } from "../utils/response.js";
 const normalizedDigitalCTE = (start_date, end_date) => `
   WITH normalized_data AS (
     SELECT
-      id,
-      product,
-      order_id,
-      net_price,
+      *,
       -- 1. Region Mapping (Keep existing mapping as it works)
       CASE
         WHEN UPPER(witel) LIKE '%BALI%' OR UPPER(witel) LIKE '%DENPASAR%' THEN 'BALI'
@@ -22,7 +19,7 @@ const normalizedDigitalCTE = (start_date, end_date) => `
       -- 2. Product Mapping (N, O, AE, PS)
       CASE
         WHEN product ILIKE '%Netmonk%' THEN 'Netmonk'
-        WHEN product ILIKE '%OCA%' THEN 'OCA'
+        WHEN product ILIKE '%OCA%' OR product ILIKE '%Omni%' THEN 'OCA'
         WHEN product ILIKE '%Pijar%' THEN 'Pijar'
         WHEN product ILIKE '%Antares%' OR product ILIKE '%IOT%' OR product ILIKE '%CCTV%' THEN 'Antares'
         ELSE 'OTHER'
@@ -30,17 +27,23 @@ const normalizedDigitalCTE = (start_date, end_date) => `
 
       -- 3. Status Logic (Based on order_status_n)
       CASE
-        WHEN order_status_n ILIKE '%Complete%' OR order_status_n ILIKE '%Completed%' THEN 'DONE'
-        WHEN order_status_n ILIKE '%In Progress%' OR order_status_n ILIKE '%On Process%' OR order_status_n ILIKE '%onprocess%' THEN 'OGP'
+        WHEN order_status_n ILIKE '%Complete%' OR order_status_n ILIKE '%Completed%' OR order_status ILIKE '%complete%' THEN 'DONE'
+        WHEN order_status_n ILIKE '%In Progress%' OR order_status_n ILIKE '%On Process%' OR order_status_n ILIKE '%onprocess%' OR order_status ILIKE '%Progress%' THEN 'OGP'
         ELSE 'IGNORE' 
       END as status_group,
 
       -- 4. Segment Logic (SME = RBS, LEGS = DGS/DPS/DSS)
       CASE
-        WHEN segmen ILIKE 'RBS' THEN 'SME'
+        WHEN segmen ILIKE 'RBS' OR segmen ILIKE 'SME' THEN 'SME'
         WHEN segmen ILIKE 'DGS' OR segmen ILIKE 'DPS' OR segmen ILIKE 'DSS' OR segmen ILIKE 'LEGS' OR segmen ILIKE 'GOV' OR segmen ILIKE 'ENT%' OR segmen ILIKE 'REG' THEN 'LEGS'
         ELSE 'OTHER'
       END as segment_group,
+
+      CASE
+        WHEN channel ILIKE '%NCX%' THEN 'NCX'
+        WHEN channel ILIKE '%SC-ONE%' OR channel ILIKE '%SCONE%' THEN 'SCONE'
+        ELSE 'OTHER'
+      END as system_type,
 
       COALESCE(net_price, 0) as revenue_clean
 
@@ -165,10 +168,20 @@ export const getReportAnalysis = async (req, res, next) => {
 
 export const getReportDetails = async (req, res, next) => {
   try {
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, segment, witel } = req.query;
     const cte = normalizedDigitalCTE(start_date, end_date);
-    // Explicit Select to avoid any hidden 'product_name' override
-    const sql = `${cte} SELECT product, order_id, segmen, channel, layanan, cust_name, order_status, order_subtype, milestone, week, order_date, net_price, region_norm, witel, telda, batch_id, created_at FROM normalized_data ORDER BY order_date DESC LIMIT 2000`;
+    
+    let filter = `WHERE 1=1`;
+    if (segment && segment !== 'ALL') {
+        const segs = segment.split(',').map(s => `'${s}'`).join(',');
+        filter += ` AND segment_group IN (${segs})`;
+    }
+    if (witel && witel !== 'ALL') {
+        const wits = witel.split(',').map(w => `'${w.toUpperCase()}'`).join(',');
+        filter += ` AND region_norm IN (${wits})`;
+    }
+
+    const sql = `${cte} SELECT * FROM normalized_data ${filter} ORDER BY order_date DESC LIMIT 2000`;
     const rows = await prisma.$queryRawUnsafe(sql);
     
     const formatted = rows.map(r => ({

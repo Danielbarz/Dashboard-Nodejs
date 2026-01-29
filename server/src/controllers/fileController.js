@@ -6,6 +6,8 @@ import { createReadStream } from 'fs'
 import { unlink, writeFile, appendFile } from 'fs/promises'
 import path from 'path'
 
+import logger from '../config/logger.js'
+
 function pickCaseInsensitive(obj, key) {
   const found = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())
   return found ? obj[found] : undefined
@@ -167,7 +169,7 @@ export const uploadFile = async (req, res, next) => {
         }
         return { inserted: 0, failed: 0 }
       } catch (err) {
-        console.error(`Error flushing ${label}:`, err.message)
+        logger.error(`Error flushing ${label}: %o`, err)
         return { inserted: 0, failed: buffer.length }
       } finally {
         buffer.length = 0
@@ -183,7 +185,11 @@ export const uploadFile = async (req, res, next) => {
         const orderIdVal = getValue(record, keyMap, 'order id', 'order_id') || `AUTO-${Date.now()}-${i}`
         
         // Helper to safely convert to string without getting "null"
-        const s = (val) => (val === null || val === undefined) ? '' : val.toString()
+        const s = (val) => {
+          if (val === null || val === undefined) return ''
+          const str = val.toString()
+          return str.toLowerCase() === 'null' ? '' : str
+        }
 
         digitalBuffer.push({
           product: s(getValue(record, keyMap, 'product')),

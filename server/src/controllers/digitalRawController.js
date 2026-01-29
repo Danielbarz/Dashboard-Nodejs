@@ -89,6 +89,10 @@ export const processDigitalRawData = async (req, res, next) => {
 
       // --- PRODUCT FALLBACK & VALIDATION ---
       let productString = row.product || ''
+      
+      // Treat string "null" as empty
+      if (productString.toLowerCase() === 'null') productString = ''
+
       // Fallback ke productDetail jika product kosong
       if (!productString.trim() && row.productDetail) {
          productString = row.productDetail
@@ -109,8 +113,12 @@ export const processDigitalRawData = async (req, res, next) => {
         // SPLIT CASE
         products.forEach((prod) => {
           const { id, statusProcess, validationNotes, createdAt, updatedAt, product, ...rest } = row
+          let finalSegmen = rest.segmen
+          if (finalSegmen && finalSegmen.toUpperCase() === 'SME') finalSegmen = 'RBS'
+
           finalData.push({
             ...rest,
+            segmen: finalSegmen,
             orderId: orderIdOriginal,
             product: prod.trim()
           })
@@ -118,8 +126,12 @@ export const processDigitalRawData = async (req, res, next) => {
       } else {
         // NO SPLIT CASE
         const { id, statusProcess, validationNotes, createdAt, updatedAt, product, ...rest } = row
+        let finalSegmen = rest.segmen
+        if (finalSegmen && finalSegmen.toUpperCase() === 'SME') finalSegmen = 'RBS'
+
         finalData.push({ 
           ...rest, 
+          segmen: finalSegmen,
           orderId: orderIdOriginal,
           product: productString.trim() // Gunakan productString yang sudah ada fallback-nya
         })

@@ -226,10 +226,7 @@ const ReportDigPro = () => {
   const currentRole = localStorage.getItem('currentRole') || user?.role || 'user'
   const isAdminMode = ['admin', 'superadmin'].includes(currentRole)
   const now = new Date()
-  const defaultYear = now.getFullYear() === 2026 ? 2025 : now.getFullYear()
-  const startOfMonth = new Date(defaultYear, 0, 1)
-  const endOfData = new Date(defaultYear, 11, 31)
-
+  
   const formatDateLocal = (date) => {
     const d = new Date(date)
     const year = d.getFullYear()
@@ -238,8 +235,13 @@ const ReportDigPro = () => {
     return `${year}-${month}-${day}`
   }
 
-  const [startDate, setStartDate] = useState(formatDateLocal(startOfMonth))
-  const [endDate, setEndDate] = useState(formatDateLocal(endOfData))
+  // Default Date Range: Today - 1 Month
+  const endDateVal = now
+  const startDateVal = new Date(now)
+  startDateVal.setMonth(startDateVal.getMonth() - 1)
+
+  const [startDate, setStartDate] = useState(formatDateLocal(startDateVal))
+  const [endDate, setEndDate] = useState(formatDateLocal(endDateVal))
   const [selectedSegment, setSelectedSegment] = useState(['SME'])
   const segmentOptions = ['SME', 'LEGS']
   const [selectedWitel, setSelectedWitel] = useState([])

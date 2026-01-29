@@ -18,13 +18,13 @@ const normalizedDigitalCTE = (start_date, end_date) => `
       END as region_norm,
       CASE
         WHEN product ILIKE '%Netmonk%' THEN 'Netmonk'
-        WHEN product ILIKE '%OCA%' THEN 'OCA'
+        WHEN product ILIKE '%OCA%' OR product ILIKE '%Omni%' THEN 'OCA'
         WHEN product ILIKE '%Pijar%' THEN 'Pijar'
         WHEN product ILIKE '%Antares%' OR product ILIKE '%IOT%' OR product ILIKE '%CCTV%' THEN 'Antares'
         ELSE 'OTHER'
       END as product_norm,
       CASE
-        WHEN order_status ILIKE '%complete%' OR order_status ILIKE '%completed%' OR order_status ILIKE '%ps%' THEN 'COMPLETED'
+        WHEN order_status ILIKE '%complete%' OR order_status ILIKE '%completed%' OR order_status ILIKE '%ps%' OR order_status_n ILIKE '%Complete%' THEN 'COMPLETED'
         WHEN order_status ILIKE '%cancel%' OR order_status ILIKE '%drop%' THEN 'IGNORE'
         ELSE 'IN PROGRESS'
       END as status_group,
